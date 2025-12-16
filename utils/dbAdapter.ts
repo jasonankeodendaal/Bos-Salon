@@ -396,21 +396,22 @@ export const dbOnAuthStateChange = (callback: (user: any) => void) => {
 
 // --- DATA SUBSCRIPTIONS ---
 export const dbSubscribeToCollection = (collection: CollectionName, callback: Listener) => {
-  if (isSupabaseConfigured && supabase) {
-    supabase.from(collection).select('*').then(({ data }) => {
+  const client = supabase;
+  if (isSupabaseConfigured && client) {
+    client.from(collection).select('*').then(({ data }) => {
       if (data) callback(data);
     });
 
-    const channel = supabase
+    const channel = client
       .channel(`public:${collection}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: collection }, (payload) => {
-         supabase.from(collection).select('*').then(({ data }) => {
+         client.from(collection).select('*').then(({ data }) => {
             if(data) callback(data);
          });
       })
       .subscribe();
 
-    return () => supabase.removeChannel(channel);
+    return () => { client.removeChannel(channel); };
   } else {
     const load = () => callback(getLocalCollection(collection));
     load(); 
@@ -421,17 +422,18 @@ export const dbSubscribeToCollection = (collection: CollectionName, callback: Li
 };
 
 export const dbSubscribeToDoc = (collection: CollectionName, docId: string, callback: DocListener) => {
-    if (isSupabaseConfigured && supabase) {
-        const fetch = () => supabase.from(collection).select('*').eq('id', docId).single().then(({ data }) => {
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+        const fetch = () => client.from(collection).select('*').eq('id', docId).single().then(({ data }) => {
             if (data) callback(data);
         });
         fetch();
-        const channel = supabase.channel(`public:${collection}:${docId}`)
+        const channel = client.channel(`public:${collection}:${docId}`)
             .on('postgres_changes', { event: '*', schema: 'public', table: collection, filter: `id=eq.${docId}` }, (payload) => {
                 fetch();
             })
             .subscribe();
-        return () => supabase.removeChannel(channel);
+        return () => { client.removeChannel(channel); };
     } else {
         const load = () => {
             const list = getLocalCollection(collection);
@@ -448,9 +450,10 @@ export const dbSubscribeToDoc = (collection: CollectionName, docId: string, call
 // --- CRUD OPERATIONS ---
 export const dbAddItem = async (collection: CollectionName, item: any) => {
   const newItem = { ...item, id: item.id || crypto.randomUUID() };
+  const client = supabase;
 
-  if (isSupabaseConfigured && supabase) {
-    const { error } = await supabase.from(collection).insert(newItem);
+  if (isSupabaseConfigured && client) {
+    const { error } = await client.from(collection).insert(newItem);
     if (error) throw error;
   } else {
     const list = getLocalCollection(collection);
@@ -462,9 +465,10 @@ export const dbAddItem = async (collection: CollectionName, item: any) => {
 
 export const dbUpdateItem = async (collection: CollectionName, item: any) => {
   if (!item.id) throw new Error("Item must have an ID to update");
+  const client = supabase;
 
-  if (isSupabaseConfigured && supabase) {
-    const { error } = await supabase.from(collection).update(item).eq('id', item.id);
+  if (isSupabaseConfigured && client) {
+    const { error } = await client.from(collection).update(item).eq('id', item.id);
     if (error) throw error;
   } else {
     const list = getLocalCollection(collection);
@@ -477,8 +481,9 @@ export const dbUpdateItem = async (collection: CollectionName, item: any) => {
 };
 
 export const dbDeleteItem = async (collection: CollectionName, id: string) => {
-  if (isSupabaseConfigured && supabase) {
-    const { error } = await supabase.from(collection).delete().eq('id', id);
+  const client = supabase;
+  if (isSupabaseConfigured && client) {
+    const { error } = await client.from(collection).delete().eq('id', id);
     if (error) throw error;
   } else {
     const list = getLocalCollection(collection);
@@ -488,8 +493,9 @@ export const dbDeleteItem = async (collection: CollectionName, id: string) => {
 };
 
 export const dbSetDoc = async (collection: CollectionName, docId: string, data: any) => {
-    if (isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from(collection).upsert({ ...data, id: docId });
+    const client = supabase;
+    if (isSupabaseConfigured && client) {
+        const { error } = await client.from(collection).upsert({ ...data, id: docId });
         if(error) throw error;
     } else {
         const list = getLocalCollection(collection);
@@ -505,12 +511,13 @@ export const dbSetDoc = async (collection: CollectionName, docId: string, data: 
 
 // --- STORAGE ---
 export const dbUploadFile = async (file: File, bucket: string, pathPrefix: string = ''): Promise<string> => {
-  if (isSupabaseConfigured && supabase) {
+  const client = supabase;
+  if (isSupabaseConfigured && client) {
     const filePath = `${pathPrefix}${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage.from(bucket).upload(filePath, file);
+    const { data, error } = await client.storage.from(bucket).upload(filePath, file);
     if (error) throw error;
     
-    const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    const { data: publicUrlData } = client.storage.from(bucket).getPublicUrl(filePath);
     return publicUrlData.publicUrl;
   } else {
     console.warn("Local Mode: converting file to Base64. This may exceed storage limits.");
@@ -520,8 +527,9 @@ export const dbUploadFile = async (file: File, bucket: string, pathPrefix: strin
 
 // --- BATCH DELETE (Used for clearing data) ---
 export const dbClearCollection = async (collection: CollectionName) => {
-    if(isSupabaseConfigured && supabase) {
-        const { error } = await supabase.from(collection).delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
+    const client = supabase;
+    if(isSupabaseConfigured && client) {
+        const { error } = await client.from(collection).delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
         if (error) throw error;
     } else {
         localStorage.removeItem(`bossalon_${collection}`);

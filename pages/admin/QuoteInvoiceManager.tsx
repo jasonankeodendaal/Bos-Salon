@@ -228,7 +228,8 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
 
   const generateRandomPassword = () => Math.random().toString(36).slice(-6).toUpperCase();
 
-  const handleStartNew = (type: 'quote' | 'invoice') => {
+  const handleStartNew = (activeTab: 'quotes' | 'invoices') => {
+      const type = activeTab === 'quotes' ? 'quote' : 'invoice';
       setFormData({
           type,
           number: generateNumber(type),
@@ -296,8 +297,9 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
           }
           
           // Ensure we switch to the tab where the saved item will appear
-          if (savedInv.type !== activeTab) {
-              setActiveTab(savedInv.type);
+          const targetTab = savedInv.type === 'quote' ? 'quotes' : 'invoices';
+          if (targetTab !== activeTab) {
+              setActiveTab(targetTab);
           }
 
           setSavedInvoice(savedInv);
@@ -327,7 +329,10 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
 
   const groupedInvoices = useMemo(() => {
       // 1. Filter by Type (Quote/Invoice)
-      const filtered = invoices.filter(i => i.type === activeTab).sort((a,b) => new Date(b.dateIssued).getTime() - new Date(a.dateIssued).getTime());
+      const filtered = invoices.filter(i => {
+          const expectedType = activeTab === 'quotes' ? 'quote' : 'invoice';
+          return i.type === expectedType;
+      }).sort((a,b) => new Date(b.dateIssued).getTime() - new Date(a.dateIssued).getTime());
       
       const groups: Record<string, Invoice[]> = {
           'Requires Action': [],

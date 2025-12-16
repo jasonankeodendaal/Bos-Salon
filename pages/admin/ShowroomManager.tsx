@@ -62,13 +62,14 @@ const ShowroomItemForm = ({
   }, [video]);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
         const currentImageCount = images.length;
-        if (currentImageCount + e.target.files.length > 5) {
+        if (currentImageCount + files.length > 5) {
             alert("You can only upload a maximum of 5 images per piece.");
             return;
         }
-        setImages(prev => [...prev, ...Array.from(e.target.files)]);
+        setImages(prev => [...prev, ...Array.from(files)]);
     }
   };
 

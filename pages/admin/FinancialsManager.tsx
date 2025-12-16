@@ -117,7 +117,7 @@ const IncomeRow: React.FC<IncomeRowProps> = ({ booking, onUpdate }) => {
                 {isEditing ? (
                     <select 
                         value={data.paymentMethod} 
-                        onChange={e => setData({...data, paymentMethod: e.target.value})} 
+                        onChange={e => setData({...data, paymentMethod: e.target.value as any})} 
                         className={selectClass}
                     >
                         <option value="cash">Cash</option>
