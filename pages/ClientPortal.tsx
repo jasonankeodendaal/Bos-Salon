@@ -170,6 +170,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
 
   const handleGoogleLogin = async () => {
       try {
+          localStorage.setItem('login_redirect_destination', 'client-portal');
           await dbLoginWithGoogle();
           // The page will redirect to Google, then back.
           // On return, the `authenticatedUser` prop will be populated by App.tsx
@@ -331,7 +332,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="flex justify-center mb-6">
             <img src={logoUrl} alt={companyName} className="w-32 h-32 object-contain" />
           </a>
-          <div className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-2xl p-8 transition-all duration-300">
+          <div className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-2xl shadow-2xl p-8 transition-all duration-300">
             <h1 className="text-2xl font-bold text-center mb-1 text-brand-light">Client Portal</h1>
             <p className="text-center text-gray-500 text-sm mb-6">Access your rewards and history.</p>
             
@@ -351,7 +352,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                 required 
                                 value={manualEmail}
                                 onChange={e => setManualEmail(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold"
+                                className="w-full bg-white border border-gray-300 rounded-full p-3 text-black placeholder-gray-400 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold shadow-sm transition-all"
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -362,13 +363,13 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                 required 
                                 value={manualPin}
                                 onChange={e => setManualPin(e.target.value)}
-                                className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold tracking-widest"
+                                className="w-full bg-white border border-gray-300 rounded-full p-3 text-black placeholder-gray-400 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold shadow-sm tracking-widest transition-all"
                                 placeholder="****"
                             />
                         </div>
                         <button 
                             type="submit"
-                            className="w-full bg-brand-gold text-white py-3 rounded-full font-bold text-sm hover:bg-opacity-90 shadow-sm transition-colors mt-2"
+                            className="w-full bg-brand-gold text-white py-3 rounded-full font-bold text-sm hover:bg-opacity-90 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all mt-2"
                         >
                             Log In
                         </button>
@@ -385,7 +386,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     <div>
                         <button 
                             onClick={handleGoogleLogin}
-                            className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-full font-bold text-sm hover:bg-gray-50 shadow-sm flex items-center justify-center gap-3 transition-colors"
+                            className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-full font-bold text-sm hover:bg-gray-50 shadow-sm flex items-center justify-center gap-3 transition-colors hover:border-gray-400"
                         >
                             <svg className="w-5 h-5" viewBox="0 0 24 24">
                                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

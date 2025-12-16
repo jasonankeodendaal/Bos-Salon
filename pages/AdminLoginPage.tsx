@@ -1,3 +1,4 @@
+
 import React, { useState, FormEvent, MouseEvent } from 'react';
 import { dbLogin } from '../utils/dbAdapter';
 
@@ -82,7 +83,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate, logoUrl }) 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-brand-gold text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-80 transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed [filter:drop-shadow(0_4px_8px_rgba(234,179,8,0.3))]"
+                className="w-full bg-black text-brand-green py-3 rounded-full font-bold text-lg hover:bg-brand-green hover:text-black transition-all duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg border border-brand-green/30"
               >
                 {loading ? 'Signing In...' : 'Sign In'}
               </button>

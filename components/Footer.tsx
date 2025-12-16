@@ -66,16 +66,24 @@ const Footer: React.FC<FooterProps> = ({ companyName, address, phone, email, soc
             )}
           </div>
            <div className="text-center text-xs text-gray-500 pt-8 mt-8 border-t border-gray-200 flex flex-col items-center gap-2">
-            <p>
-                Website created by{' '}
+            <div className="flex items-center justify-center gap-2">
+                <span className="text-gray-400">Website created by</span>
                 <button
                     onClick={() => setIsCreatorModalOpen(true)}
-                    className="font-bold text-gray-700 hover:text-brand-green underline transition-colors"
+                    className="transition-transform hover:scale-110 focus:outline-none"
+                    aria-label="View Creator JSTYP.me"
                 >
-                    JSTYP.me
+                    <img 
+                        src="https://i.ibb.co/WRn7WFs/unnamed-1-1-removebg-preview.png" 
+                        alt="JSTYP.me Logo" 
+                        className="h-10 w-auto object-contain" 
+                    />
                 </button>
-            </p>
-            <button onClick={() => onNavigate('admin')} className="text-[10px] text-gray-400 hover:text-brand-green transition-colors">
+            </div>
+            <button 
+                onClick={() => onNavigate('admin')} 
+                className="text-[10px] font-bold bg-black text-brand-green px-4 py-1.5 rounded-full hover:bg-brand-green hover:text-black transition-colors mt-2 shadow-sm border border-brand-green/20"
+            >
                 Admin Login
             </button>
           </div>

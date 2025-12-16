@@ -441,17 +441,22 @@ create policy "App Access Clients" on public.clients for all using (true);
           <p className="text-gray-600">To allow clients to sign in with their Gmail accounts instead of a PIN.</p>
           
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-              <h4 className="font-bold text-red-800 mb-2">Troubleshooting: "This site can't be reached"</h4>
+              <h4 className="font-bold text-red-800 mb-2">Troubleshooting: "This site can't be reached" (Localhost:3000)</h4>
               <p className="text-sm text-red-700 mb-2">
-                  If users see an error referencing <code>localhost:3000</code> after clicking "Sign in with Google", it means Supabase is redirecting to the wrong port.
+                  If you see an error referencing <code>localhost:3000</code> after clicking "Sign in with Google", Supabase is redirecting to its default Site URL.
               </p>
               <div className="bg-white border border-red-200 p-3 rounded text-sm text-gray-700">
-                  <strong>Fix:</strong>
-                  <ol className="list-decimal pl-5 mt-1 space-y-1">
-                      <li>Go to Supabase &rarr; Authentication &rarr; URL Configuration.</li>
-                      <li>In <strong>Site URL</strong>, enter your actual app URL (e.g. <code>https://bos-salon.vercel.app</code> or <code>http://localhost:5173</code> for local testing).</li>
-                      <li>In <strong>Redirect URLs</strong>, ensure you have added the same URL.</li>
-                      <li>Delete any reference to <code>localhost:3000</code>.</li>
+                  <strong>How to Fix (Crucial):</strong>
+                  <ol className="list-decimal pl-5 mt-1 space-y-2">
+                      <li>Go to your Supabase Dashboard &rarr; Authentication &rarr; <strong>URL Configuration</strong>.</li>
+                      <li>In <strong>Site URL</strong>, change <code>http://localhost:3000</code> to your actual local URL (usually <code>http://localhost:5173</code>) OR your live Vercel URL.</li>
+                      <li>In <strong>Redirect URLs</strong>, add ALL URLs you use:
+                          <ul className="list-disc pl-5 mt-1 text-xs text-gray-500">
+                              <li><code>http://localhost:5173</code> (for local testing)</li>
+                              <li><code>https://your-project.vercel.app</code> (for live site)</li>
+                          </ul>
+                      </li>
+                      <li>Click Save. This tells Google it's safe to return to your specific page.</li>
                   </ol>
               </div>
           </div>

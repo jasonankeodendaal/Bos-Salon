@@ -226,6 +226,13 @@ const App: React.FC = () => {
     const unsubscribe = dbOnAuthStateChange((currentUser) => {
       setUser(currentUser);
       setAuthChecked(true);
+
+      // Check for redirect intent from Google Login
+      const redirectDest = localStorage.getItem('login_redirect_destination');
+      if (currentUser && redirectDest === 'client-portal') {
+          setCurrentView('client-portal');
+          localStorage.removeItem('login_redirect_destination');
+      }
     });
     return () => unsubscribe();
   }, []);
