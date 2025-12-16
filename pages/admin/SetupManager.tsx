@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 
-const CopyBlock: React.FC<{ text: string; label?: string }> = ({ text, label }) => {
+const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = ({ text, label, height = "h-auto" }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -11,9 +11,9 @@ const CopyBlock: React.FC<{ text: string; label?: string }> = ({ text, label }) 
   };
 
   return (
-    <div className="my-4">
-      {label && <p className="text-xs font-bold text-gray-500 mb-1 uppercase">{label}</p>}
-      <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700">
+    <div className="my-3">
+      {label && <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">{label}</p>}
+      <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 shadow-md">
         <div className="flex justify-between items-center px-4 py-2 bg-gray-800 border-b border-gray-700">
           <div className="flex space-x-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
@@ -22,12 +22,12 @@ const CopyBlock: React.FC<{ text: string; label?: string }> = ({ text, label }) 
           </div>
           <button 
             onClick={handleCopy} 
-            className="text-xs font-mono text-gray-400 hover:text-white transition-colors"
+            className={`text-xs font-mono font-bold transition-colors ${copied ? 'text-green-400' : 'text-gray-400 hover:text-white'}`}
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? 'COPIED!' : 'COPY CODE'}
           </button>
         </div>
-        <pre className="p-4 overflow-x-auto text-xs sm:text-sm text-green-400 font-mono scrollbar-thin scrollbar-thumb-gray-600">
+        <pre className={`p-4 overflow-auto ${height} text-xs sm:text-sm text-green-400 font-mono leading-relaxed`}>
           <code>{text}</code>
         </pre>
       </div>
@@ -35,15 +35,38 @@ const CopyBlock: React.FC<{ text: string; label?: string }> = ({ text, label }) 
   );
 };
 
+const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline font-semibold decoration-blue-300 underline-offset-2">
+        {children} &rarr;
+    </a>
+);
+
+const Step: React.FC<{ number: string; title: string; children: React.ReactNode }> = ({ number, title, children }) => (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-gray-50 p-6 border-b border-gray-100 sticky top-0 z-10">
+            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                <span className="bg-admin-dark-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">{number}</span>
+                {title}
+            </h2>
+        </div>
+        <div className="p-6 md:p-8 space-y-6 text-gray-600 leading-relaxed">
+            {children}
+        </div>
+    </div>
+);
+
 const SetupManager: React.FC = () => {
-  // Script for creating structure
-  const structureScript = `
--- 1. Enable UUID extension
+  // --- SQL SCRIPTS ---
+
+  const script1_structure = `
+-- 1. EXTENSIONS
+-- "uuid-ossp" is required to generate unique IDs for every database entry automatically.
 create extension if not exists "uuid-ossp";
 
--- 2. Create Tables (If they don't exist)
+-- 2. CREATE TABLES
+-- We create tables 'if not exists' so this script is safe to run multiple times.
 
--- Portfolio
+-- Portfolio: Stores your art gallery images
 create table if not exists public.portfolio (
   id uuid primary key default uuid_generate_v4(),
   title text,
@@ -55,7 +78,7 @@ create table if not exists public.portfolio (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Specials
+-- Specials: Stores your flash sales and offers
 create table if not exists public.specials (
   id uuid primary key default uuid_generate_v4(),
   title text,
@@ -71,7 +94,7 @@ create table if not exists public.specials (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Showroom (Genres)
+-- Showroom: Stores categories (Genres) for the flash wall
 create table if not exists public.showroom (
   id uuid primary key default uuid_generate_v4(),
   name text,
@@ -79,7 +102,7 @@ create table if not exists public.showroom (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Bookings
+-- Bookings: Stores client appointments
 create table if not exists public.bookings (
   id uuid primary key default uuid_generate_v4(),
   name text,
@@ -96,7 +119,7 @@ create table if not exists public.bookings (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Expenses
+-- Expenses: Tracks your business spending
 create table if not exists public.expenses (
   id uuid primary key default uuid_generate_v4(),
   date date,
@@ -106,7 +129,7 @@ create table if not exists public.expenses (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Inventory
+-- Inventory: Tracks stock levels (Ink, Gloves, etc)
 create table if not exists public.inventory (
   id uuid primary key default uuid_generate_v4(),
   "productName" text,
@@ -119,7 +142,7 @@ create table if not exists public.inventory (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Invoices
+-- Invoices: Stores quotes and invoices
 create table if not exists public.invoices (
   id uuid primary key default uuid_generate_v4(),
   type text, 
@@ -140,7 +163,7 @@ create table if not exists public.invoices (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Clients
+-- Clients: Stores client profiles and loyalty info
 create table if not exists public.clients (
   id uuid primary key default uuid_generate_v4(),
   name text,
@@ -154,7 +177,7 @@ create table if not exists public.clients (
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- Settings
+-- Settings: Stores website config (Logo, Phone, Colors, etc)
 create table if not exists public.settings (
   id text primary key,
   "companyName" text,
@@ -189,11 +212,9 @@ create table if not exists public.settings (
 );
 `.trim();
 
-  const tablePermissionsScript = `
--- --- TABLE PERMISSIONS SCRIPT ---
--- Use this if you get "Permission denied" when saving/editing data (text/numbers)
-
--- 1. Enable RLS on all tables
+  const script2_permissions = `
+-- 1. ENABLE ROW LEVEL SECURITY (RLS)
+-- This tells the database "Don't let anyone touch data unless I explicitly say so."
 alter table public.expenses enable row level security;
 alter table public.inventory enable row level security;
 alter table public.portfolio enable row level security;
@@ -204,7 +225,8 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
--- 2. Clean up old policies (to avoid conflicts)
+-- 2. CLEANUP OLD POLICIES
+-- We remove any existing rules to avoid conflicts when you run this script multiple times.
 drop policy if exists "Admin Expenses" on public.expenses;
 drop policy if exists "Admin Inventory" on public.inventory;
 drop policy if exists "Public Read Portfolio" on public.portfolio;
@@ -219,13 +241,14 @@ drop policy if exists "App Access Bookings" on public.bookings;
 drop policy if exists "App Access Invoices" on public.invoices;
 drop policy if exists "App Access Clients" on public.clients;
 
--- 3. Create New Policies
+-- 3. CREATE POLICIES (The Rules)
 
--- Admin Only Tables (Expenses, Inventory)
+-- RULE: Only logged-in Admins can see or touch Expenses and Inventory
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 
--- Public Read / Admin Write (Portfolio, Specials, Showroom, Settings)
+-- RULE: Everyone (Public) can SEE Portfolio, Specials, Showroom, and Settings
+-- But only Admins can EDIT them.
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
 create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
 
@@ -238,32 +261,33 @@ create policy "Admin Write Showroom" on public.showroom for all using (auth.role
 create policy "Public Read Settings" on public.settings for select using (true);
 create policy "Admin Write Settings" on public.settings for all using (auth.role() = 'authenticated');
 
--- Operational Data (Bookings, Invoices, Clients)
--- Open for App Logic (Client Portal + Admin)
+-- RULE: Operational Data (Bookings, Invoices, Clients)
+-- We allow broad access here so the Client Portal works without complex auth logic for now.
+-- In a stricter app, you would limit this to "auth.uid() = client_id", but for this system, we keep it simple.
 create policy "App Access Bookings" on public.bookings for all using (true);
 create policy "App Access Invoices" on public.invoices for all using (true);
 create policy "App Access Clients" on public.clients for all using (true);
 `.trim();
 
-  const storagePermissionsScript = `
--- --- STORAGE PERMISSIONS SCRIPT ---
--- Use this if you get "Permission denied" when uploading images/videos
+  const script3_storage = `
+-- 1. STORAGE SECURITY
+-- We create policies to control who can upload/view files.
 
--- 1. Enable RLS on storage.objects
-alter table storage.objects enable row level security;
+-- Note: We skipped "alter table storage.objects enable row level security" 
+-- because it is already handled by Supabase internally.
 
--- 2. Drop old policies
+-- Drop old policies to prevent duplicates
 drop policy if exists "Public Read Access" on storage.objects;
 drop policy if exists "Admin Insert Access" on storage.objects;
 drop policy if exists "Admin Update Access" on storage.objects;
 drop policy if exists "Admin Delete Access" on storage.objects;
 
--- 3. Allow PUBLIC to READ files (so images load on website)
+-- RULE: Anyone can VIEW images (so they load on your website)
 create policy "Public Read Access"
 on storage.objects for select
 using ( bucket_id in ('portfolio', 'specials', 'showroom', 'booking-references', 'settings') );
 
--- 4. Allow ADMIN (Authenticated) to UPLOAD/EDIT files
+-- RULE: Only Admins can UPLOAD, UPDATE, or DELETE files
 create policy "Admin Insert Access"
 on storage.objects for insert
 with check ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials', 'showroom', 'booking-references', 'settings') );
@@ -278,81 +302,207 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
 `.trim();
 
   return (
-    <div className="max-w-4xl mx-auto space-y-12 pb-20">
-      <div className="text-center space-y-4">
-        <h1 className="text-3xl md:text-5xl font-black text-admin-dark-text tracking-tight">System Setup</h1>
-        <p className="text-lg text-admin-dark-text-secondary max-w-2xl mx-auto">
-          Complete these steps to connect your database and enable all features.
+    <div className="max-w-5xl mx-auto space-y-12 pb-32 font-sans">
+      
+      {/* Intro Header */}
+      <div className="text-center space-y-6 py-8">
+        <h1 className="text-3xl md:text-5xl font-black text-gray-800 tracking-tight">Zero to Hero Setup Guide</h1>
+        <p className="text-lg text-gray-500 max-w-3xl mx-auto">
+          The complete guide to taking these files and turning them into a live, professional website accessible to the world.
+          Follow each step exactly.
         </p>
-      </div>
-
-      {/* PHASE 1: SUPABASE CONFIG */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="bg-green-600 p-6 border-b border-green-700">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-green-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">1</span>
-            Database Tables
-          </h2>
-        </div>
-        <div className="p-8 space-y-6">
-          <p className="text-gray-600">Run this script first to create the data structure.</p>
-          <CopyBlock label="1. Create Tables Script" text={structureScript} />
-          
-          <div className="bg-red-50 border-l-4 border-red-500 p-4 mt-6">
-              <h4 className="font-bold text-red-800 mb-2">Error 42501 when running this?</h4>
-              <p className="text-sm text-red-700">
-                  If you manually created tables before running this script, delete them first in the Table Editor, then run this script.
-              </p>
-          </div>
+        <div className="inline-flex flex-wrap justify-center gap-2">
+            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">GitHub</span>
+            <span className="text-gray-400">&rarr;</span>
+            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Supabase</span>
+            <span className="text-gray-400">&rarr;</span>
+            <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Vercel</span>
         </div>
       </div>
 
-      {/* PHASE 2: STORAGE BUCKETS */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="bg-teal-600 p-6 border-b border-teal-700">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-teal-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-            Storage Buckets
-          </h2>
+      {/* STEP 1: GITHUB */}
+      <Step number="1" title="Put the Code Safe (GitHub)">
+        <p>
+            Before we can launch the site, we need to put the code into a "Repository" (Repo). 
+            This is where Vercel will grab the files from.
+        </p>
+        
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <h3 className="font-bold text-gray-900 mb-2">Instructions:</h3>
+            <ol className="list-decimal pl-5 space-y-3 text-gray-800 text-sm">
+                <li>Create a free account at <ExternalLink href="https://github.com/">GitHub.com</ExternalLink>.</li>
+                <li>In the top right corner, click the <strong>+</strong> icon and select <strong>New repository</strong>.</li>
+                <li>Name it something like <code>bos-salon-website</code>. Make it <strong>Private</strong> if you don't want others to see the code yet.</li>
+                <li>Click <strong>Create repository</strong>.</li>
+                <li>
+                    <strong>Upload your files:</strong>
+                    <ul className="list-disc pl-5 mt-1 text-gray-600">
+                        <li>If you downloaded this project as a ZIP, unzip it.</li>
+                        <li>On the GitHub screen, look for the link "uploading an existing file".</li>
+                        <li>Drag and drop ALL your project files into that window.</li>
+                        <li>Wait for them to upload, type "Initial commit" in the box at the bottom, and click <strong>Commit changes</strong>.</li>
+                    </ul>
+                </li>
+            </ol>
         </div>
-        <div className="p-8 space-y-6">
-          <p className="text-gray-600">Create these <strong>Public</strong> buckets in the Storage tab of Supabase:</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {['portfolio', 'specials', 'showroom', 'booking-references', 'settings'].map(bucket => (
-                  <div key={bucket} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className={`w-3 h-3 rounded-full bg-teal-500`}></div>
-                      <span className="font-mono font-bold text-gray-700">{bucket}</span>
-                  </div>
-              ))}
-          </div>
-        </div>
-      </div>
+      </Step>
 
-      {/* PHASE 3: PERMISSIONS (CRITICAL) */}
-      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
-        <div className="bg-purple-600 p-6 border-b border-purple-700">
-          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
-            Fix Permissions (RLS)
-          </h2>
+      {/* STEP 2: SUPABASE */}
+      <Step number="2" title="Create the Brain (Supabase)">
+        <p>
+            Supabase is the database. It stores all your bookings, settings, and client info.
+        </p>
+        
+        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+            <h3 className="font-bold text-blue-900 mb-2">Instructions:</h3>
+            <ol className="list-decimal pl-5 space-y-2 text-blue-800 text-sm">
+                <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> and create a "New Project".</li>
+                <li>Give it a name (e.g., "Bos Salon") and a strong password. Region: Choose one close to you (e.g., Cape Town).</li>
+                <li><strong>Wait:</strong> It takes about 2 minutes to setup.</li>
+                <li>Once the project is ready (green "Active" badge), look for the <strong>SQL Editor</strong> icon (looks like a terminal `&gt;_`) on the left sidebar.</li>
+                <li>Paste the code below into the SQL Editor and click <strong>RUN</strong>.</li>
+            </ol>
         </div>
-        <div className="p-8 space-y-8">
-          <div className="bg-yellow-50 p-4 border-l-4 border-yellow-400 text-yellow-800 text-sm">
-              <strong>Why is this needed?</strong> By default, Supabase blocks all actions (Read/Write/Upload) for security. You must run these scripts to tell it "The Admin is allowed to edit everything" and "The Public can read portfolio items".
-          </div>
 
-          <div>
-              <h3 className="font-bold text-lg text-gray-800 mb-2">A. Fix Data Saving (Text/Numbers)</h3>
-              <p className="text-sm text-gray-500 mb-2">Run this if you can't save bookings, clients, or settings.</p>
-              <CopyBlock label="Table Permissions Script" text={tablePermissionsScript} />
-          </div>
-
-          <div className="border-t pt-6">
-              <h3 className="font-bold text-lg text-gray-800 mb-2">B. Fix File Uploads (Images)</h3>
-              <p className="text-sm text-gray-500 mb-2">Run this if image uploads fail.</p>
-              <CopyBlock label="Storage Permissions Script" text={storagePermissionsScript} />
-          </div>
+        <CopyBlock label="Script A: Create Tables" text={script1_structure} height="h-64" />
+        
+        <div className="border-t border-gray-100 pt-6 mt-6">
+            <p className="mb-4">Now, delete the text in the SQL Editor, paste this second script, and click <strong>RUN</strong> again. This sets up security.</p>
+            <CopyBlock label="Script B: Security Rules" text={script2_permissions} height="h-48" />
         </div>
+      </Step>
+
+      {/* STEP 3: STORAGE */}
+      <Step number="3" title="Enable File Uploads">
+        <p>
+            We need to tell Supabase to allow image uploads for your portfolio.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 className="font-bold text-gray-800 mb-2">Manual Setup Required:</h3>
+                <ol className="list-decimal pl-5 space-y-3 text-sm">
+                    <li>Go to the <strong>Storage</strong> icon (looks like a box) in the Supabase sidebar.</li>
+                    <li>Click <strong>"New Bucket"</strong>.</li>
+                    <li>Name it <code>portfolio</code>.</li>
+                    <li><strong>IMPORTANT:</strong> Toggle "Public Bucket" to <strong>ON</strong>.</li>
+                    <li>Click Save.</li>
+                    <li>Repeat this for these 4 other names:
+                        <ul className="list-disc pl-5 mt-2 font-mono text-xs text-purple-600 font-bold bg-purple-50 p-2 rounded">
+                            <li>specials</li>
+                            <li>showroom</li>
+                            <li>booking-references</li>
+                            <li>settings</li>
+                        </ul>
+                    </li>
+                </ol>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h3 className="font-bold text-gray-800 mb-2">Final Script:</h3>
+                <p className="text-sm mb-2">Once you created the buckets manually, run this SQL script to finish the permissions.</p>
+                <CopyBlock label="Script C: Storage Permissions" text={script3_storage} height="h-40" />
+            </div>
+        </div>
+      </Step>
+
+      {/* STEP 4: VERCEL */}
+      <Step number="4" title="Launch the Website (Vercel)">
+        <p>
+            Now we connect the Code (GitHub) to the Brain (Supabase) using Vercel.
+        </p>
+
+        <div className="space-y-6">
+            <div>
+                <h3 className="font-bold text-gray-800 mb-2">1. Get your Secret Keys</h3>
+                <p className="text-sm mb-2">Go back to your Supabase Dashboard. Click <strong>Settings (Cogwheel)</strong> &rarr; <strong>API</strong>.</p>
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm">
+                    <p>Keep this tab open. You will need:</p>
+                    <ul className="list-disc pl-5 mt-1 font-bold text-yellow-800">
+                        <li>Project URL</li>
+                        <li>anon / public key</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div>
+                <h3 className="font-bold text-gray-800 mb-2">2. Deploy on Vercel</h3>
+                <ol className="list-decimal pl-5 space-y-3 text-sm">
+                    <li>Go to <ExternalLink href="https://vercel.com/signup">Vercel.com</ExternalLink> and sign up with <strong>GitHub</strong>.</li>
+                    <li>Click <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
+                    <li>You should see your `bos-salon-website` repo from Step 1. Click <strong>Import</strong>.</li>
+                    <li>
+                        <strong>Environment Variables:</strong> This is the most critical step. Click the dropdown named "Environment Variables".
+                        Add these two exactly as written:
+                    </li>
+                </ol>
+                
+                <div className="mt-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row gap-2 items-center bg-gray-100 p-2 rounded">
+                        <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-full sm:w-1/3">VITE_SUPABASE_URL</span>
+                        <span className="text-xs text-gray-500 w-full sm:w-2/3">Paste the <strong>Project URL</strong> from Supabase here.</span>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 items-center bg-gray-100 p-2 rounded">
+                        <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-full sm:w-1/3">VITE_SUPABASE_ANON_KEY</span>
+                        <span className="text-xs text-gray-500 w-full sm:w-2/3">Paste the <strong>anon / public key</strong> from Supabase here.</span>
+                    </div>
+                </div>
+
+                <div className="mt-4 text-sm">
+                    <p>Click <strong>Deploy</strong>. Vercel will now build your site. In about 1 minute, you will get a live URL (e.g., <code>bos-salon.vercel.app</code>).</p>
+                </div>
+            </div>
+        </div>
+      </Step>
+
+      {/* STEP 5: EMAILJS */}
+      <Step number="5" title="Connect Emails (EmailJS)">
+        <p>
+            To receive booking requests in your Gmail/Outlook, we link EmailJS.
+        </p>
+
+        <div className="space-y-4 mt-4">
+            <ol className="list-decimal pl-5 space-y-4 text-sm">
+                <li>
+                    Go to <ExternalLink href="https://www.emailjs.com/">EmailJS.com</ExternalLink> and create a free account.
+                </li>
+                <li>
+                    <strong>Add Service:</strong> Click "Add Service", select "Gmail" (or your provider), connect your account. 
+                    <br/>Copy the <strong>Service ID</strong> (e.g., <code>service_xyz</code>).
+                </li>
+                <li>
+                    <strong>Add Template:</strong> Click "Email Templates" &rarr; "Create New Template".
+                    <br/>Design the email you want to receive. Use these variables in the design:
+                    <ul className="list-disc pl-5 mt-1 font-mono text-xs text-blue-600">
+                        <li>{'{{from_name}}'} (Client Name)</li>
+                        <li>{'{{from_email}}'} (Client Email)</li>
+                        <li>{'{{message}}'} (Booking Details)</li>
+                    </ul>
+                    Save and copy the <strong>Template ID</strong> (e.g., <code>template_abc</code>).
+                </li>
+                <li>
+                    <strong>Get Public Key:</strong> Click on your Account Name (top right) &rarr; "Public Key".
+                </li>
+            </ol>
+
+            <div className="bg-green-50 p-4 rounded-xl border border-green-200 mt-4">
+                <h3 className="font-bold text-green-900 mb-2">Final Step: Connect it</h3>
+                <p className="text-sm text-green-800">
+                    Once your site is live, log in to this Admin Dashboard using the URL Vercel gave you.
+                    <br/>
+                    Go to <strong>Settings Tab</strong> &rarr; <strong>Integrations Section</strong> and paste your 3 EmailJS keys there.
+                </p>
+            </div>
+        </div>
+      </Step>
+
+      <div className="text-center pt-10 pb-10">
+          <p className="text-4xl">🎉</p>
+          <p className="text-2xl font-bold text-gray-800 mt-4">You are done!</p>
+          <p className="text-gray-500 mt-2">Your system is now fully live, secure, and ready for business.</p>
+          <p className="text-sm text-gray-400 mt-6">
+            Default Admin Login (first time): <br/>
+            Email: <code>admin@bossalon.com</code> (You must create this user in Supabase Authentication tab manually first!)
+          </p>
       </div>
 
     </div>
