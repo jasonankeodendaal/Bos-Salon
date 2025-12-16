@@ -38,14 +38,15 @@ const AboutUs: React.FC<AboutUsProps> = ({
           {/* Changed to 1 column on mobile to allow larger image */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             
-            {/* Image Col - Adjusted for free view logo/image */}
+            {/* Image Col - Circular Container */}
             <div className="order-1 w-full flex justify-center items-center">
-               {/* Removed circular constraints for free view */}
-              <img 
-                src={aboutUsImageUrl} 
-                alt="Bos Salon Feature" 
-                className="relative w-full max-w-[280px] sm:max-w-md h-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
-              />
+               <div className="relative w-64 h-64 sm:w-96 sm:h-96 rounded-full overflow-hidden border-4 border-white shadow-2xl hover:scale-105 transition-transform duration-500 ring-1 ring-gray-200">
+                  <img 
+                    src={aboutUsImageUrl} 
+                    alt="Bos Salon Feature" 
+                    className="w-full h-full object-cover"
+                  />
+               </div>
             </div>
 
             {/* Text Col */}
