@@ -4,6 +4,7 @@ import { Genre, ShowroomItem, PortfolioItem } from '../App';
 import PortfolioModal from '../components/PortfolioModal';
 
 const getMimeType = (url: string): string => {
+    if (!url) return 'video/mp4';
     if (url.startsWith('data:')) {
         const mime = url.substring(5, url.indexOf(';'));
         return mime || 'video/mp4';
@@ -93,7 +94,7 @@ const ShowroomGridItem: React.FC<{ item: ShowroomItem, onClick: () => void }> = 
               onCanPlayThrough={() => setIsMediaLoading(false)}
               onWaiting={() => setIsMediaLoading(true)}
             >
-              {shouldLoad && <source src={item.videoUrl} type={getMimeType(item.videoUrl)} />}
+              {shouldLoad && item.videoUrl && <source src={item.videoUrl as string} type={getMimeType(item.videoUrl as string)} />}
             </video>
           ) : (
             <div className="relative w-full h-full">
@@ -135,7 +136,7 @@ const Showroom: React.FC<ShowroomProps> = ({ showroomData, showroomTitle, showro
         story: "This is a flash design from our showroom. Contact us to book this piece or a similar concept!",
         primaryImage: item.images[0],
         galleryImages: item.images.slice(1),
-        videoData: item.videoUrl,
+        videoData: item.videoUrl as string | undefined,
     };
   };
 

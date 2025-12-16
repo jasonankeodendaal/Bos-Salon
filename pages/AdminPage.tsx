@@ -1,7 +1,8 @@
+
 import React from 'react';
 import AdminLoginPage from './AdminLoginPage';
 import AdminDashboard from './admin/AdminDashboard';
-import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem } from '../App';
+import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client, LoyaltyProgram } from '../App';
 
 export interface AdminPageProps {
   user: any | null; // Supports Supabase User or Mock User object
@@ -30,6 +31,7 @@ export interface AdminPageProps {
   bookings: Booking[];
   onUpdateBooking: (booking: Booking) => Promise<void>;
   onManualAddBooking: (booking: Omit<Booking, 'id' | 'bookingType'>) => Promise<void>;
+  onDeleteBooking: (id: string) => Promise<void>;
 
   // Expenses
   expenses: Expense[];
@@ -42,7 +44,19 @@ export interface AdminPageProps {
   onAddInventoryItem: (newItem: Omit<InventoryItem, 'id'>) => Promise<void>;
   onUpdateInventoryItem: (updatedItem: InventoryItem) => Promise<void>;
   onDeleteInventoryItem: (itemId: string) => Promise<void>;
+
+  // Invoices
+  invoices: Invoice[];
+  onAddInvoice: (item: Omit<Invoice, 'id'>) => Promise<void>;
+  onUpdateInvoice: (item: Invoice) => Promise<void>;
+  onDeleteInvoice: (id: string) => Promise<void>;
   
+  // Clients
+  clients: Client[];
+  onAddClient: (item: Omit<Client, 'id'>) => Promise<void>;
+  onUpdateClient: (item: Client) => Promise<void>;
+  onDeleteClient: (id: string) => Promise<void>;
+
   // Settings
   onSaveAllSettings: (settings: any) => Promise<void>;
   onClearAllData: () => Promise<void>;
@@ -66,6 +80,18 @@ export interface AdminPageProps {
   vatNumber: string;
   isMaintenanceMode: boolean;
   apkUrl: string;
+  taxEnabled: boolean;
+  vatPercentage: number;
+  loyaltyProgram: any;
+  loyaltyPrograms: LoyaltyProgram[]; // Added missing property
+  
+  // Settings Sections
+  hero?: any;
+  about?: any;
+  contact?: any;
+  emailServiceId: string;
+  emailTemplateId: string;
+  emailPublicKey: string;
 }
 
 const AdminPage: React.FC<AdminPageProps> = (props) => {
