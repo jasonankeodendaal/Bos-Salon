@@ -291,6 +291,19 @@ create policy "App Access Clients" on public.clients for all using (true);
           
           <CopyBlock label="SQL Setup Script" text={sqlScript} />
 
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mt-6">
+              <h4 className="font-bold text-red-800 mb-2">Error 42501: "Must be owner of table objects"?</h4>
+              <p className="text-sm text-red-700 mb-2">
+                  This happens if you created tables manually in the Supabase Dashboard before running this script. 
+                  The script cannot modify tables owned by the dashboard admin.
+              </p>
+              <div className="bg-white border border-red-200 p-3 rounded text-sm text-gray-700">
+                  <strong>Fix:</strong> Go to the <strong>Table Editor</strong> in Supabase. 
+                  <strong>Delete</strong> any tables you see (like <code>portfolio</code>, <code>bookings</code>). 
+                  Then run the SQL script above again.
+              </div>
+          </div>
+
           <div className="mt-4">
             <h4 className="font-bold text-gray-800 mb-2">Get Your API Keys</h4>
             <p className="text-gray-600 text-sm mb-2">Go to <strong>Project Settings (Cog icon) &rarr; API</strong>. You will need these for Vercel.</p>
@@ -312,8 +325,11 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
         <div className="p-8 space-y-6">
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
-              <p className="text-sm text-yellow-800 font-bold">Why Manual?</p>
-              <p className="text-xs text-yellow-700 mt-1">Supabase security settings prevent the SQL script above from creating buckets automatically. You must do this part in the dashboard.</p>
+              <p className="text-sm text-yellow-800 font-bold">Why isn't this in the SQL script?</p>
+              <p className="text-xs text-yellow-700 mt-1">
+                  Storage Buckets are separate from the database tables. Supabase security settings prevent standard SQL scripts from creating buckets automatically. 
+                  You must create these manually in the dashboard.
+              </p>
           </div>
 
           <p className="text-gray-600">Go to the <strong>Storage</strong> tab (icon looks like a bucket) in Supabase and create the following buckets. 
