@@ -1,31 +1,29 @@
 
 import React, { useState, useEffect } from 'react';
-import { 
-  dbOnAuthStateChange, 
-  dbSubscribeToCollection, 
-  dbSubscribeToDoc, 
-  dbAddItem, 
-  dbUpdateItem, 
-  dbDeleteItem, 
-  dbSetDoc, 
-  dbClearCollection,
-  dbLogout
-} from './utils/dbAdapter';
-
 import Header from './components/Header';
 import Hero from './components/Hero';
-import SpecialsCollage from './components/SpecialsCollage';
+import AboutUs from './components/AboutUs';
+import SpecialsSection from './components/SpecialsSection';
+import Showroom from './pages/ShowroomPage';
 import ContactForm from './components/ContactForm';
 import Footer from './components/Footer';
 import AdminPage from './pages/AdminPage';
-import Showroom from './pages/ShowroomPage';
-import AboutUs from './components/AboutUs';
-import WelcomeIntro from './components/WelcomeIntro';
-import MaintenancePage from './components/MaintenancePage';
-import SpecialsSection from './components/SpecialsSection';
 import ClientPortal from './pages/ClientPortal';
+import MaintenancePage from './components/MaintenancePage';
+import WelcomeIntro from './components/WelcomeIntro';
+import { 
+  dbOnAuthStateChange, 
+  dbSubscribeToCollection, 
+  dbAddItem, 
+  dbUpdateItem, 
+  dbDeleteItem, 
+  dbLogout, 
+  dbSetDoc,
+  dbClearCollection
+} from './utils/dbAdapter';
 
-// --- INTERFACES ---
+// --- Type Definitions ---
+
 export interface PortfolioItem {
   id: string;
   title: string;
@@ -35,71 +33,50 @@ export interface PortfolioItem {
   videoData?: string;
   featured?: boolean;
 }
-export interface ShowroomItem {
-  id: string;
-  title: string;
-  images: string[];
-  videoUrl?: string;
-}
+
 export interface SpecialItem {
   id: string;
   title: string;
   description: string;
-  price: number;
-  imageUrl: string; // Primary image for cards
-  images?: string[]; // Multiple images for the modal gallery
-  active: boolean;
-  // Added optional properties to support new SpecialsCollage features
-  priceType?: 'fixed' | 'hourly' | 'percentage';
+  price?: number;
   priceValue?: number;
+  priceType?: 'fixed' | 'hourly' | 'percentage';
+  imageUrl: string;
+  images?: string[];
+  active: boolean;
   details?: string[];
   voucherCode?: string;
 }
-export interface SocialLink {
+
+export interface ShowroomItem {
   id: string;
-  url: string;
-  icon: string;
+  title: string;
+  images: string[];
+  videoUrl?: string | File;
 }
+
+export interface Genre {
+  id: string;
+  name: string;
+  items: ShowroomItem[];
+}
+
 export interface Booking {
   id: string;
   name: string;
   email: string;
   whatsappNumber?: string;
-  contactMethod?: 'email' | 'whatsapp';
   message: string;
   bookingDate: string;
   status: 'pending' | 'quote_sent' | 'confirmed' | 'completed' | 'cancelled' | 'rescheduled';
   bookingType: 'online' | 'manual';
-  // Financials
   totalCost?: number;
   amountPaid?: number;
   paymentMethod?: 'cash' | 'card' | 'eft' | 'other';
   referenceImages?: string[];
-}
-export interface Genre {
-  id:string;
-  name: string;
-  items: ShowroomItem[];
-}
-export interface Expense {
-  id: string;
-  date: string;
-  category: 'Supplies' | 'Rent' | 'Utilities' | 'Marketing' | 'Stock' | 'Other';
-  description: string;
-  amount: number;
-}
-export interface InventoryItem {
-  id: string;
-  productName: string;
-  brand: string;
-  category: string;
-  quantity: number;
-  minStockLevel: number;
-  unitCost: number;
-  supplier: string;
+  contactMethod?: 'email' | 'whatsapp';
 }
 
-// --- NEW INVOICE INTERFACES ---
 export interface InvoiceLineItem {
   id: string;
   description: string;
@@ -110,20 +87,32 @@ export interface InvoiceLineItem {
 export interface Invoice {
   id: string;
   type: 'quote' | 'invoice';
-  number: string; // e.g. Q-1001 or INV-2023-01
-  clientId?: string; // Optional link to existing booking/client
-  bookingId?: string; // Link specific quote to a booking
+  number: string;
+  clientId?: string;
+  bookingId?: string;
   clientName: string;
   clientEmail: string;
-  clientPhone: string;
+  clientPhone?: string;
   dateIssued: string;
   dateDue: string;
-  status: 'draft' | 'sent' | 'accepted' | 'paid' | 'overdue' | 'void';
+  status: 'draft' | 'sent' | 'paid' | 'accepted' | 'overdue' | 'void';
   items: InvoiceLineItem[];
-  notes: string;
+  notes?: string;
   subtotal: number;
-  taxAmount: number; // VAT
+  taxAmount: number;
   total: number;
+}
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+  notes?: string;
+  stickers?: number;
+  loyaltyProgress?: Record<string, number>;
+  rewardsRedeemed?: number;
 }
 
 export interface LoyaltyProgram {
@@ -132,399 +121,238 @@ export interface LoyaltyProgram {
   stickersRequired: number;
   rewardDescription: string;
   terms?: string;
-  iconUrl?: string; // Custom icon for this program
   active: boolean;
+  iconUrl?: string;
 }
 
-export interface Client {
+export interface Expense {
   id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  password?: string; // Auto-generated PIN/Password
-  notes?: string;
-  stickers?: number; // Deprecated: used for legacy single program
-  loyaltyProgress?: Record<string, number>; // Map of programId -> stickers count
-  rewardsRedeemed?: number; // Total rewards redeemed
+  date: string;
+  category: string; // 'Supplies' | 'Rent' | 'Stock' | ...
+  description: string;
+  amount: number;
 }
 
-// --- MAIN APP COMPONENT ---
-const App: React.FC = () => {
-  // --- STATE ---
-  const [user, setUser] = useState<any | null>(null);
-  const [authChecked, setAuthChecked] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [dataError, setDataError] = useState<string | null>(null);
+export interface InventoryItem {
+  id: string;
+  productName: string;
+  brand: string;
+  category: string;
+  quantity: number;
+  minStockLevel: number;
+  unitCost: number;
+  supplier?: string;
+}
 
+export interface SocialLink {
+  id: string;
+  url: string;
+  icon: string;
+}
+
+const App: React.FC = () => {
+  // State
+  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'client-portal'>('home');
+  const [user, setUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  // Data State
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
-  const [specialsData, setSpecialsData] = useState<SpecialItem[]>([]); // New Specials
+  const [specialsData, setSpecialsData] = useState<SpecialItem[]>([]);
   const [showroomData, setShowroomData] = useState<Genre[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]); // New Inventory
-  const [invoices, setInvoices] = useState<Invoice[]>([]); // New Invoices
-  const [clients, setClients] = useState<Client[]>([]); // New Clients collection
-  
-  // Site settings - Now includes nested objects for specific sections
-  const [settings, setSettings] = useState<any>({
-    companyName: 'Die Bos Salon',
-    logoUrl: 'https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png',
-    heroTattooGunImageUrl: 'https://i.ibb.co/8DFd4pt7/unnamed-1.jpg',
-    aboutUsImageUrl: 'https://picsum.photos/seed/nail-artist/500/500',
-    whatsAppNumber: '27795904162',
-    address: '123 Nature Way, Green Valley, 45678',
-    phone: '+27 12 345 6789',
-    email: 'bookings@bossalon.com',
-    socialLinks: [],
-    showroomTitle: 'Nail Art Gallery',
-    showroomDescription: "Browse our collection of hand-painted designs and natural treatments.",
-    bankName: 'FNB',
-    accountNumber: '1234567890',
-    branchCode: '250655',
-    accountType: 'Cheque',
-    vatNumber: '',
-    isMaintenanceMode: false,
-    apkUrl: '',
-    taxEnabled: false,
-    vatPercentage: 15,
-    emailServiceId: '',
-    emailTemplateId: '',
-    emailPublicKey: '',
-    
-    // Legacy Loyalty (Single) - Kept for fallback
-    loyaltyProgram: {
-        enabled: true,
-        stickersRequired: 10,
-        rewardDescription: '50% Off your next treatment',
-        terms: 'Valid on treatments over R300. Not exchangeable for cash.'
-    },
-    
-    // NEW: Multiple Loyalty Programs
-    loyaltyPrograms: [], // Array of LoyaltyProgram objects
-    
-    // Default sub-objects for specific sections
-    hero: {
-        title: 'Nail and beauty',
-        subtitle: 'Experience the art of nature',
-        buttonText: 'Book an Appointment'
-    },
-    about: {
-        title: 'Our Story',
-        text1: 'Bos Salon was born from a love for natural beauty and intricate art.',
-        text2: 'We specialize in bespoke nail art, ensuring your hands and feet look their absolute best.'
-    },
-    contact: {
-        intro: 'Ready for a fresh look? Fill out the form below.'
-    }
-  });
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [settings, setSettings] = useState<any>({});
 
-  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'client-portal'>('home');
-  const [isIntroVisible, setIsIntroVisible] = useState(true);
-  
-  // --- AUTH STATE LISTENER ---
+  // Auth Listener
   useEffect(() => {
     const unsubscribe = dbOnAuthStateChange((currentUser) => {
       setUser(currentUser);
       setAuthChecked(true);
+
+      // Handle Redirects (e.g. returning from Google OAuth)
+      if (currentUser) {
+          const redirectTarget = sessionStorage.getItem('auth_redirect');
+          if (redirectTarget === 'client-portal') {
+              setCurrentView('client-portal');
+              sessionStorage.removeItem('auth_redirect'); // Clear flag
+          }
+      }
     });
     return () => unsubscribe();
   }, []);
-  
-  // --- PUBLIC DATA FETCHING ---
-  useEffect(() => {
-    const unsubscribers: (() => void)[] = [];
 
+  // Data Subscriptions
+  useEffect(() => {
+    const subs = [
+      dbSubscribeToCollection('portfolio', (data) => setPortfolioData(data)),
+      dbSubscribeToCollection('specials', (data) => setSpecialsData(data)),
+      dbSubscribeToCollection('showroom', (data) => setShowroomData(data)),
+      dbSubscribeToCollection('bookings', (data) => setBookings(data)),
+      dbSubscribeToCollection('expenses', (data) => setExpenses(data)),
+      dbSubscribeToCollection('inventory', (data) => setInventory(data)),
+      dbSubscribeToCollection('invoices', (data) => setInvoices(data)),
+      dbSubscribeToCollection('clients', (data) => setClients(data)),
+      dbSubscribeToCollection('settings', (data) => {
+        if (data && data.length > 0) setSettings(data[0]);
+      }),
+    ];
+    return () => {
+      subs.forEach(unsub => unsub && unsub());
+    };
+  }, []);
+
+  // Handlers
+  const handleAddBooking = async (booking: Omit<Booking, 'id' | 'status' | 'bookingType'>) => {
     try {
-      // Subscribe to settings document
-      const unsubSettings = dbSubscribeToDoc("settings", "main", (fetchedSettings: any) => {
-          if (fetchedSettings) {
-             setSettings((prev: any) => ({ ...prev, ...fetchedSettings }));
-          }
+      await dbAddItem('bookings', {
+        ...booking,
+        status: 'pending',
+        bookingType: 'online'
       });
-      unsubscribers.push(unsubSettings);
-
-      // Subscribe to public collections
-      unsubscribers.push(dbSubscribeToCollection('portfolio', (data) => setPortfolioData(data)));
-      unsubscribers.push(dbSubscribeToCollection('specials', (data) => setSpecialsData(data))); // Public specials
-      unsubscribers.push(dbSubscribeToCollection('showroom', (data) => setShowroomData(data)));
-      unsubscribers.push(dbSubscribeToCollection('clients', (data) => setClients(data))); // Clients need to be public for portal login check (simulated)
-      unsubscribers.push(dbSubscribeToCollection('bookings', (data) => setBookings(data))); // Bookings public for portal (filtered by client)
-      unsubscribers.push(dbSubscribeToCollection('invoices', (data) => setInvoices(data))); // Invoices public for portal (filtered by client)
-      
-    } catch (error) {
-      console.error("Error setting up DB listeners:", error);
-      setDataError("A critical error occurred while trying to connect to the database.");
-    }
-
-    return () => {
-      unsubscribers.forEach(unsub => unsub());
-    };
-  }, []);
-
-  // --- PRIVATE (ADMIN) DATA FETCHING ---
-  useEffect(() => {
-    if (!user) {
-      setExpenses([]);
-      setInventory([]);
-      return;
-    }
-
-    const unsubscribers: (() => void)[] = [];
-    try {
-        // Admin only collections
-        unsubscribers.push(dbSubscribeToCollection('expenses', (data) => setExpenses(data)));
-        unsubscribers.push(dbSubscribeToCollection('inventory', (data) => setInventory(data)));
-    } catch (error) {
-      console.error("Error setting up private listeners:", error);
-      setDataError("A critical error occurred while trying to load administrator data.");
-    }
-    
-    return () => {
-      unsubscribers.forEach(unsub => unsub());
-    };
-  }, [user]); 
-
-  // --- LOADING STATE ---
-  useEffect(() => {
-    if (authChecked) {
-      setLoading(false);
-    }
-  }, [authChecked]);
-
-
-  // --- INTRO & NAVIGATION ---
-  useEffect(() => {
-    if (sessionStorage.getItem('introShown')) {
-      setIsIntroVisible(false);
-    }
-  }, []);
-
-  const handleEnter = () => {
-    sessionStorage.setItem('introShown', 'true');
-    setIsIntroVisible(false);
-  };
-
-  const navigate = (view: 'home' | 'admin' | 'client-portal') => setCurrentView(view);
-
-  const handleLogoutSuccess = async () => {
-    await dbLogout();
-    setUser(null); 
-    navigate('home');
-  };
-
-  // --- CRUD FUNCTIONS (Adapter Wrappers) ---
-  const handleUpdatePortfolioItem = async (item: PortfolioItem) => await dbUpdateItem('portfolio', item);
-  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => await dbAddItem('portfolio', item);
-  const handleDeletePortfolioItem = async (itemId: string) => await dbDeleteItem('portfolio', itemId);
-
-  const handleUpdateSpecialItem = async (item: SpecialItem) => await dbUpdateItem('specials', item);
-  const handleAddSpecialItem = async (item: Omit<SpecialItem, 'id'>) => await dbAddItem('specials', item);
-  const handleDeleteSpecialItem = async (itemId: string) => await dbDeleteItem('specials', itemId);
-
-  const handleUpdateShowroomGenre = async (item: Genre) => await dbUpdateItem('showroom', item);
-  const handleAddShowroomGenre = async (item: Omit<Genre, 'id'>) => await dbAddItem('showroom', item);
-  const handleDeleteShowroomGenre = async (itemId: string) => await dbDeleteItem('showroom', itemId);
-  
-  const handleAddBooking = async (newBookingData: Omit<Booking, 'id' | 'status' | 'bookingType'>) => {
-    const newBooking = {
-      ...newBookingData,
-      status: 'pending',
-      bookingType: 'online',
-    };
-    await dbAddItem('bookings', newBooking);
-    
-    // Email Notification Mock Logic (Simulating Backend/EmailJS)
-    if(settings.emailServiceId && settings.emailTemplateId && settings.emailPublicKey) {
-       console.log("Attempting to send email notification via EmailJS configuration...");
-       // Here you would implement emailjs.send(...)
+    } catch (e) {
+      console.error("Booking Error", e);
+      alert("Failed to submit booking.");
     }
   };
-  const handleManualAddBooking = async (newBookingData: Omit<Booking, 'id' | 'bookingType'>) => {
-    const newBooking = {
-      ...newBookingData,
-      bookingType: 'manual',
-    };
-    await dbAddItem('bookings', newBooking);
-  };
-  const handleUpdateBooking = async (item: Booking) => await dbUpdateItem('bookings', item);
-  const handleDeleteBooking = async (id: string) => await dbDeleteItem('bookings', id);
 
-  const handleAddExpense = async (newExpense: Omit<Expense, 'id'>) => await dbAddItem('expenses', newExpense);
-  const handleUpdateExpense = async (updatedExpense: Expense) => await dbUpdateItem('expenses', updatedExpense);
-  const handleDeleteExpense = async (expenseId: string) => await dbDeleteItem('expenses', expenseId);
-
-  // Inventory CRUD
-  const handleAddInventoryItem = async (item: Omit<InventoryItem, 'id'>) => await dbAddItem('inventory', item);
-  const handleUpdateInventoryItem = async (item: InventoryItem) => await dbUpdateItem('inventory', item);
-  const handleDeleteInventoryItem = async (id: string) => await dbDeleteItem('inventory', id);
-
-  // Invoice CRUD
-  const handleAddInvoice = async (item: Omit<Invoice, 'id'>) => await dbAddItem('invoices', item);
-  const handleUpdateInvoice = async (item: Invoice) => await dbUpdateItem('invoices', item);
-  const handleDeleteInvoice = async (id: string) => await dbDeleteItem('invoices', id);
-
-  // Client CRUD
-  const handleAddClient = async (item: Omit<Client, 'id'>) => await dbAddItem('clients', item);
-  const handleUpdateClient = async (item: Client) => await dbUpdateItem('clients', item);
-  const handleDeleteClient = async (id: string) => await dbDeleteItem('clients', id);
-
-  const handleSaveAllSettings = async (newSettings: any) => {
-    await dbSetDoc('settings', 'main', newSettings);
+  const handleNavigate = (view: 'home' | 'admin' | 'client-portal') => {
+    setCurrentView(view);
+    window.scrollTo(0, 0);
   };
 
-  const handleClearAllData = async () => {
-      if (!window.confirm("ARE YOU SURE? This will delete ALL content from your live database. This is irreversible.")) return;
-      const collections = ['portfolio', 'specials', 'showroom', 'bookings', 'expenses', 'inventory', 'invoices', 'clients'];
-      try {
-          for (const col of collections) {
-              await dbClearCollection(col as any);
-          }
-          alert('All live data has been cleared.');
-      } catch (error) {
-          console.error("Error clearing data:", error);
-          alert("An error occurred while clearing data. Check console for details.");
-      }
-  };
-  
-  // --- RENDER LOGIC ---
-
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-dark">
-         <img src={settings.logoUrl || "https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png"} alt="Bos Salon Logo" className="w-48 h-48 object-contain animate-pulse"/>
-         <p className="text-brand-light/70 mt-4">Opening Salon...</p>
-      </div>
-    );
+  if (settings.isMaintenanceMode && currentView === 'home' && !user) {
+    return <MaintenancePage onNavigate={handleNavigate} logoUrl={settings.logoUrl} />;
   }
-  
-  if (dataError) {
-    return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-dark text-brand-light p-8 text-center">
-            <div className="max-w-2xl">
-                <h1 className="text-2xl font-bold text-red-500 mb-4">🚨 Application Error</h1>
-                <p className="mb-4">A critical error occurred while fetching data:</p>
-                <p className="font-mono bg-black/10 p-4 rounded-lg text-red-500 text-left text-sm whitespace-pre-wrap">{dataError}</p>
-                <p className="mt-6 text-gray-500 text-sm">Please refresh or check your internet connection.</p>
-            </div>
-        </div>
-    );
-  }
-
-  if (currentView === 'admin') {
-    return (
-      <AdminPage
-        user={user}
-        onNavigate={navigate}
-        portfolioData={portfolioData}
-        onAddPortfolioItem={handleAddPortfolioItem}
-        onUpdatePortfolioItem={handleUpdatePortfolioItem}
-        onDeletePortfolioItem={handleDeletePortfolioItem}
-        specialsData={specialsData}
-        onAddSpecialItem={handleAddSpecialItem}
-        onUpdateSpecialItem={handleUpdateSpecialItem}
-        onDeleteSpecialItem={handleDeleteSpecialItem}
-        showroomData={showroomData}
-        onAddShowroomGenre={handleAddShowroomGenre}
-        onUpdateShowroomGenre={handleUpdateShowroomGenre}
-        onDeleteShowroomGenre={handleDeleteShowroomGenre}
-        bookings={bookings}
-        onUpdateBooking={handleUpdateBooking}
-        onManualAddBooking={handleManualAddBooking}
-        onDeleteBooking={handleDeleteBooking}
-        expenses={expenses}
-        onAddExpense={handleAddExpense}
-        onUpdateExpense={handleUpdateExpense}
-        onDeleteExpense={handleDeleteExpense}
-        inventory={inventory}
-        onAddInventoryItem={handleAddInventoryItem}
-        onUpdateInventoryItem={handleUpdateInventoryItem}
-        onDeleteInventoryItem={handleDeleteInventoryItem}
-        invoices={invoices}
-        onAddInvoice={handleAddInvoice}
-        onUpdateInvoice={handleUpdateInvoice}
-        onDeleteInvoice={handleDeleteInvoice}
-        clients={clients} 
-        onAddClient={handleAddClient} 
-        onUpdateClient={handleUpdateClient} 
-        onDeleteClient={handleDeleteClient} 
-        onSaveAllSettings={handleSaveAllSettings}
-        onClearAllData={handleClearAllData}
-        onSuccessfulLogout={handleLogoutSuccess}
-        // Spread all settings as props so Admin page gets everything
-        {...settings}
-      />
-    );
-  }
-
-  if (currentView === 'client-portal') {
-      return (
-          <ClientPortal 
-            logoUrl={settings.logoUrl}
-            companyName={settings.companyName}
-            onNavigate={navigate}
-            clients={clients}
-            bookings={bookings}
-            invoices={invoices}
-            specials={specialsData} // Passed specials
-            onAddBooking={handleAddBooking} // Passed booking function
-            onUpdateBooking={handleUpdateBooking}
-            onUpdateInvoice={handleUpdateInvoice}
-            settings={settings} // Pass settings for loyalty program config
-            onAddClient={handleAddClient} // Pass ability to create new client record
-            authenticatedUser={user} // Pass the auth user state
-          />
-      );
-  }
-
-  if (isIntroVisible) {
-    return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
-  }
-  
-  const showMaintenance = settings.isMaintenanceMode && !user;
 
   return (
-    <div className="relative">
-      <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none' : ''}>
-        <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
-        <main>
-          <Hero 
-            portfolioData={portfolioData} 
-            onNavigate={navigate} 
-            heroTattooGunImageUrl={settings.heroTattooGunImageUrl}
-            title={settings.hero?.title}
-            subtitle={settings.hero?.subtitle}
-            buttonText={settings.hero?.buttonText}
-          />
-          {/* Legacy Collage for Showroom/Portfolio - kept as "Flash Designs" */}
-          <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
-          <AboutUs 
-            aboutUsImageUrl={settings.aboutUsImageUrl} 
-            title={settings.about?.title}
-            text1={settings.about?.text1}
-            text2={settings.about?.text2}
-          />
-          {/* New Public Specials Section */}
-          <SpecialsSection specials={specialsData} onNavigate={navigate} whatsAppNumber={settings.whatsAppNumber} />
-          <Showroom 
-            showroomData={showroomData} 
-            showroomTitle={settings.showroomTitle} 
-            showroomDescription={settings.showroomDescription} 
-          />
-          <ContactForm onAddBooking={handleAddBooking} />
-        </main>
-        <Footer
-          companyName={settings.companyName}
-          address={settings.address}
-          phone={settings.phone}
-          email={settings.email}
-          socialLinks={settings.socialLinks}
-          apkUrl={settings.apkUrl}
-          onNavigate={navigate}
+    <>
+      {currentView === 'home' && showWelcome && (
+        <WelcomeIntro 
+          isVisible={showWelcome} 
+          onEnter={() => setShowWelcome(false)} 
+          logoUrl={settings.logoUrl || ''} 
         />
-      </div>
+      )}
 
-      {showMaintenance && <MaintenancePage onNavigate={navigate} logoUrl={settings.logoUrl} />}
-    </div>
+      {currentView === 'home' && (
+        <div className="font-sans text-brand-dark bg-brand-off-white">
+          <Header 
+            onNavigate={handleNavigate} 
+            logoUrl={settings.logoUrl} 
+            companyName={settings.companyName || 'Bos Salon'} 
+          />
+          <main>
+            <Hero 
+              portfolioData={portfolioData} 
+              onNavigate={handleNavigate} 
+              heroTattooGunImageUrl={settings.heroTattooGunImageUrl || ''}
+              title={settings.hero?.title}
+              subtitle={settings.hero?.subtitle}
+              buttonText={settings.hero?.buttonText}
+            />
+            <AboutUs 
+              aboutUsImageUrl={settings.aboutUsImageUrl || ''}
+              title={settings.about?.title}
+              text1={settings.about?.text1}
+              text2={settings.about?.text2}
+            />
+            <SpecialsSection 
+              specials={specialsData} 
+              onNavigate={handleNavigate} 
+              whatsAppNumber={settings.whatsAppNumber || ''} 
+            />
+            <Showroom 
+              showroomData={showroomData} 
+              showroomTitle={settings.showroomTitle || 'Showroom'}
+              showroomDescription={settings.showroomDescription || 'Gallery'}
+            />
+            <ContactForm onAddBooking={handleAddBooking} />
+          </main>
+          <Footer 
+            companyName={settings.companyName || 'Bos Salon'}
+            address={settings.address || ''}
+            phone={settings.phone || ''}
+            email={settings.email || ''}
+            socialLinks={settings.socialLinks || []}
+            apkUrl={settings.apkUrl || ''}
+            onNavigate={handleNavigate}
+          />
+        </div>
+      )}
+
+      {currentView === 'admin' && (
+        <AdminPage 
+          user={user}
+          onNavigate={handleNavigate}
+          onSuccessfulLogout={dbLogout}
+          portfolioData={portfolioData}
+          onAddPortfolioItem={(item) => dbAddItem('portfolio', item)}
+          onUpdatePortfolioItem={(item) => dbUpdateItem('portfolio', item)}
+          onDeletePortfolioItem={(id) => dbDeleteItem('portfolio', id)}
+          specialsData={specialsData}
+          onAddSpecialItem={(item) => dbAddItem('specials', item)}
+          onUpdateSpecialItem={(item) => dbUpdateItem('specials', item)}
+          onDeleteSpecialItem={(id) => dbDeleteItem('specials', id)}
+          showroomData={showroomData}
+          onAddShowroomGenre={(item) => dbAddItem('showroom', item)}
+          onUpdateShowroomGenre={(item) => dbUpdateItem('showroom', item)}
+          onDeleteShowroomGenre={(id) => dbDeleteItem('showroom', id)}
+          bookings={bookings}
+          onUpdateBooking={(item) => dbUpdateItem('bookings', item)}
+          onManualAddBooking={(item) => dbAddItem('bookings', { ...item, bookingType: 'manual' })}
+          onDeleteBooking={(id) => dbDeleteItem('bookings', id)}
+          expenses={expenses}
+          onAddExpense={(item) => dbAddItem('expenses', item)}
+          onUpdateExpense={(item) => dbUpdateItem('expenses', item)}
+          onDeleteExpense={(id) => dbDeleteItem('expenses', id)}
+          inventory={inventory}
+          onAddInventoryItem={(item) => dbAddItem('inventory', item)}
+          onUpdateInventoryItem={(item) => dbUpdateItem('inventory', item)}
+          onDeleteInventoryItem={(id) => dbDeleteItem('inventory', id)}
+          invoices={invoices}
+          onAddInvoice={(item) => dbAddItem('invoices', item)}
+          onUpdateInvoice={(item) => dbUpdateItem('invoices', item)}
+          onDeleteInvoice={(id) => dbDeleteItem('invoices', id)}
+          clients={clients}
+          onAddClient={(item) => dbAddItem('clients', item)}
+          onUpdateClient={(item) => dbUpdateItem('clients', item)}
+          onDeleteClient={(id) => dbDeleteItem('clients', id)}
+          onSaveAllSettings={(newSettings) => dbSetDoc('settings', 'main', newSettings)}
+          onClearAllData={async () => {
+             if(window.confirm("ARE YOU SURE? This will delete almost everything.")) {
+                 await dbClearCollection('portfolio');
+                 await dbClearCollection('specials');
+                 await dbClearCollection('showroom');
+                 await dbClearCollection('bookings');
+                 await dbClearCollection('expenses');
+                 await dbClearCollection('inventory');
+                 await dbClearCollection('invoices');
+                 await dbClearCollection('clients');
+                 alert("Data cleared.");
+             }
+          }}
+          {...settings}
+          loyaltyPrograms={settings.loyaltyPrograms || []}
+        />
+      )}
+
+      {currentView === 'client-portal' && (
+        <ClientPortal 
+           onNavigate={handleNavigate}
+           logoUrl={settings.logoUrl}
+           companyName={settings.companyName}
+           clients={clients}
+           bookings={bookings}
+           invoices={invoices}
+           loyaltyPrograms={settings.loyaltyPrograms || []}
+        />
+      )}
+    </>
   );
 };
 
