@@ -187,46 +187,7 @@ create table if not exists public.settings (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 3. STORAGE BUCKETS & POLICIES
--- Automatically create public buckets and set permissions
-
-insert into storage.buckets (id, name, public)
-values 
-  ('portfolio', 'portfolio', true),
-  ('specials', 'specials', true),
-  ('showroom', 'showroom', true),
-  ('booking-references', 'booking-references', true),
-  ('settings', 'settings', true)
-on conflict (id) do update set public = true;
-
--- Enable RLS on storage objects
-alter table storage.objects enable row level security;
-
--- Policy: Public Read Access (Everyone can see images)
-drop policy if exists "Public Read Images" on storage.objects;
-create policy "Public Read Images" on storage.objects for select
-using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') );
-
--- Policy: Public Upload (Booking References Only - for Contact Form)
-drop policy if exists "Public Upload References" on storage.objects;
-create policy "Public Upload References" on storage.objects for insert
-with check ( bucket_id = 'booking-references' );
-
--- Policy: Admin Full Access (Upload/Delete Site Content)
-drop policy if exists "Admin Write Images" on storage.objects;
-create policy "Admin Write Images" on storage.objects for insert
-with check ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
-
-drop policy if exists "Admin Update Images" on storage.objects;
-create policy "Admin Update Images" on storage.objects for update
-using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
-
-drop policy if exists "Admin Delete Images" on storage.objects;
-create policy "Admin Delete Images" on storage.objects for delete
-using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
-
-
--- 4. ROW LEVEL SECURITY (RLS) POLICIES FOR TABLES
+-- 3. ROW LEVEL SECURITY (RLS) POLICIES FOR TABLES
 
 -- ADMIN ONLY TABLES
 alter table public.expenses enable row level security;
@@ -312,7 +273,7 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
       </div>
 
-      {/* PHASE 2: SUPABASE */}
+      {/* PHASE 2: SUPABASE TABLES */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-green-600 p-6 border-b border-green-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
@@ -325,20 +286,10 @@ create policy "App Access Clients" on public.clients for all using (true);
           <ol className="list-decimal pl-5 space-y-4 text-gray-800 font-medium">
             <li>Go to <a href="https://supabase.com" target="_blank" className="text-blue-600 hover:underline">supabase.com</a> and create a project.</li>
             <li>Once created, go to the <strong>SQL Editor</strong> tab (icon looks like terminal).</li>
-            <li>Click "New Query", paste the code below, and click <strong>Run</strong>. This will create your tables AND configure storage.</li>
+            <li>Click "New Query", paste the code below, and click <strong>Run</strong>. This will create your tables.</li>
           </ol>
           
           <CopyBlock label="SQL Setup Script" text={sqlScript} />
-
-          <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg shadow-sm">
-            <h4 className="font-bold text-green-800 text-lg mb-2">✅ Storage Buckets Included</h4>
-            <p className="text-sm text-green-700 mt-1 mb-2">
-              The script above now includes commands to automatically create your storage buckets (Portfolio, Specials, etc.) and set their permissions.
-            </p>
-            <p className="text-sm text-green-700 font-semibold">
-              If you still experience upload errors, check the Storage tab in Supabase to ensure buckets named <code>portfolio</code>, <code>specials</code>, <code>showroom</code>, <code>booking-references</code>, and <code>settings</code> exist and are set to Public.
-            </p>
-          </div>
 
           <div className="mt-4">
             <h4 className="font-bold text-gray-800 mb-2">Get Your API Keys</h4>
@@ -351,11 +302,41 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
       </div>
 
-      {/* PHASE 3: AUTHENTICATION */}
+      {/* PHASE 3: STORAGE SETUP (MANUAL) */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-teal-600 p-6 border-b border-teal-700">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <span className="bg-white text-teal-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+            Supabase Storage (Manual Step)
+          </h2>
+        </div>
+        <div className="p-8 space-y-6">
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+              <p className="text-sm text-yellow-800 font-bold">Why Manual?</p>
+              <p className="text-xs text-yellow-700 mt-1">Supabase security settings prevent the SQL script above from creating buckets automatically. You must do this part in the dashboard.</p>
+          </div>
+
+          <p className="text-gray-600">Go to the <strong>Storage</strong> tab (icon looks like a bucket) in Supabase and create the following buckets. 
+          <br/><strong>Important:</strong> Ensure the "Public Bucket" toggle is turned <strong>ON</strong> for all of them.</p>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {['portfolio', 'specials', 'showroom', 'booking-references', 'settings'].map(bucket => (
+                  <div key={bucket} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
+                      <div className={`w-3 h-3 rounded-full bg-teal-500`}></div>
+                      <span className="font-mono font-bold text-gray-700">{bucket}</span>
+                  </div>
+              ))}
+          </div>
+          
+          <p className="text-xs text-gray-500 italic mt-2">Note: For "booking-references", simple Public access is fine for this app version.</p>
+        </div>
+      </div>
+
+      {/* PHASE 4: AUTHENTICATION */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-purple-600 p-6 border-b border-purple-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+            <span className="bg-white text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
             Authentication (Admin Access)
           </h2>
         </div>
@@ -392,11 +373,11 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
       </div>
 
-      {/* PHASE 4: VERCEL */}
+      {/* PHASE 5: VERCEL */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-black p-6 border-b border-gray-800">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
+            <span className="bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-sm">5</span>
             Vercel (Launch Site)
           </h2>
         </div>
@@ -436,11 +417,11 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
       </div>
 
-      {/* PHASE 5: EMAILJS */}
+      {/* PHASE 6: EMAILJS */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-orange-500 p-6 border-b border-orange-600">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-orange-500 w-8 h-8 rounded-full flex items-center justify-center text-sm">5</span>
+            <span className="bg-white text-orange-500 w-8 h-8 rounded-full flex items-center justify-center text-sm">6</span>
             EmailJS (Notifications)
           </h2>
         </div>
@@ -462,11 +443,11 @@ create policy "App Access Clients" on public.clients for all using (true);
         </div>
       </div>
 
-      {/* PHASE 6: GOOGLE OAUTH */}
+      {/* PHASE 7: GOOGLE OAUTH */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-red-600 p-6 border-b border-red-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">6</span>
+            <span className="bg-white text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">7</span>
             Google Login (Client Portal)
           </h2>
         </div>
