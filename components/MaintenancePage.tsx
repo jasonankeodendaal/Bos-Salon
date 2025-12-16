@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface MaintenancePageProps {
@@ -7,20 +8,36 @@ interface MaintenancePageProps {
 
 const MaintenancePage: React.FC<MaintenancePageProps> = ({ onNavigate, logoUrl }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-8">
-      <div className="text-center text-brand-light animate-fade-in-up">
-        <div className="border border-white/20 bg-brand-dark/90 backdrop-blur-lg rounded-2xl p-8 sm:p-12 shadow-2xl shadow-gray-200">
-          <img src={logoUrl} alt="Bos Salon Logo" className="w-24 h-24 sm:w-32 sm:h-32 mx-auto mb-6 object-contain animate-subtle-glow"/>
-          <h1 className="font-script text-4xl sm:text-6xl mb-4 text-brand-green">Under Construction</h1>
-          <p className="text-gray-600 max-w-sm mx-auto mb-8 text-sm sm:text-base">
-            Our salon website is currently being updated to bring you an even better experience. We'll be back online shortly!
-          </p>
-          <button
-            onClick={() => onNavigate('admin')}
-            className="border border-brand-light/50 px-8 py-3 rounded-full text-sm font-semibold hover:bg-brand-light hover:text-brand-dark transition-colors"
-          >
-            Admin Login
-          </button>
+    <div className="fixed inset-0 z-[9999] overflow-hidden">
+      {/* Background Curtain - The Wall */}
+      <div className="absolute inset-0 bg-brand-light z-0 animate-curtain-down origin-top shadow-2xl"></div>
+      
+      {/* Content Layer - Fades in after curtain drops */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center text-brand-dark p-8 opacity-0 animate-fade-in-delayed">
+        <div className="bg-brand-dark/90 backdrop-blur-md p-8 sm:p-12 rounded-3xl border-2 border-brand-gold/30 shadow-2xl max-w-md w-full text-center transform hover:scale-105 transition-transform duration-500">
+            <div className="w-32 h-32 mx-auto mb-6 relative">
+                <div className="absolute inset-0 bg-brand-green/20 rounded-full animate-ping"></div>
+                <img 
+                    src={logoUrl} 
+                    alt="Bos Salon Logo" 
+                    className="w-full h-full object-contain relative z-10 drop-shadow-lg"
+                />
+            </div>
+            
+            <h1 className="font-script text-5xl sm:text-6xl text-brand-green mb-2 drop-shadow-sm">Closed</h1>
+            <h2 className="text-xl font-bold uppercase tracking-widest text-brand-light mb-6">Under Construction</h2>
+            
+            <p className="text-brand-light/70 mb-8 leading-relaxed font-medium">
+                We are currently updating our salon experience to serve you better. 
+                Please check back soon for our fresh new look!
+            </p>
+            
+            <button
+                onClick={() => onNavigate('admin')}
+                className="inline-block border-2 border-brand-green/50 text-brand-green px-8 py-3 rounded-full text-sm font-bold uppercase tracking-wider hover:bg-brand-green hover:text-white hover:border-brand-green transition-all shadow-lg"
+            >
+                Staff Access
+            </button>
         </div>
       </div>
     </div>
