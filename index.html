@@ -1,0 +1,314 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bos Salon - Nail & Beauty</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#fff0f5" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Apple PWA specific meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Bos Salon" />
+    <link rel="apple-touch-icon" href="https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'sans': ['Montserrat', 'sans-serif'],
+              'script': ['Dancing Script', 'cursive'],
+            },
+            colors: {
+              // Theme: Soft Pink, White, Bright Pink Accents
+              'brand-dark': '#fff0f5',  // Lavender Blush / Soft Pink (Background)
+              'brand-light': '#4e342e', // Dark Brown / Horn Brown (Text)
+              'brand-off-white': '#ffffff', // White (Cards/Secondary Background)
+              'brand-gold': '#d4a373', // Bone/Light Horn (Accents)
+              'brand-green': '#ff1493', // Bright Pink (Buttons/Primary Actions - replaced brown)
+              'brand-pink': '#f48fb1', // Softer Pink Accent
+              
+              // Admin Theme (Remapped to match Website Light Theme)
+              'admin-bg': '#fff0f5', // Matches brand-dark
+              'admin-primary': '#ff1493', // Matches brand-green (Bright Pink)
+              'admin-secondary': '#d4a373', // Matches brand-gold
+              'admin-text': '#4e342e', // Matches brand-light
+              'admin-text-light': '#ff1493',
+              
+              // Remapping "Dark Mode" admin classes to Light Mode colors
+              'admin-dark-bg': '#fff0f5', // Background
+              'admin-dark-card': '#ffffff', // Cards are white
+              'admin-dark-border': 'rgba(78, 52, 46, 0.1)', // Subtle brown border
+              'admin-dark-primary': '#ff1493', // Primary buttons/accents (Bright Pink)
+              'admin-dark-text': '#4e342e', // Main text
+              'admin-dark-text-secondary': '#795548', // Secondary text (lighter brown)
+            },
+            animation: {
+              'infinite-scroll': 'infinite-scroll 40s linear infinite',
+              'text-scroll': 'infinite-scroll 120s linear infinite',
+              'fade-in-up': 'fade-in-up 1s ease-out .5s forwards',
+              'fade-in': 'fade-in 0.5s ease-out forwards',
+              'fade-in-delayed': 'fade-in 0.5s ease-out 1s forwards',
+              'vibrate-subtle': 'vibrate-subtle 0.1s linear infinite',
+              'stroke-draw': 'stroke-draw 4s ease-in-out forwards',
+              'subtle-glow': 'subtle-glow 3s ease-in-out infinite',
+              'bounce-horizontal': 'bounce-horizontal 1.5s ease-in-out infinite',
+              'bounce-horizontal-reverse': 'bounce-horizontal-reverse 1.5s ease-in-out infinite',
+              'subtle-float': 'subtle-float 20s ease-in-out infinite',
+              'subtle-pan': 'subtle-pan 40s ease-in-out infinite',
+              'curtain-down': 'curtain-down 1s cubic-bezier(0.8, 0, 0.2, 1) forwards',
+              'curtain-up': 'curtain-up 1s cubic-bezier(0.8, 0, 0.2, 1) forwards',
+            },
+            keyframes: {
+              'infinite-scroll': {
+                'from': { transform: 'translateX(0)' },
+                'to': { transform: 'translateX(-50%)' },
+              },
+              'fade-in-up': {
+                '0%': {
+                  opacity: '0',
+                  transform: 'translateY(20px)'
+                },
+                '100%': {
+                  opacity: '1',
+                  transform: 'translateY(0)'
+                }
+              },
+              'fade-in': {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              'vibrate-subtle': {
+                '0%, 100%': { transform: 'translate(0, 0)' },
+                '50%': { transform: 'translate(0.5px, -0.5px)' },
+              },
+              'stroke-draw': {
+                'to': { 'stroke-dashoffset': '0' },
+              },
+              'subtle-glow': {
+                '0%, 100%': { filter: 'drop-shadow(0 0 8px rgba(234, 179, 8, 0.4)) drop-shadow(0 0 4px rgba(224, 224, 224, 0.2))' },
+                '50%': { filter: 'drop-shadow(0 0 16px rgba(234, 179, 8, 0.6)) drop-shadow(0 0 8px rgba(224, 224, 224, 0.3))' },
+              },
+              'bounce-horizontal': {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '50%': { transform: 'translateX(5px)' },
+              },
+              'bounce-horizontal-reverse': {
+                '0%, 100%': { transform: 'translateX(0)' },
+                '50%': { transform: 'translateX(-5px)' },
+              },
+              'fly-across': {
+                '0%': { transform: 'translateX(-200px) rotate(-15deg)', opacity: '0' },
+                '10%': { opacity: '1' },
+                '90%': { opacity: '1' },
+                '100%': { transform: 'translateX(calc(100vw + 200px)) rotate(15deg)', opacity: '0' },
+              },
+              'subtle-float': {
+                '0%': { transform: 'translateY(0px) translateX(0px) rotate(0deg)' },
+                '25%': { transform: 'translateY(-15px) translateX(10px) rotate(3deg)' },
+                '50%': { transform: 'translateY(10px) translateX(-10px) rotate(-2deg)' },
+                '75%': { transform: 'translateY(-10px) translateX(15px) rotate(2deg)' },
+                '100%': { transform: 'translateY(0px) translateX(0px) rotate(0deg)' },
+              },
+              'subtle-pan': {
+                '0%, 100%': { transform: 'translateX(-5%) translateY(-5%)' },
+                '50%': { transform: 'translateX(5%) translateY(5%)' },
+              },
+              'curtain-down': {
+                'from': { transform: 'translateY(-100%)' },
+                'to': { transform: 'translateY(0)' }
+              },
+              'curtain-up': {
+                'from': { transform: 'translateY(100%)' },
+                'to': { transform: 'translateY(0)' }
+              },
+            },
+            gridTemplateColumns: {
+              '15': 'repeat(15, minmax(0, 1fr))',
+              '20': 'repeat(20, minmax(0, 1fr))',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* Hide arrows in number input */
+      /* Chrome, Safari, Edge, Opera */
+      input::-webkit-outer-spin-button,
+      input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      /* Firefox */
+      input[type=number] {
+        -moz-appearance: textfield;
+      }
+
+      /* Print Styles */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        
+        .printable-content, .printable-content * {
+          visibility: visible;
+        }
+        
+        .printable-content {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+          margin: 0;
+          padding: 0;
+          background: white;
+          z-index: 9999;
+        }
+
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
+    "firebase/": "https://esm.sh/firebase@^12.6.0/"
+  }
+}
+</script>
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(registration => {
+              console.log('ServiceWorker registration successful with scope: ', registration.scope);
+            })
+            .catch(error => {
+              console.log('ServiceWorker registration failed: ', error);
+            });
+        });
+      }
+    </script>
+</head>
+  <body class="bg-brand-dark overflow-x-hidden text-brand-light">
+    <div id="root"></div>
+    <template id="latest-designs-template">
+      <style>
+        .widget-container {
+          display: flex;
+          flex-direction: column;
+          font-family: 'Montserrat', sans-serif;
+          background-color: #fcfbf9;
+          color: #1f2937;
+          padding: 16px;
+          border-radius: 12px;
+          height: 100%;
+          box-sizing: border-box;
+          border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .widget-header {
+          font-family: 'Dancing Script', cursive;
+          font-size: 24px;
+          margin: 0 0 12px;
+          color: #d97706;
+        }
+        .design-list {
+          flex-grow: 1;
+          overflow-y: auto;
+          list-style: none;
+          padding: 0;
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        /* Simple scrollbar for dark themes */
+        .design-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .design-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .design-list::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 10px;
+        }
+        .design-list::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+        .design-item {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          background-color: rgba(0, 0, 0, 0.05);
+          padding: 8px;
+          border-radius: 8px;
+          text-decoration: none;
+          color: inherit;
+          transition: background-color 0.2s ease-in-out;
+        }
+        .design-item:hover {
+            background-color: rgba(0, 0, 0, 0.1);
+        }
+        .design-image {
+          width: 50px;
+          height: 50px;
+          object-fit: cover;
+          border-radius: 6px;
+          flex-shrink: 0;
+        }
+        .design-info {
+            overflow: hidden;
+        }
+        .design-info h4 {
+          font-size: 14px;
+          font-weight: bold;
+          margin: 0 0 4px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: #1f2937;
+        }
+        .design-info p {
+          font-size: 12px;
+          color: #6b7280;
+          margin: 0;
+        }
+      </style>
+      <div class="widget-container">
+        <h3 class="widget-header">Latest Nails</h3>
+        <ul class="design-list" ms-data-src="designs">
+          <template>
+            <li>
+              <a href="{{url}}" class="design-item" target="_blank">
+                <img class="design-image" src="{{imageUrl}}" alt="{{title}}">
+                <div class="design-info">
+                  <h4>{{title}}</h4>
+                  <p>{{description}}</p>
+                </div>
+              </a>
+            </li>
+          </template>
+        </ul>
+      </div>
+    </template>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
