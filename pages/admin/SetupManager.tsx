@@ -192,16 +192,45 @@ create table public.settings (
 -- 'portfolio', 'specials', 'showroom', 'booking-references', 'settings'
 -- Make sure to set them to Public.
 
--- 4. Row Level Security (RLS) - OPTIONAL for MVP, RECOMMENDED for Prod
--- For now, we will disable RLS to ensure your API keys work immediately without policy headaches.
-alter table public.portfolio enable row level security;
-create policy "Public Read" on public.portfolio for select using (true);
-create policy "Anon Insert" on public.portfolio for insert with check (true);
-create policy "Anon Update" on public.portfolio for update using (true);
-create policy "Anon Delete" on public.portfolio for delete using (true);
+-- 4. ROW LEVEL SECURITY (RLS) POLICIES
+-- This fixes the 'RLS Disabled' errors while keeping the app functional.
 
--- Repeat similar simple policies for others if you enable RLS, 
--- OR just go to Authentication -> Policies -> Disable RLS for all tables for the simplest setup.
+-- ADMIN ONLY TABLES (Only logged in Admins can see these)
+alter table public.expenses enable row level security;
+create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
+
+alter table public.inventory enable row level security;
+create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
+
+-- PUBLIC READ / ADMIN WRITE TABLES (Website needs to read these)
+alter table public.portfolio enable row level security;
+create policy "Public Read Portfolio" on public.portfolio for select using (true);
+create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
+
+alter table public.specials enable row level security;
+create policy "Public Read Specials" on public.specials for select using (true);
+create policy "Admin Write Specials" on public.specials for all using (auth.role() = 'authenticated');
+
+alter table public.showroom enable row level security;
+create policy "Public Read Showroom" on public.showroom for select using (true);
+create policy "Admin Write Showroom" on public.showroom for all using (auth.role() = 'authenticated');
+
+alter table public.settings enable row level security;
+create policy "Public Read Settings" on public.settings for select using (true);
+create policy "Admin Write Settings" on public.settings for all using (auth.role() = 'authenticated');
+
+-- APP OPERATIONAL DATA (Clients/Bookings/Invoices)
+-- Because the Client Portal uses a custom login system (via the 'clients' table) 
+-- and not Supabase Auth, these tables must be accessible to the public API key.
+-- Security is handled by the application logic (PIN verification).
+alter table public.bookings enable row level security;
+create policy "App Access Bookings" on public.bookings for all using (true);
+
+alter table public.invoices enable row level security;
+create policy "App Access Invoices" on public.invoices for all using (true);
+
+alter table public.clients enable row level security;
+create policy "App Access Clients" on public.clients for all using (true);
 `.trim();
 
   return (
@@ -210,7 +239,7 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
         <h1 className="text-3xl md:text-5xl font-black text-admin-dark-text tracking-tight">Zero to Hero</h1>
         <p className="text-lg text-admin-dark-text-secondary max-w-2xl mx-auto">
           The complete guide to launching your salon system into the cloud. 
-          Follow these 4 phases to go from a local demo to a live, worldwide business tool.
+          Follow these 5 phases to go from a local demo to a live, worldwide business tool.
         </p>
       </div>
 
@@ -242,7 +271,7 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
         <div className="bg-green-600 p-6 border-b border-green-700">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
             <span className="bg-white text-green-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">2</span>
-            Supabase (Database)
+            Supabase (Database Setup)
           </h2>
         </div>
         <div className="p-8 space-y-6">
@@ -250,7 +279,7 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
           <ol className="list-decimal pl-5 space-y-4 text-gray-800 font-medium">
             <li>Go to <a href="https://supabase.com" target="_blank" className="text-blue-600 hover:underline">supabase.com</a> and create a project.</li>
             <li>Once created, go to the <strong>SQL Editor</strong> tab (icon looks like terminal).</li>
-            <li>Click "New Query", paste the code below, and click <strong>Run</strong>.</li>
+            <li>Click "New Query", paste the code below, and click <strong>Run</strong>. This will create your tables AND fix the RLS Security errors.</li>
           </ol>
           
           <CopyBlock label="SQL Setup Script" text={sqlScript} />
@@ -275,11 +304,52 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
         </div>
       </div>
 
-      {/* PHASE 3: VERCEL */}
+      {/* PHASE 3: AUTHENTICATION */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-purple-600 p-6 border-b border-purple-700">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <span className="bg-white text-purple-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+            Authentication (Admin Access)
+          </h2>
+        </div>
+        <div className="p-8 space-y-6">
+          <p className="text-gray-600">Set up who can access this Admin Dashboard.</p>
+          
+          <div className="grid md:grid-cols-2 gap-8">
+              <div className="space-y-4">
+                  <h4 className="font-bold text-lg text-gray-800">For Admins (You)</h4>
+                  <p className="text-sm text-gray-600">You must create a user account in Supabase to log in to this dashboard.</p>
+                  <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700 font-medium">
+                      <li>In Supabase, go to the <strong>Authentication</strong> tab.</li>
+                      <li>Click on <strong>Providers</strong> and ensure <strong>Email</strong> is enabled.</li>
+                      <li>Go to the <strong>Users</strong> section.</li>
+                      <li>Click <strong>"Add User"</strong> (top right).</li>
+                      <li>Enter your email address and a strong password.</li>
+                      <li>Click "Create User". You can now use these credentials to log in on the live site.</li>
+                  </ol>
+              </div>
+              
+              <div className="space-y-4">
+                  <h4 className="font-bold text-lg text-gray-800">For Clients</h4>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                      <p className="text-sm text-blue-800 font-bold mb-2">No Supabase Setup Required</p>
+                      <p className="text-sm text-blue-700 leading-relaxed">
+                          Client credentials are handled by your <code>public.clients</code> database table (created in Phase 2). 
+                      </p>
+                      <p className="text-sm text-blue-700 leading-relaxed mt-2">
+                          Clients log in using their <strong>Email</strong> and a <strong>PIN</strong> stored in that table. You do NOT need to create Authentication Users for them. This keeps it simple for them!
+                      </p>
+                  </div>
+              </div>
+          </div>
+        </div>
+      </div>
+
+      {/* PHASE 4: VERCEL */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-black p-6 border-b border-gray-800">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-sm">3</span>
+            <span className="bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
             Vercel (Launch Site)
           </h2>
         </div>
@@ -319,11 +389,11 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
         </div>
       </div>
 
-      {/* PHASE 4: EMAILJS */}
+      {/* PHASE 5: EMAILJS */}
       <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
         <div className="bg-orange-500 p-6 border-b border-orange-600">
           <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-            <span className="bg-white text-orange-500 w-8 h-8 rounded-full flex items-center justify-center text-sm">4</span>
+            <span className="bg-white text-orange-500 w-8 h-8 rounded-full flex items-center justify-center text-sm">5</span>
             EmailJS (Notifications)
           </h2>
         </div>
