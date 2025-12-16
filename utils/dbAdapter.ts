@@ -6,7 +6,22 @@ type CollectionName = 'portfolio' | 'specials' | 'showroom' | 'bookings' | 'expe
 type Listener = (data: any[]) => void;
 type DocListener = (data: any) => void;
 
-// --- MOCK DATA GENERATORS ---
+// --- ERROR HANDLING HELPER ---
+const handleSupabaseError = (error: any, operation: string, table: string) => {
+  if (!error) return;
+  console.error(`Supabase Error [${operation} on ${table}]:`, error);
+  
+  // Postgres Error 42501: insufficient_privilege (RLS Policy violation)
+  if (error.code === '42501' || error.message?.toLowerCase().includes('row-level security') || error.message?.toLowerCase().includes('permission denied')) {
+    const msg = `PERMISSION ERROR: You do not have permission to ${operation} in the '${table}' table.\n\nReason: Supabase Row Level Security (RLS) policies are missing or incorrect.\n\nFIX: Log in to the Admin Dashboard, go to the 'Setup' tab, and run the 'Table Permissions' SQL script in your Supabase SQL Editor.`;
+    alert(msg);
+    throw new Error(`RLS Permission denied: ${operation} on ${table}`);
+  }
+  
+  throw error;
+};
+
+// --- MOCK DATA GENERATORS (Kept for fallback/local mode) ---
 const generateMockPortfolio = () => [
   {
     id: '1',
@@ -111,7 +126,6 @@ const generateMockBookings = () => {
   const services = ['Gel Manicure', 'Full Set Acrylics', 'Nail Art Consultation', 'Fill & Shape', 'Luxury Pedicure'];
   const now = new Date();
   
-  // Past year data for charts
   for (let i = 0; i < 50; i++) {
     const date = new Date(now);
     date.setDate(now.getDate() - Math.floor(Math.random() * 365));
@@ -130,13 +144,12 @@ const generateMockBookings = () => {
     });
   }
 
-  // Future/Recent bookings
   bookings.push({
     id: 'future_1',
     name: 'Sarah Connor',
     email: 'sarah@example.com',
     message: 'Looking for chrome hearts design on long coffin shape.',
-    bookingDate: new Date(now.getTime() + 86400000).toISOString().split('T')[0], // Tomorrow
+    bookingDate: new Date(now.getTime() + 86400000).toISOString().split('T')[0],
     status: 'confirmed',
     bookingType: 'online',
     totalCost: 650,
@@ -149,20 +162,10 @@ const generateMockBookings = () => {
     name: 'John Wick',
     email: 'john@example.com',
     message: 'Manicure and hand treatment. No polish.',
-    bookingDate: new Date(now.getTime() + 172800000).toISOString().split('T')[0], // 2 days
+    bookingDate: new Date(now.getTime() + 172800000).toISOString().split('T')[0],
     status: 'pending',
     bookingType: 'online',
     totalCost: 250
-  });
-
-  bookings.push({
-    id: 'pending_2',
-    name: 'Alice Wonderland',
-    email: 'alice@example.com',
-    message: 'Quote for bridal party nails (5 people).',
-    bookingDate: new Date(now.getTime() + 259200000).toISOString().split('T')[0], // 3 days
-    status: 'pending',
-    bookingType: 'manual'
   });
 
   return bookings;
@@ -190,11 +193,6 @@ const generateMockExpenses = () => {
 const generateMockInventory = () => [
   { id: '1', productName: 'Gel Polish - Classic Red', brand: 'OPI', category: 'Gel Polish', quantity: 12, minStockLevel: 5, unitCost: 250, supplier: 'Nail Supply Co' },
   { id: '2', productName: 'Acrylic Powder - Clear', brand: 'Young Nails', category: 'Acrylic', quantity: 4, minStockLevel: 2, unitCost: 450, supplier: 'Nail Supply Co' },
-  { id: '3', productName: 'Acetone (5L)', brand: 'Generic', category: 'Removers', quantity: 2, minStockLevel: 1, unitCost: 300, supplier: 'Chemical Depot' },
-  { id: '4', productName: 'Nitrile Gloves (S)', brand: 'Black Dragon', category: 'Hygiene', quantity: 20, minStockLevel: 5, unitCost: 150, supplier: 'Medical Depot' },
-  { id: '5', productName: 'Nail Files 100/180', brand: 'Professional', category: 'Consumables', quantity: 50, minStockLevel: 20, unitCost: 15, supplier: 'Nail Supply Co' },
-  { id: '6', productName: 'Cuticle Oil', brand: 'Essie', category: 'Care', quantity: 10, minStockLevel: 3, unitCost: 120, supplier: 'Beauty Wholesalers' },
-  { id: '7', productName: 'Top Coat', brand: 'Gelish', category: 'Gel Polish', quantity: 6, minStockLevel: 3, unitCost: 380, supplier: 'Nail Supply Co' },
 ];
 
 const generateMockInvoices = () => [
@@ -210,32 +208,11 @@ const generateMockInvoices = () => [
         status: 'sent',
         items: [
             { id: '1', description: 'Bridal Party: Gel Manicures (x5)', quantity: 5, unitPrice: 350 },
-            { id: '2', description: 'Bridal Nail Art (Intricate)', quantity: 1, unitPrice: 200 }
         ],
-        notes: 'Deposit of 50% required to book the morning slot.',
-        subtotal: 1950,
-        taxAmount: 292.5,
-        total: 2242.5
+        subtotal: 1750,
+        taxAmount: 262.5,
+        total: 2012.5
     },
-    {
-        id: '2',
-        type: 'invoice',
-        number: 'INV-2023-44',
-        clientName: 'John Wick',
-        clientEmail: 'john@example.com',
-        clientPhone: '27999999999',
-        dateIssued: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
-        dateDue: new Date().toISOString().split('T')[0], // Due today
-        status: 'paid',
-        items: [
-            { id: '1', description: 'Men\'s Manicure', quantity: 1, unitPrice: 250 },
-            { id: '2', description: 'Hand Cream Purchase', quantity: 1, unitPrice: 150 }
-        ],
-        notes: 'Thank you for your business.',
-        subtotal: 400,
-        taxAmount: 60,
-        total: 460
-    }
 ];
 
 const generateMockClients = () => [
@@ -246,14 +223,6 @@ const generateMockClients = () => [
         phone: '27123456789',
         password: 'nails', 
         notes: 'Likes surreal designs.'
-    },
-    {
-        id: '2',
-        name: 'John Wick',
-        email: 'john@example.com',
-        phone: '27999999999',
-        password: 'dog',
-        notes: 'VIP Client.'
     }
 ];
 
@@ -274,27 +243,11 @@ const generateMockSettings = () => ({
     accountNumber: '1234567890',
     branchCode: '250655',
     accountType: 'Cheque',
-    vatNumber: '4200123456',
+    vatNumber: '',
     isMaintenanceMode: false,
     apkUrl: '',
     taxEnabled: true,
     vatPercentage: 15,
-    emailServiceId: '',
-    emailTemplateId: '',
-    emailPublicKey: '',
-    hero: {
-        title: 'Nail and beauty',
-        subtitle: 'Experience the art of nature',
-        buttonText: 'Book an Appointment'
-    },
-    about: {
-        title: 'Our Story',
-        text1: 'Bos Salon was born from a love for natural beauty and intricate art.',
-        text2: 'We specialize in bespoke nail art, ensuring your hands and feet look their absolute best.'
-    },
-    contact: {
-        intro: 'Ready for a fresh look? Fill out the form below.'
-    }
 });
 
 // --- Local Storage Helpers ---
@@ -410,18 +363,25 @@ export const dbOnAuthStateChange = (callback: (user: any) => void) => {
   }
 };
 
-// --- DATA SUBSCRIPTIONS ---
+// --- DATA SUBSCRIPTIONS (READ) ---
 export const dbSubscribeToCollection = (collection: CollectionName, callback: Listener) => {
   const client = supabase;
   if (isSupabaseConfigured && client) {
-    client.from(collection).select('*').then(({ data }) => {
-      if (data) callback(data);
+    // Initial fetch
+    client.from(collection).select('*').then(({ data, error }) => {
+      if (error) {
+          handleSupabaseError(error, 'read/subscribe', collection);
+      } else if (data) {
+          callback(data);
+      }
     });
 
+    // Realtime subscription
     const channel = client
       .channel(`public:${collection}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: collection }, (payload) => {
-         client.from(collection).select('*').then(({ data }) => {
+         client.from(collection).select('*').then(({ data, error }) => {
+            if (error) console.error(`Realtime fetch error for ${collection}:`, error);
             if(data) callback(data);
          });
       })
@@ -440,8 +400,13 @@ export const dbSubscribeToCollection = (collection: CollectionName, callback: Li
 export const dbSubscribeToDoc = (collection: CollectionName, docId: string, callback: DocListener) => {
     const client = supabase;
     if (isSupabaseConfigured && client) {
-        const fetch = () => client.from(collection).select('*').eq('id', docId).single().then(({ data }) => {
-            if (data) callback(data);
+        const fetch = () => client.from(collection).select('*').eq('id', docId).single().then(({ data, error }) => {
+            if (error) {
+                // Ignore "zero rows" error for single docs as it might just not exist yet
+                if (error.code !== 'PGRST116') handleSupabaseError(error, 'read/subscribe doc', collection);
+            } else if (data) {
+                callback(data);
+            }
         });
         fetch();
         const channel = client.channel(`public:${collection}:${docId}`)
@@ -463,14 +428,14 @@ export const dbSubscribeToDoc = (collection: CollectionName, docId: string, call
     }
 };
 
-// --- CRUD OPERATIONS ---
+// --- CRUD OPERATIONS (WRITE) ---
 export const dbAddItem = async (collection: CollectionName, item: any) => {
   const newItem = { ...item, id: item.id || crypto.randomUUID() };
   const client = supabase;
 
   if (isSupabaseConfigured && client) {
     const { error } = await client.from(collection).insert(newItem);
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'insert item', collection);
   } else {
     const list = getLocalCollection(collection);
     list.push(newItem);
@@ -485,7 +450,7 @@ export const dbUpdateItem = async (collection: CollectionName, item: any) => {
 
   if (isSupabaseConfigured && client) {
     const { error } = await client.from(collection).update(item).eq('id', item.id);
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'update item', collection);
   } else {
     const list = getLocalCollection(collection);
     const index = list.findIndex(i => i.id === item.id);
@@ -500,7 +465,7 @@ export const dbDeleteItem = async (collection: CollectionName, id: string) => {
   const client = supabase;
   if (isSupabaseConfigured && client) {
     const { error } = await client.from(collection).delete().eq('id', id);
-    if (error) throw error;
+    if (error) handleSupabaseError(error, 'delete item', collection);
   } else {
     const list = getLocalCollection(collection);
     const newList = list.filter(i => i.id !== id);
@@ -512,7 +477,7 @@ export const dbSetDoc = async (collection: CollectionName, docId: string, data: 
     const client = supabase;
     if (isSupabaseConfigured && client) {
         const { error } = await client.from(collection).upsert({ ...data, id: docId });
-        if(error) throw error;
+        if (error) handleSupabaseError(error, 'upsert doc', collection);
     } else {
         const list = getLocalCollection(collection);
         const index = list.findIndex(i => i.id === docId);
@@ -533,10 +498,14 @@ export const dbUploadFile = async (file: File, bucket: string, pathPrefix: strin
     const { data, error } = await client.storage.from(bucket).upload(filePath, file);
     
     if (error) {
-        // Critical Error Handling: Specific check for missing buckets
+        // Handle specific storage errors
+        if (error.statusCode === '403' || error.message.includes('new row violates row-level security policy') || error.message.includes('AccessDenied') || error.message.includes('permission denied')) {
+             alert(`UPLOAD ERROR: Permission Denied for bucket '${bucket}'.\n\nReason: Supabase Storage RLS policy is blocking the upload.\n\nFIX: Go to Admin Dashboard > Setup > Step 3 and run the Storage Permissions SQL script.`);
+             throw new Error(`Storage Permission denied: ${bucket}`);
+        }
         if (error.message && (error.message.includes("Bucket not found") || error.message.includes("not found"))) {
             alert(`CRITICAL ERROR: The storage bucket '${bucket}' does not exist in your Supabase project.\n\nPlease go to your Supabase Dashboard > Storage and create a new Public bucket named '${bucket}'.`);
-            throw new Error(`Bucket '${bucket}' missing. Check console/dashboard.`);
+            throw new Error(`Bucket '${bucket}' missing.`);
         }
         console.error(`Upload error to bucket '${bucket}':`, error);
         throw error;
@@ -555,7 +524,7 @@ export const dbClearCollection = async (collection: CollectionName) => {
     const client = supabase;
     if(isSupabaseConfigured && client) {
         const { error } = await client.from(collection).delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
-        if (error) throw error;
+        if (error) handleSupabaseError(error, 'clear collection', collection);
     } else {
         localStorage.removeItem(`bossalon_${collection}`);
         window.dispatchEvent(new Event(`local_update_${collection}`));
