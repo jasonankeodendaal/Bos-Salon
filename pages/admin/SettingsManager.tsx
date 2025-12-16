@@ -12,10 +12,7 @@ interface SettingsManagerProps {
   onClearAllData: () => Promise<void>;
   startTour: (tourKey: 'settings') => void;
   // All current settings (now including specific section objects)
-  [key: string]: any;
-  // Connection Stats
-  storageStatus?: 'checking' | 'connected' | 'error';
-  storageError?: string | null;
+  [key: string]: any; 
 }
 
 // Section Tabs
@@ -28,7 +25,6 @@ const TABS = [
   { id: 'financials', label: 'Financial Config' },
   { id: 'loyalty', label: 'Loyalty Programs' },
   { id: 'integrations', label: 'Integrations & Adv' },
-  { id: 'health', label: 'System Health' }, // New Tab
 ];
 
 const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
@@ -616,61 +612,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                   </div>
                </div>
              </div>
-          )}
-
-          {/* New System Health Tab */}
-          {activeTab === 'health' && (
-            <div className={sectionClass}>
-               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">System Connection Status</h3>
-               
-               <div className={`p-6 rounded-lg border-2 shadow-sm ${props.storageStatus === 'connected' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                   <div className="flex items-center gap-4">
-                       <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-2xl ${props.storageStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}>
-                           {props.storageStatus === 'connected' ? '✓' : '!'}
-                       </div>
-                       <div>
-                           <h4 className={`text-xl font-bold ${props.storageStatus === 'connected' ? 'text-green-800' : 'text-red-800'}`}>
-                               Supabase Storage: {props.storageStatus === 'connected' ? 'Online' : 'Disconnected'}
-                           </h4>
-                           <p className="text-sm text-gray-600 mt-1">
-                               {props.storageStatus === 'connected' 
-                                   ? "Connection established. Storage buckets are accessible." 
-                                   : "Critical Error: Unable to access storage buckets."}
-                           </p>
-                       </div>
-                   </div>
-                   
-                   {props.storageError && (
-                       <div className="mt-4 p-4 bg-white rounded border border-red-200 text-red-600 font-mono text-xs break-all">
-                           <strong>Error Detail:</strong> {props.storageError}
-                       </div>
-                   )}
-               </div>
-
-               {props.storageStatus !== 'connected' && (
-                   <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm mt-6">
-                       <h4 className="font-bold text-gray-800 mb-4 text-lg">Troubleshooting Steps</h4>
-                       <ul className="list-decimal pl-5 space-y-3 text-sm text-gray-600">
-                           <li>
-                               <strong>Check Environment Variables:</strong> Ensure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> are correctly set in Vercel settings.
-                           </li>
-                           <li>
-                               <strong>Verify Buckets exist:</strong> Log into Supabase Dashboard &rarr; Storage. Ensure you have created public buckets named:
-                               <div className="flex gap-2 mt-2 flex-wrap">
-                                   <code className="bg-gray-100 px-2 py-1 rounded">portfolio</code>
-                                   <code className="bg-gray-100 px-2 py-1 rounded">specials</code>
-                                   <code className="bg-gray-100 px-2 py-1 rounded">showroom</code>
-                                   <code className="bg-gray-100 px-2 py-1 rounded">settings</code>
-                                   <code className="bg-gray-100 px-2 py-1 rounded">booking-references</code>
-                               </div>
-                           </li>
-                           <li>
-                               <strong>Check RLS Policies:</strong> If buckets exist but error persists, ensure Row Level Security policies allow public read access to `storage.objects` and `storage.buckets`.
-                           </li>
-                       </ul>
-                   </div>
-               )}
-            </div>
           )}
 
         </main>

@@ -620,8 +620,7 @@ const AdminDashboard: React.FC<AdminDashboardComponentProps> = (props) => {
             </div>
         );
       case 'settings':
-        // Pass status props into SettingsManager
-        return <SettingsManager {...props} startTour={setActiveTour} storageStatus={props.storageStatus} storageError={props.storageError} />;
+        return <SettingsManager {...props} startTour={setActiveTour} />;
       case 'setup':
         return (
             <div className="h-full flex flex-col bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">

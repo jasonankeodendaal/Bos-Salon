@@ -61,10 +61,6 @@ export interface AdminPageProps {
   onSaveAllSettings: (settings: any) => Promise<void>;
   onClearAllData: () => Promise<void>;
 
-  // Connection Status
-  storageStatus: 'checking' | 'connected' | 'error';
-  storageError: string | null;
-
   // Pass-through settings properties
   companyName: string;
   logoUrl: string;
