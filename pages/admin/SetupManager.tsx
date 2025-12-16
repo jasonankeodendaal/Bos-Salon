@@ -448,7 +448,7 @@ create policy "App Access Clients" on public.clients for all using (true);
               <div className="bg-white border border-red-200 p-3 rounded text-sm text-gray-700">
                   <strong>Fix:</strong>
                   <ol className="list-decimal pl-5 mt-1 space-y-1">
-                      <li>Go to Supabase -> Authentication -> URL Configuration.</li>
+                      <li>Go to Supabase &rarr; Authentication &rarr; URL Configuration.</li>
                       <li>In <strong>Site URL</strong>, enter your actual app URL (e.g. <code>https://bos-salon.vercel.app</code> or <code>http://localhost:5173</code> for local testing).</li>
                       <li>In <strong>Redirect URLs</strong>, ensure you have added the same URL.</li>
                       <li>Delete any reference to <code>localhost:3000</code>.</li>
