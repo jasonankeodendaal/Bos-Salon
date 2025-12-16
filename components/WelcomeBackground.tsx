@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { BullHead, BuckHead, Bush } from './icons/TattooFlashIcons';
 
@@ -64,8 +65,14 @@ const WelcomeBackground: React.FC = () => {
         {floatingItems.map(({ id, Icon, style }) => (
           <div
             key={id}
-            // Increased opacity to 0.35 (was 0.15) and reduced grayscale for better visibility
-            className="absolute animate-subtle-float flex items-center justify-center opacity-35 text-brand-light grayscale-[20%] hover:grayscale-0 hover:opacity-60 transition-all duration-500 ease-in-out hover:scale-110"
+            // Logic:
+            // - Hide every 2nd item on mobile (id % 2 === 0 condition for flex, else hidden on mobile)
+            // - Reduced opacity on mobile (opacity-10 vs sm:opacity-35)
+            // - Scale down on mobile (scale-75 vs sm:scale-100)
+            className={`absolute animate-subtle-float items-center justify-center text-brand-light grayscale-[20%] hover:grayscale-0 hover:opacity-60 transition-all duration-500 ease-in-out hover:scale-110
+              ${id % 2 === 0 ? 'flex' : 'hidden sm:flex'}
+              opacity-10 sm:opacity-35
+              scale-75 sm:scale-100`}
             style={style}
           >
              <Icon className="w-full h-full" />

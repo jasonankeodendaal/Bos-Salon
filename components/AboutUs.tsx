@@ -45,7 +45,7 @@ const AboutUs: React.FC<AboutUsProps> = ({
                   <img 
                     src={aboutUsImageUrl} 
                     alt="Bos Salon Feature" 
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover object-center"
                   />
                </div>
             </div>
