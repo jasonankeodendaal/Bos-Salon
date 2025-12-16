@@ -1,8 +1,8 @@
 
 import React from 'react';
-import AdminLoginPage from './AdminLoginPage';
-import AdminDashboard from './admin/AdminDashboard';
-import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client } from '../App';
+import AdminLoginPage from '../AdminLoginPage';
+import AdminDashboard from './AdminDashboard';
+import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client, LoyaltyProgram } from '../../App';
 
 export interface AdminPageProps {
   user: any | null; // Supports Supabase User or Mock User object
@@ -31,7 +31,7 @@ export interface AdminPageProps {
   bookings: Booking[];
   onUpdateBooking: (booking: Booking) => Promise<void>;
   onManualAddBooking: (booking: Omit<Booking, 'id' | 'bookingType'>) => Promise<void>;
-  onDeleteBooking: (id: string) => Promise<void>; // Added delete booking prop
+  onDeleteBooking: (id: string) => Promise<void>;
 
   // Expenses
   expenses: Expense[];
@@ -83,6 +83,15 @@ export interface AdminPageProps {
   taxEnabled: boolean;
   vatPercentage: number;
   loyaltyProgram: any;
+  loyaltyPrograms: LoyaltyProgram[]; 
+  
+  // Settings Sections
+  hero?: any;
+  about?: any;
+  contact?: any;
+  emailServiceId: string;
+  emailTemplateId: string;
+  emailPublicKey: string;
 }
 
 const AdminPage: React.FC<AdminPageProps> = (props) => {
