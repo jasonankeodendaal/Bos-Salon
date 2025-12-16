@@ -440,6 +440,14 @@ create policy "App Access Clients" on public.clients for all using (true);
         <div className="p-8 space-y-6">
           <p className="text-gray-600">To allow clients to sign in with their Gmail accounts instead of a PIN.</p>
           
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
+              <h4 className="font-bold text-red-800 mb-1">Fix: "This site can't be reached" Error</h4>
+              <p className="text-sm text-red-700">
+                  If users see this error after clicking "Sign in with Google", it means Supabase is redirecting them to a URL that isn't whitelisted. 
+                  You must add your actual website URL (e.g., <code>https://bos-salon.vercel.app</code>) to the <strong>Redirect URLs</strong> list in Supabase.
+              </p>
+          </div>
+
           <h4 className="font-bold text-lg text-gray-800">Step A: Google Cloud Console</h4>
           <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700">
               <li>Go to <a href="https://console.cloud.google.com/" target="_blank" className="text-blue-600 underline">Google Cloud Console</a>.</li>
@@ -452,7 +460,10 @@ create policy "App Access Clients" on public.clients for all using (true);
 
           <h4 className="font-bold text-lg text-gray-800 mt-4">Step B: Supabase Configuration</h4>
           <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700">
-              <li>In your Supabase Dashboard, go to <strong>Authentication &rarr; Providers</strong>.</li>
+              <li>In your Supabase Dashboard, go to <strong>Authentication &rarr; URL Configuration</strong>.</li>
+              <li>Under <strong>Redirect URLs</strong>, click "Add URL".</li>
+              <li>Add your live site URL (e.g., <code>https://your-project.vercel.app</code>) AND <code>http://localhost:5173</code> (for testing).</li>
+              <li>Now go to <strong>Authentication &rarr; Providers</strong>.</li>
               <li>Click <strong>Google</strong>. Enable it.</li>
               <li>Copy the <strong>Callback URL</strong> (looks like <code>https://xyz.supabase.co/auth/v1/callback</code>).</li>
               <li>Paste this URL back into the Google Cloud Console "Authorized Redirect URIs" field. Save Google.</li>

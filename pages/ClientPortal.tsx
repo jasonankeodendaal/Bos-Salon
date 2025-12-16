@@ -104,6 +104,11 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const [currentUser, setCurrentUser] = useState<Client | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'bookings' | 'financials'>('overview');
   const [isProcessingLogin, setIsProcessingLogin] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<'google' | 'manual'>('google');
+  
+  // Manual Login State
+  const [manualEmail, setManualEmail] = useState('');
+  const [manualPin, setManualPin] = useState('');
   
   // View State
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
@@ -158,10 +163,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                       setIsProcessingLogin(false);
                   }
               }
-          } else {
-              // No auth user, so we are logged out
-              setIsLoggedIn(false);
-              setCurrentUser(null);
           }
       };
 
@@ -179,10 +180,33 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       }
   };
 
+  const handleManualLogin = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsProcessingLogin(true);
+      
+      // Simulate slight network delay for better UX feel
+      setTimeout(() => {
+          const email = manualEmail.trim().toLowerCase();
+          const pin = manualPin.trim();
+          
+          const foundClient = clients.find(c => c.email.toLowerCase() === email);
+          
+          if (foundClient && foundClient.password === pin) {
+              setCurrentUser(foundClient);
+              setIsLoggedIn(true);
+          } else {
+              alert("Invalid Credentials. Please check your Email and PIN, or ask the salon admin.");
+          }
+          setIsProcessingLogin(false);
+      }, 800);
+  };
+
   const handleLogout = async () => {
       await dbLogout();
       setIsLoggedIn(false);
       setCurrentUser(null);
+      setManualEmail('');
+      setManualPin('');
   };
 
   // --- ACTIONS ---
@@ -308,17 +332,33 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           <a href="#" onClick={(e) => { e.preventDefault(); onNavigate('home'); }} className="flex justify-center mb-6">
             <img src={logoUrl} alt={companyName} className="w-32 h-32 object-contain" />
           </a>
-          <div className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-2xl p-8">
-            <h1 className="text-2xl font-bold text-center mb-2 text-brand-light">Client Portal</h1>
-            <p className="text-center text-gray-500 text-sm mb-8">Access your rewards and history.</p>
+          <div className="bg-white/80 backdrop-blur-lg border border-gray-200 rounded-xl shadow-2xl p-8 transition-all duration-300">
+            <h1 className="text-2xl font-bold text-center mb-1 text-brand-light">Client Portal</h1>
+            <p className="text-center text-gray-500 text-sm mb-6">Access your rewards and history.</p>
             
+            {/* Login Method Toggle */}
+            <div className="flex bg-gray-100 p-1 rounded-lg mb-6">
+                <button 
+                    onClick={() => setLoginMethod('google')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === 'google' ? 'bg-white text-brand-dark shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    Google
+                </button>
+                <button 
+                    onClick={() => setLoginMethod('manual')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${loginMethod === 'manual' ? 'bg-white text-brand-dark shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                >
+                    Manual
+                </button>
+            </div>
+
             {isProcessingLogin ? (
                 <div className="text-center py-4">
                     <div className="w-8 h-8 border-4 border-brand-green/30 border-t-brand-green rounded-full animate-spin mx-auto mb-2"></div>
-                    <p className="text-sm text-gray-500">Setting up your profile...</p>
+                    <p className="text-sm text-gray-500">Checking credentials...</p>
                 </div>
-            ) : (
-                <div className="space-y-4">
+            ) : loginMethod === 'google' ? (
+                <div className="space-y-4 animate-fade-in">
                     <button 
                         onClick={handleGoogleLogin}
                         className="w-full bg-white border border-gray-300 text-gray-700 py-3 rounded-full font-bold text-sm hover:bg-gray-50 shadow-sm flex items-center justify-center gap-3 transition-colors"
@@ -335,6 +375,40 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                         <p className="text-xs text-gray-400">Secure access via your Gmail account.</p>
                     </div>
                 </div>
+            ) : (
+                <form onSubmit={handleManualLogin} className="space-y-4 animate-fade-in">
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">Email Address</label>
+                        <input 
+                            type="email" 
+                            required 
+                            value={manualEmail}
+                            onChange={e => setManualEmail(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold"
+                            placeholder="name@example.com"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-500 mb-1 ml-1">PIN Code</label>
+                        <input 
+                            type="password" 
+                            required 
+                            value={manualPin}
+                            onChange={e => setManualPin(e.target.value)}
+                            className="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 text-gray-900 outline-none focus:ring-2 focus:ring-brand-gold focus:border-brand-gold tracking-widest"
+                            placeholder="****"
+                        />
+                    </div>
+                    <button 
+                        type="submit"
+                        className="w-full bg-brand-gold text-white py-3 rounded-full font-bold text-sm hover:bg-opacity-90 shadow-sm transition-colors mt-2"
+                    >
+                        Log In
+                    </button>
+                    <div className="text-center">
+                        <p className="text-xs text-gray-400">Don't have a PIN? Ask the salon to activate your profile.</p>
+                    </div>
+                </form>
             )}
           </div>
           <p className="text-center text-xs text-gray-600 mt-6">
