@@ -499,7 +499,8 @@ export const dbUploadFile = async (file: File, bucket: string, pathPrefix: strin
     
     if (error) {
         // Handle specific storage errors
-        if (error.statusCode === '403' || error.message.includes('new row violates row-level security policy') || error.message.includes('AccessDenied') || error.message.includes('permission denied')) {
+        const err = error as any; // Cast to 'any' to avoid TS errors regarding 'statusCode'
+        if (err.statusCode === '403' || err.message?.includes('new row violates row-level security policy') || err.message?.includes('AccessDenied') || err.message?.includes('permission denied')) {
              alert(`UPLOAD ERROR: Permission Denied for bucket '${bucket}'.\n\nReason: Supabase Storage RLS policy is blocking the upload.\n\nFIX: Go to Admin Dashboard > Setup > Step 3 and run the Storage Permissions SQL script.`);
              throw new Error(`Storage Permission denied: ${bucket}`);
         }

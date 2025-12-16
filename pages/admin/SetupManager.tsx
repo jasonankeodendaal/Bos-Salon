@@ -454,8 +454,58 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
         </div>
       </Step>
 
-      {/* STEP 5: EMAILJS */}
-      <Step number="5" title="Connect Emails (EmailJS)">
+      {/* STEP 5: GOOGLE AUTH */}
+      <Step number="5" title="Enable Google Login">
+        <p>
+            This allows clients to "Sign in with Google" on their personal portal.
+        </p>
+
+        <div className="space-y-6">
+            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                <h3 className="font-bold text-blue-900 mb-2">Part A: Prepare Supabase</h3>
+                <ol className="list-decimal pl-5 space-y-2 text-blue-800 text-sm">
+                    <li>Go to Supabase Dashboard &rarr; <strong>Authentication</strong> (Icon of people) &rarr; <strong>Providers</strong>.</li>
+                    <li>Select <strong>Google</strong>.</li>
+                    <li>Toggle "Enable Google provider".</li>
+                    <li><strong>Copy</strong> the "Callback URL (for OAuth)". It looks like `https://xyz.supabase.co/auth/v1/callback`.</li>
+                    <li>Keep this tab open!</li>
+                </ol>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <h3 className="font-bold text-gray-900 mb-2">Part B: Get Google Keys</h3>
+                <ol className="list-decimal pl-5 space-y-2 text-gray-800 text-sm">
+                    <li>Go to <ExternalLink href="https://console.cloud.google.com/">Google Cloud Console</ExternalLink>.</li>
+                    <li>Create a <strong>New Project</strong> (name it "Bos Salon Auth").</li>
+                    <li>Go to <strong>APIs & Services</strong> &rarr; <strong>OAuth consent screen</strong>.
+                        <ul className="list-disc pl-5 mt-1 text-xs text-gray-600">
+                            <li>Select <strong>External</strong> &rarr; Create.</li>
+                            <li>Fill in App Name, Support Email, and Developer Email. Click Save & Continue until finished.</li>
+                        </ul>
+                    </li>
+                    <li>Go to <strong>Credentials</strong> (Left sidebar) &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth client ID</strong>.</li>
+                    <li>Application type: <strong>Web application</strong>.</li>
+                    <li>
+                        <strong>Authorized redirect URIs:</strong> Click "Add URI" and paste the <strong>Callback URL</strong> you copied from Supabase in Part A.
+                    </li>
+                    <li>Click Create.</li>
+                    <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+                </ol>
+            </div>
+
+            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
+                <h3 className="font-bold text-green-900 mb-2">Part C: Finish in Supabase</h3>
+                <p className="text-sm text-green-800">
+                    Go back to your Supabase tab (Authentication &rarr; Providers &rarr; Google).
+                    <br/>Paste the <strong>Client ID</strong> and <strong>Client Secret</strong> you just got.
+                    <br/>Click <strong>Save</strong>.
+                </p>
+            </div>
+        </div>
+      </Step>
+
+      {/* STEP 6: EMAILJS */}
+      <Step number="6" title="Connect Emails (EmailJS)">
         <p>
             To receive booking requests in your Gmail/Outlook, we link EmailJS.
         </p>
