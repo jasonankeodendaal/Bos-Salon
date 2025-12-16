@@ -266,7 +266,7 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
 
           <div className="mt-4">
             <h4 className="font-bold text-gray-800 mb-2">Get Your API Keys</h4>
-            <p className="text-gray-600 text-sm mb-2">Go to <strong>Project Settings (Cog icon) -> API</strong>. You will need these for Vercel.</p>
+            <p className="text-gray-600 text-sm mb-2">Go to <strong>Project Settings (Cog icon) &rarr; API</strong>. You will need these for Vercel.</p>
             <ul className="bg-gray-100 p-4 rounded-lg space-y-2 text-sm font-mono text-gray-700">
               <li>Project URL (e.g., https://xyz.supabase.co)</li>
               <li>anon public key (long string)</li>
@@ -287,7 +287,7 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
           <p className="text-gray-600">This puts your website on the internet.</p>
           <ol className="list-decimal pl-5 space-y-4 text-gray-800 font-medium">
             <li>Go to <a href="https://vercel.com" target="_blank" className="text-blue-600 hover:underline">vercel.com</a> and sign up with GitHub.</li>
-            <li>Click <strong>"Add New..." -> Project</strong>.</li>
+            <li>Click <strong>"Add New..." &rarr; Project</strong>.</li>
             <li>Import your <code>bos-salon-system</code> repo.</li>
             <li>In the "Configure Project" screen, open the <strong>Environment Variables</strong> section.</li>
             <li>Add the keys you got from Supabase:</li>
@@ -339,8 +339,8 @@ create policy "Anon Delete" on public.portfolio for delete using (true);
                 </ul>
                 Save and copy the <code>Template ID</code>.
             </li>
-            <li><strong>Account:</strong> Click your avatar (top right) -> Public Key. Copy it.</li>
-            <li><strong>Final Step:</strong> Log into your new Vercel website -> Admin Dashboard -> Settings -> Integrations. Paste these 3 keys there and save.</li>
+            <li><strong>Account:</strong> Click your avatar (top right) &rarr; Public Key. Copy it.</li>
+            <li><strong>Final Step:</strong> Log into your new Vercel website &rarr; Admin Dashboard &rarr; Settings &rarr; Integrations. Paste these 3 keys there and save.</li>
           </ol>
         </div>
       </div>

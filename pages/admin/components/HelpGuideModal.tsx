@@ -51,7 +51,7 @@ const guideContent: Record<HelpSection, { title: string; content: React.ReactNod
         <p>You don't manually lower stock here usually. Instead:</p>
         <ul className="list-disc pl-5 space-y-2">
             <li>Go to the <strong>Financials Tab</strong>.</li>
-            <li>Click "Log Expense" -> "Use from Inventory".</li>
+            <li>Click "Log Expense" &rarr; "Use from Inventory".</li>
             <li>Or, when a Booking is marked "Completed", the system prompts you to log supplies used.</li>
         </ul>
       </div>
@@ -69,7 +69,7 @@ const guideContent: Record<HelpSection, { title: string; content: React.ReactNod
                 <br/><span className="text-xs bg-gray-100 p-1">Use variables like &#123;&#123;to_name&#125;&#125;, &#123;&#123;message&#125;&#125; in the design.</span>
                 <br/>Save and copy the <strong>Template ID</strong>.
             </li>
-            <li><strong>Public Key:</strong> Go to "Account" (Avatar icon) -> "Public Key". Copy it.</li>
+            <li><strong>Public Key:</strong> Go to "Account" (Avatar icon) &rarr; "Public Key". Copy it.</li>
             <li>Paste these 3 values into the fields in this tab and click Save.</li>
         </ol>
 
