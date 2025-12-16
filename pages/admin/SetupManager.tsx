@@ -187,14 +187,46 @@ create table if not exists public.settings (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 3. Storage Buckets (Execute this via Dashboard UI usually, but here for ref)
--- You need to create public buckets named: 
--- 'portfolio', 'specials', 'showroom', 'booking-references', 'settings'
--- Make sure to set them to Public.
+-- 3. STORAGE BUCKETS & POLICIES
+-- Automatically create public buckets and set permissions
 
--- 4. ROW LEVEL SECURITY (RLS) POLICIES
--- This fixes the 'RLS Disabled' errors while keeping the app functional.
--- Using 'drop policy if exists' to allow re-running script without errors.
+insert into storage.buckets (id, name, public)
+values 
+  ('portfolio', 'portfolio', true),
+  ('specials', 'specials', true),
+  ('showroom', 'showroom', true),
+  ('booking-references', 'booking-references', true),
+  ('settings', 'settings', true)
+on conflict (id) do update set public = true;
+
+-- Enable RLS on storage objects
+alter table storage.objects enable row level security;
+
+-- Policy: Public Read Access (Everyone can see images)
+drop policy if exists "Public Read Images" on storage.objects;
+create policy "Public Read Images" on storage.objects for select
+using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') );
+
+-- Policy: Public Upload (Booking References Only - for Contact Form)
+drop policy if exists "Public Upload References" on storage.objects;
+create policy "Public Upload References" on storage.objects for insert
+with check ( bucket_id = 'booking-references' );
+
+-- Policy: Admin Full Access (Upload/Delete Site Content)
+drop policy if exists "Admin Write Images" on storage.objects;
+create policy "Admin Write Images" on storage.objects for insert
+with check ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
+
+drop policy if exists "Admin Update Images" on storage.objects;
+create policy "Admin Update Images" on storage.objects for update
+using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
+
+drop policy if exists "Admin Delete Images" on storage.objects;
+create policy "Admin Delete Images" on storage.objects for delete
+using ( bucket_id in ('portfolio', 'specials', 'showroom', 'settings', 'booking-references') and auth.role() = 'authenticated' );
+
+
+-- 4. ROW LEVEL SECURITY (RLS) POLICIES FOR TABLES
 
 -- ADMIN ONLY TABLES
 alter table public.expenses enable row level security;
@@ -293,25 +325,19 @@ create policy "App Access Clients" on public.clients for all using (true);
           <ol className="list-decimal pl-5 space-y-4 text-gray-800 font-medium">
             <li>Go to <a href="https://supabase.com" target="_blank" className="text-blue-600 hover:underline">supabase.com</a> and create a project.</li>
             <li>Once created, go to the <strong>SQL Editor</strong> tab (icon looks like terminal).</li>
-            <li>Click "New Query", paste the code below, and click <strong>Run</strong>. This will create your tables AND fix the RLS Security errors.</li>
+            <li>Click "New Query", paste the code below, and click <strong>Run</strong>. This will create your tables AND configure storage.</li>
           </ol>
           
           <CopyBlock label="SQL Setup Script" text={sqlScript} />
 
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
-            <h4 className="font-bold text-yellow-800 text-lg mb-2">⚠️ CRITICAL STEP: Storage Buckets Setup</h4>
-            <p className="text-sm text-yellow-700 mt-1 mb-2">
-              The "Bucket not found" error happens because you must create these folders manually. SQL scripts cannot create storage buckets.
+          <div className="bg-green-50 border-l-4 border-green-400 p-4 rounded-lg shadow-sm">
+            <h4 className="font-bold text-green-800 text-lg mb-2">✅ Storage Buckets Included</h4>
+            <p className="text-sm text-green-700 mt-1 mb-2">
+              The script above now includes commands to automatically create your storage buckets (Portfolio, Specials, etc.) and set their permissions.
             </p>
-            <ol className="list-decimal pl-5 text-sm text-yellow-800 font-semibold space-y-1">
-                <li>Go to the <strong>Storage</strong> tab in your Supabase Dashboard.</li>
-                <li>Click <strong>"New Bucket"</strong>.</li>
-                <li>Enter name: <code>settings</code>. Toggle <strong>"Public Bucket"</strong> to ON. Click Create.</li>
-                <li>Repeat for: <code>portfolio</code> (Public: Yes)</li>
-                <li>Repeat for: <code>specials</code> (Public: Yes)</li>
-                <li>Repeat for: <code>showroom</code> (Public: Yes)</li>
-                <li>Repeat for: <code>booking-references</code> (Public: Yes)</li>
-            </ol>
+            <p className="text-sm text-green-700 font-semibold">
+              If you still experience upload errors, check the Storage tab in Supabase to ensure buckets named <code>portfolio</code>, <code>specials</code>, <code>showroom</code>, <code>booking-references</code>, and <code>settings</code> exist and are set to Public.
+            </p>
           </div>
 
           <div className="mt-4">
