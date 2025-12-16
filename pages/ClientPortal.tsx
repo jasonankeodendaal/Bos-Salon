@@ -91,43 +91,50 @@ const ClientPortal: React.FC<ClientPortalProps> = ({ onNavigate, logoUrl, compan
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-            <div className="bg-white p-8 rounded-xl shadow-xl max-w-md w-full text-center">
-                {logoUrl && <img src={logoUrl} alt="Logo" className="w-24 h-24 mx-auto object-contain mb-4" />}
-                <h2 className="text-2xl font-bold text-gray-800 mb-6">{companyName} Client Portal</h2>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4 font-sans">
+            <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">
+                {logoUrl && <img src={logoUrl} alt="Logo" className="w-28 h-28 mx-auto object-contain mb-6" />}
+                <h2 className="text-2xl font-bold text-gray-800 mb-2">{companyName}</h2>
+                <p className="text-gray-500 text-sm mb-8">Client Portal Login</p>
                 
-                <form onSubmit={handleLogin} className="space-y-4 mb-6">
-                    <input 
-                        type="email" 
-                        placeholder="Email" 
-                        value={userEmail} 
-                        onChange={e => setUserEmail(e.target.value)} 
-                        className="w-full border p-2 rounded focus:ring-2 focus:ring-brand-green outline-none" 
-                        required 
-                    />
-                    <input 
-                        type="password" 
-                        placeholder="PIN" 
-                        value={pin} 
-                        onChange={e => setPin(e.target.value)} 
-                        className="w-full border p-2 rounded focus:ring-2 focus:ring-brand-green outline-none" 
-                        required 
-                    />
-                    <button type="submit" className="w-full bg-brand-green text-white py-2 rounded font-bold hover:opacity-90 transition-opacity">Login with PIN</button>
+                <form onSubmit={handleLogin} className="space-y-4 mb-8">
+                    <div className="space-y-4">
+                        <input 
+                            type="email" 
+                            placeholder="Email Address" 
+                            value={userEmail} 
+                            onChange={e => setUserEmail(e.target.value)} 
+                            className="w-full bg-white text-black border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none placeholder-gray-400 shadow-sm transition-all text-sm font-medium" 
+                            required 
+                        />
+                        <input 
+                            type="password" 
+                            placeholder="PIN Code" 
+                            value={pin} 
+                            onChange={e => setPin(e.target.value)} 
+                            className="w-full bg-white text-black border border-gray-200 p-4 rounded-xl focus:ring-2 focus:ring-brand-green focus:border-transparent outline-none placeholder-gray-400 shadow-sm transition-all text-sm font-medium" 
+                            required 
+                        />
+                    </div>
+                    <button type="submit" className="w-full bg-brand-green text-white py-3.5 rounded-xl font-bold hover:opacity-90 transition-all shadow-lg transform hover:-translate-y-0.5 mt-2 text-sm uppercase tracking-wide">
+                        Login with PIN
+                    </button>
                 </form>
 
-                <div className="relative mb-6">
-                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-300"></div></div>
-                    <div className="relative flex justify-center text-sm"><span className="px-2 bg-white text-gray-500">Or</span></div>
+                <div className="relative mb-8">
+                    <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200"></div></div>
+                    <div className="relative flex justify-center text-xs uppercase tracking-widest font-semibold"><span className="px-4 bg-white text-gray-400">Or continue with</span></div>
                 </div>
 
-                <button onClick={handleGoogleLogin} className="w-full border border-gray-300 py-2 rounded font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-2 transition-colors">
+                <button onClick={handleGoogleLogin} className="w-full bg-white border border-gray-200 py-3.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 flex items-center justify-center gap-3 transition-all shadow-sm hover:shadow-md transform hover:-translate-y-0.5 text-sm">
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" />
                     Sign in with Google
                 </button>
 
-                <div className="mt-6">
-                    <button onClick={() => onNavigate('home')} className="text-sm text-blue-500 hover:underline">Back to Home</button>
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                    <button onClick={() => onNavigate('home')} className="text-xs font-bold text-gray-400 hover:text-brand-green transition-colors flex items-center justify-center gap-1 mx-auto">
+                        <span>←</span> Back to Home
+                    </button>
                 </div>
             </div>
         </div>
