@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { dbUploadFile } from '../../utils/dbAdapter';
 import HelpGuideModal from './components/HelpGuideModal';
 import TrashIcon from '../../components/icons/TrashIcon';
@@ -93,6 +93,45 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     apkUrl: props.apkUrl || '',
     isMaintenanceMode: props.isMaintenanceMode || false,
   });
+
+  // Sync state with props when database content loads (Critical for fixing blank fields on refresh)
+  useEffect(() => {
+    setSettings(prev => ({
+        ...prev,
+        companyName: props.companyName || prev.companyName,
+        whatsAppNumber: props.whatsAppNumber || prev.whatsAppNumber,
+        logoUrl: props.logoUrl || prev.logoUrl,
+        heroTitle: props.hero?.title || prev.heroTitle,
+        heroSubtitle: props.hero?.subtitle || prev.heroSubtitle,
+        heroButtonText: props.hero?.buttonText || prev.heroButtonText,
+        heroTattooGunImageUrl: props.heroTattooGunImageUrl || prev.heroTattooGunImageUrl,
+        aboutTitle: props.about?.title || prev.aboutTitle,
+        aboutText1: props.about?.text1 || prev.aboutText1,
+        aboutText2: props.about?.text2 || prev.aboutText2,
+        aboutUsImageUrl: props.aboutUsImageUrl || prev.aboutUsImageUrl,
+        showroomTitle: props.showroomTitle || prev.showroomTitle,
+        showroomDescription: props.showroomDescription || prev.showroomDescription,
+        address: props.address || prev.address,
+        phone: props.phone || prev.phone,
+        email: props.email || prev.email,
+        bankName: props.bankName || prev.bankName,
+        accountNumber: props.accountNumber || prev.accountNumber,
+        branchCode: props.branchCode || prev.branchCode,
+        accountType: props.accountType || prev.accountType,
+        socialLinks: props.socialLinks || prev.socialLinks, // Syncs social links array
+        taxEnabled: props.taxEnabled ?? prev.taxEnabled,
+        vatPercentage: props.vatPercentage || prev.vatPercentage,
+        vatNumber: props.vatNumber || prev.vatNumber,
+        emailServiceId: props.emailServiceId || prev.emailServiceId,
+        emailTemplateId: props.emailTemplateId || prev.emailTemplateId,
+        emailPublicKey: props.emailPublicKey || prev.emailPublicKey,
+        apkUrl: props.apkUrl || prev.apkUrl,
+        isMaintenanceMode: props.isMaintenanceMode ?? prev.isMaintenanceMode,
+    }));
+    if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
+        setLoyaltyPrograms(props.loyaltyPrograms);
+    }
+  }, [props.companyName, props.socialLinks, props.loyaltyPrograms]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;

@@ -39,7 +39,7 @@ const Footer: React.FC<FooterProps> = ({ companyName, address, phone, email, soc
             </div>
             <div>
               <h4 className="font-bold text-gray-900 mb-3 text-lg">Follow Us</h4>
-              {socialLinks.length > 0 ? (
+              {socialLinks && Array.isArray(socialLinks) && socialLinks.length > 0 ? (
                   <div className="flex justify-center md:justify-start items-center gap-4">
                     {socialLinks.map(link => (
                       <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 hover:text-brand-green transition-colors transform hover:scale-110">

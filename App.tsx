@@ -245,7 +245,15 @@ const App: React.FC = () => {
       // Subscribe to settings document
       const unsubSettings = dbSubscribeToDoc("settings", "main", (fetchedSettings: any) => {
           if (fetchedSettings) {
-             setSettings((prev: any) => ({ ...prev, ...fetchedSettings }));
+             // NORMALIZE DATA: Check for both camelCase and lowercase keys to handle Postgres vagaries
+             const normalizedSettings = {
+                 ...fetchedSettings,
+                 // Force socialLinks to populate from either socialLinks OR sociallinks
+                 socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
+                 // Same for loyalty programs
+                 loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
+             };
+             setSettings((prev: any) => ({ ...prev, ...normalizedSettings }));
           }
       });
       unsubscribers.push(unsubSettings);
