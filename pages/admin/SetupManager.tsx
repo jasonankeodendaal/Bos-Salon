@@ -441,11 +441,19 @@ create policy "App Access Clients" on public.clients for all using (true);
           <p className="text-gray-600">To allow clients to sign in with their Gmail accounts instead of a PIN.</p>
           
           <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6">
-              <h4 className="font-bold text-red-800 mb-1">Fix: "This site can't be reached" Error</h4>
-              <p className="text-sm text-red-700">
-                  If users see this error after clicking "Sign in with Google", it means Supabase is redirecting them to a URL that isn't whitelisted. 
-                  You must add your actual website URL (e.g., <code>https://bos-salon.vercel.app</code>) to the <strong>Redirect URLs</strong> list in Supabase.
+              <h4 className="font-bold text-red-800 mb-2">Troubleshooting: "This site can't be reached"</h4>
+              <p className="text-sm text-red-700 mb-2">
+                  If users see an error referencing <code>localhost:3000</code> after clicking "Sign in with Google", it means Supabase is redirecting to the wrong port.
               </p>
+              <div className="bg-white border border-red-200 p-3 rounded text-sm text-gray-700">
+                  <strong>Fix:</strong>
+                  <ol className="list-decimal pl-5 mt-1 space-y-1">
+                      <li>Go to Supabase -> Authentication -> URL Configuration.</li>
+                      <li>In <strong>Site URL</strong>, enter your actual app URL (e.g. <code>https://bos-salon.vercel.app</code> or <code>http://localhost:5173</code> for local testing).</li>
+                      <li>In <strong>Redirect URLs</strong>, ensure you have added the same URL.</li>
+                      <li>Delete any reference to <code>localhost:3000</code>.</li>
+                  </ol>
+              </div>
           </div>
 
           <h4 className="font-bold text-lg text-gray-800">Step A: Google Cloud Console</h4>
