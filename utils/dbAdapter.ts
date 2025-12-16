@@ -365,6 +365,22 @@ export const dbLogin = async (email: string, passwordOrPin: string): Promise<{ u
   }
 };
 
+export const dbLoginWithGoogle = async () => {
+  if (isSupabaseConfigured && supabase) {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin,
+      },
+    });
+    if (error) throw error;
+    return data;
+  } else {
+    alert("Google Login requires a live Supabase connection. It does not work in local mock mode.");
+    return null;
+  }
+};
+
 export const dbLogout = async () => {
   if (isSupabaseConfigured && supabase) {
     await supabase.auth.signOut();

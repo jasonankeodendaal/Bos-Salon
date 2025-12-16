@@ -40,10 +40,10 @@ const SetupManager: React.FC = () => {
 -- 1. Enable UUID extension
 create extension if not exists "uuid-ossp";
 
--- 2. Create Tables
+-- 2. Create Tables (Safe to run multiple times)
 
 -- Portfolio
-create table public.portfolio (
+create table if not exists public.portfolio (
   id uuid primary key default uuid_generate_v4(),
   title text,
   story text,
@@ -55,7 +55,7 @@ create table public.portfolio (
 );
 
 -- Specials
-create table public.specials (
+create table if not exists public.specials (
   id uuid primary key default uuid_generate_v4(),
   title text,
   description text,
@@ -71,7 +71,7 @@ create table public.specials (
 );
 
 -- Showroom (Genres)
-create table public.showroom (
+create table if not exists public.showroom (
   id uuid primary key default uuid_generate_v4(),
   name text,
   items jsonb default '[]'::jsonb, -- Array of {id, title, images[], videoUrl}
@@ -79,7 +79,7 @@ create table public.showroom (
 );
 
 -- Bookings
-create table public.bookings (
+create table if not exists public.bookings (
   id uuid primary key default uuid_generate_v4(),
   name text,
   email text,
@@ -96,7 +96,7 @@ create table public.bookings (
 );
 
 -- Expenses
-create table public.expenses (
+create table if not exists public.expenses (
   id uuid primary key default uuid_generate_v4(),
   date date,
   category text,
@@ -106,7 +106,7 @@ create table public.expenses (
 );
 
 -- Inventory
-create table public.inventory (
+create table if not exists public.inventory (
   id uuid primary key default uuid_generate_v4(),
   "productName" text,
   brand text,
@@ -119,7 +119,7 @@ create table public.inventory (
 );
 
 -- Invoices
-create table public.invoices (
+create table if not exists public.invoices (
   id uuid primary key default uuid_generate_v4(),
   type text, -- 'quote' or 'invoice'
   number text,
@@ -140,7 +140,7 @@ create table public.invoices (
 );
 
 -- Clients
-create table public.clients (
+create table if not exists public.clients (
   id uuid primary key default uuid_generate_v4(),
   name text,
   email text,
@@ -154,7 +154,7 @@ create table public.clients (
 );
 
 -- Settings (Single Row Config)
-create table public.settings (
+create table if not exists public.settings (
   id text primary key, -- usually 'main'
   "companyName" text,
   "logoUrl" text,
@@ -194,29 +194,40 @@ create table public.settings (
 
 -- 4. ROW LEVEL SECURITY (RLS) POLICIES
 -- This fixes the 'RLS Disabled' errors while keeping the app functional.
+-- Using 'drop policy if exists' to allow re-running script without errors.
 
--- ADMIN ONLY TABLES (Only logged in Admins can see these)
+-- ADMIN ONLY TABLES
 alter table public.expenses enable row level security;
+drop policy if exists "Admin Expenses" on public.expenses;
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 
 alter table public.inventory enable row level security;
+drop policy if exists "Admin Inventory" on public.inventory;
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 
--- PUBLIC READ / ADMIN WRITE TABLES (Website needs to read these)
+-- PUBLIC READ / ADMIN WRITE TABLES
 alter table public.portfolio enable row level security;
+drop policy if exists "Public Read Portfolio" on public.portfolio;
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
+drop policy if exists "Admin Write Portfolio" on public.portfolio;
 create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
 
 alter table public.specials enable row level security;
+drop policy if exists "Public Read Specials" on public.specials;
 create policy "Public Read Specials" on public.specials for select using (true);
+drop policy if exists "Admin Write Specials" on public.specials;
 create policy "Admin Write Specials" on public.specials for all using (auth.role() = 'authenticated');
 
 alter table public.showroom enable row level security;
+drop policy if exists "Public Read Showroom" on public.showroom;
 create policy "Public Read Showroom" on public.showroom for select using (true);
+drop policy if exists "Admin Write Showroom" on public.showroom;
 create policy "Admin Write Showroom" on public.showroom for all using (auth.role() = 'authenticated');
 
 alter table public.settings enable row level security;
+drop policy if exists "Public Read Settings" on public.settings;
 create policy "Public Read Settings" on public.settings for select using (true);
+drop policy if exists "Admin Write Settings" on public.settings;
 create policy "Admin Write Settings" on public.settings for all using (auth.role() = 'authenticated');
 
 -- APP OPERATIONAL DATA (Clients/Bookings/Invoices)
@@ -224,12 +235,15 @@ create policy "Admin Write Settings" on public.settings for all using (auth.role
 -- and not Supabase Auth, these tables must be accessible to the public API key.
 -- Security is handled by the application logic (PIN verification).
 alter table public.bookings enable row level security;
+drop policy if exists "App Access Bookings" on public.bookings;
 create policy "App Access Bookings" on public.bookings for all using (true);
 
 alter table public.invoices enable row level security;
+drop policy if exists "App Access Invoices" on public.invoices;
 create policy "App Access Invoices" on public.invoices for all using (true);
 
 alter table public.clients enable row level security;
+drop policy if exists "App Access Clients" on public.clients;
 create policy "App Access Clients" on public.clients for all using (true);
 `.trim();
 
@@ -412,6 +426,43 @@ create policy "App Access Clients" on public.clients for all using (true);
             <li><strong>Account:</strong> Click your avatar (top right) &rarr; Public Key. Copy it.</li>
             <li><strong>Final Step:</strong> Log into your new Vercel website &rarr; Admin Dashboard &rarr; Settings &rarr; Integrations. Paste these 3 keys there and save.</li>
           </ol>
+        </div>
+      </div>
+
+      {/* PHASE 6: GOOGLE OAUTH */}
+      <div className="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">
+        <div className="bg-red-600 p-6 border-b border-red-700">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+            <span className="bg-white text-red-600 w-8 h-8 rounded-full flex items-center justify-center text-sm">6</span>
+            Google Login (Client Portal)
+          </h2>
+        </div>
+        <div className="p-8 space-y-6">
+          <p className="text-gray-600">To allow clients to sign in with their Gmail accounts instead of a PIN.</p>
+          
+          <h4 className="font-bold text-lg text-gray-800">Step A: Google Cloud Console</h4>
+          <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700">
+              <li>Go to <a href="https://console.cloud.google.com/" target="_blank" className="text-blue-600 underline">Google Cloud Console</a>.</li>
+              <li>Create a <strong>New Project</strong> named "Bos Salon".</li>
+              <li>Search for "OAuth consent screen". Select "External". Fill in App Name and Emails. Save.</li>
+              <li>Go to <strong>Credentials</strong> (left menu) &rarr; Create Credentials &rarr; OAuth Client ID.</li>
+              <li>Type: <strong>Web Application</strong>.</li>
+              <li><strong>Authorized Redirect URIs:</strong> You need to get this URL from Supabase (see Step B).</li>
+          </ol>
+
+          <h4 className="font-bold text-lg text-gray-800 mt-4">Step B: Supabase Configuration</h4>
+          <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-700">
+              <li>In your Supabase Dashboard, go to <strong>Authentication &rarr; Providers</strong>.</li>
+              <li>Click <strong>Google</strong>. Enable it.</li>
+              <li>Copy the <strong>Callback URL</strong> (looks like <code>https://xyz.supabase.co/auth/v1/callback</code>).</li>
+              <li>Paste this URL back into the Google Cloud Console "Authorized Redirect URIs" field. Save Google.</li>
+              <li>Google will give you a <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+              <li>Paste these two keys into the Supabase Google Provider settings and click Save.</li>
+          </ol>
+          
+          <div className="bg-green-50 text-green-800 p-4 rounded mt-4 border border-green-200">
+              <strong>Done!</strong> The "Sign in with Google" button on your Client Portal will now work automatically.
+          </div>
         </div>
       </div>
 

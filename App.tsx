@@ -470,6 +470,8 @@ const App: React.FC = () => {
             onUpdateBooking={handleUpdateBooking}
             onUpdateInvoice={handleUpdateInvoice}
             settings={settings} // Pass settings for loyalty program config
+            onAddClient={handleAddClient} // Pass ability to create new client record
+            authenticatedUser={user} // Pass the auth user state
           />
       );
   }
