@@ -9,7 +9,8 @@ import {
   dbDeleteItem, 
   dbSetDoc, 
   dbClearCollection,
-  dbLogout
+  dbLogout,
+  dbCheckStorageConnection // Imported check function
 } from './utils/dbAdapter';
 
 import Header from './components/Header';
@@ -165,6 +166,10 @@ const App: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]); // New Invoices
   const [clients, setClients] = useState<Client[]>([]); // New Clients collection
   
+  // Storage Connectivity State
+  const [storageStatus, setStorageStatus] = useState<'checking' | 'connected' | 'error'>('checking');
+  const [storageError, setStorageError] = useState<string | null>(null);
+
   // Site settings - Now includes nested objects for specific sections
   const [settings, setSettings] = useState<any>({
     companyName: 'Die Bos Salon',
@@ -237,6 +242,22 @@ const App: React.FC = () => {
     return () => unsubscribe();
   }, []);
   
+  // --- STORAGE CHECK ---
+  useEffect(() => {
+    const checkStorage = async () => {
+        setStorageStatus('checking');
+        const { connected, error } = await dbCheckStorageConnection();
+        if (connected) {
+            setStorageStatus('connected');
+            setStorageError(null);
+        } else {
+            setStorageStatus('error');
+            setStorageError(error || "Unknown storage error");
+        }
+    };
+    checkStorage();
+  }, []);
+
   // --- PUBLIC DATA FETCHING ---
   useEffect(() => {
     const unsubscribers: (() => void)[] = [];
@@ -417,69 +438,96 @@ const App: React.FC = () => {
     );
   }
 
+  // --- TINY BLINKING LIGHT COMPONENT ---
+  const StatusLight = () => (
+    <div className="fixed bottom-2 left-2 z-[9999] group cursor-help pointer-events-auto" title={`Storage Status: ${storageStatus}`}>
+        <div 
+            className={`
+                w-2 h-2 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)] border border-white/20
+                ${storageStatus === 'connected' ? 'bg-green-500 animate-pulse' : 
+                  storageStatus === 'error' ? 'bg-red-500 animate-ping' : 
+                  'bg-yellow-500'}
+            `}
+        ></div>
+        {/* Tooltip on hover */}
+        <div className="absolute left-4 bottom-0 bg-black/80 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+            Supabase Storage: {storageStatus === 'connected' ? 'Connected' : 'Error'}
+        </div>
+    </div>
+  );
+
   if (currentView === 'admin') {
     return (
-      <AdminPage
-        user={user}
-        onNavigate={navigate}
-        portfolioData={portfolioData}
-        onAddPortfolioItem={handleAddPortfolioItem}
-        onUpdatePortfolioItem={handleUpdatePortfolioItem}
-        onDeletePortfolioItem={handleDeletePortfolioItem}
-        specialsData={specialsData}
-        onAddSpecialItem={handleAddSpecialItem}
-        onUpdateSpecialItem={handleUpdateSpecialItem}
-        onDeleteSpecialItem={handleDeleteSpecialItem}
-        showroomData={showroomData}
-        onAddShowroomGenre={handleAddShowroomGenre}
-        onUpdateShowroomGenre={handleUpdateShowroomGenre}
-        onDeleteShowroomGenre={handleDeleteShowroomGenre}
-        bookings={bookings}
-        onUpdateBooking={handleUpdateBooking}
-        onManualAddBooking={handleManualAddBooking}
-        onDeleteBooking={handleDeleteBooking}
-        expenses={expenses}
-        onAddExpense={handleAddExpense}
-        onUpdateExpense={handleUpdateExpense}
-        onDeleteExpense={handleDeleteExpense}
-        inventory={inventory}
-        onAddInventoryItem={handleAddInventoryItem}
-        onUpdateInventoryItem={handleUpdateInventoryItem}
-        onDeleteInventoryItem={handleDeleteInventoryItem}
-        invoices={invoices}
-        onAddInvoice={handleAddInvoice}
-        onUpdateInvoice={handleUpdateInvoice}
-        onDeleteInvoice={handleDeleteInvoice}
-        clients={clients} 
-        onAddClient={handleAddClient} 
-        onUpdateClient={handleUpdateClient} 
-        onDeleteClient={handleDeleteClient} 
-        onSaveAllSettings={handleSaveAllSettings}
-        onClearAllData={handleClearAllData}
-        onSuccessfulLogout={handleLogoutSuccess}
-        // Spread all settings as props so Admin page gets everything
-        {...settings}
-      />
+      <>
+        <StatusLight />
+        <AdminPage
+            user={user}
+            onNavigate={navigate}
+            portfolioData={portfolioData}
+            onAddPortfolioItem={handleAddPortfolioItem}
+            onUpdatePortfolioItem={handleUpdatePortfolioItem}
+            onDeletePortfolioItem={handleDeletePortfolioItem}
+            specialsData={specialsData}
+            onAddSpecialItem={handleAddSpecialItem}
+            onUpdateSpecialItem={handleUpdateSpecialItem}
+            onDeleteSpecialItem={handleDeleteSpecialItem}
+            showroomData={showroomData}
+            onAddShowroomGenre={handleAddShowroomGenre}
+            onUpdateShowroomGenre={handleUpdateShowroomGenre}
+            onDeleteShowroomGenre={handleDeleteShowroomGenre}
+            bookings={bookings}
+            onUpdateBooking={handleUpdateBooking}
+            onManualAddBooking={handleManualAddBooking}
+            onDeleteBooking={handleDeleteBooking}
+            expenses={expenses}
+            onAddExpense={handleAddExpense}
+            onUpdateExpense={handleUpdateExpense}
+            onDeleteExpense={handleDeleteExpense}
+            inventory={inventory}
+            onAddInventoryItem={handleAddInventoryItem}
+            onUpdateInventoryItem={handleUpdateInventoryItem}
+            onDeleteInventoryItem={handleDeleteInventoryItem}
+            invoices={invoices}
+            onAddInvoice={handleAddInvoice}
+            onUpdateInvoice={handleUpdateInvoice}
+            onDeleteInvoice={handleDeleteInvoice}
+            clients={clients} 
+            onAddClient={handleAddClient} 
+            onUpdateClient={handleUpdateClient} 
+            onDeleteClient={handleDeleteClient} 
+            onSaveAllSettings={handleSaveAllSettings}
+            onClearAllData={handleClearAllData}
+            onSuccessfulLogout={handleLogoutSuccess}
+            // Pass connection stats
+            storageStatus={storageStatus}
+            storageError={storageError}
+            // Spread all settings as props so Admin page gets everything
+            {...settings}
+        />
+      </>
     );
   }
 
   if (currentView === 'client-portal') {
       return (
-          <ClientPortal 
-            logoUrl={settings.logoUrl}
-            companyName={settings.companyName}
-            onNavigate={navigate}
-            clients={clients}
-            bookings={bookings}
-            invoices={invoices}
-            specials={specialsData} // Passed specials
-            onAddBooking={handleAddBooking} // Passed booking function
-            onUpdateBooking={handleUpdateBooking}
-            onUpdateInvoice={handleUpdateInvoice}
-            settings={settings} // Pass settings for loyalty program config
-            onAddClient={handleAddClient} // Pass ability to create new client record
-            authenticatedUser={user} // Pass the auth user state
-          />
+          <>
+            <StatusLight />
+            <ClientPortal 
+                logoUrl={settings.logoUrl}
+                companyName={settings.companyName}
+                onNavigate={navigate}
+                clients={clients}
+                bookings={bookings}
+                invoices={invoices}
+                specials={specialsData} // Passed specials
+                onAddBooking={handleAddBooking} // Passed booking function
+                onUpdateBooking={handleUpdateBooking}
+                onUpdateInvoice={handleUpdateInvoice}
+                settings={settings} // Pass settings for loyalty program config
+                onAddClient={handleAddClient} // Pass ability to create new client record
+                authenticatedUser={user} // Pass the auth user state
+            />
+          </>
       );
   }
 
@@ -491,6 +539,7 @@ const App: React.FC = () => {
 
   return (
     <div className="relative">
+      <StatusLight />
       <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none' : ''}>
         <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
         <main>

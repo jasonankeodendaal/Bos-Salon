@@ -298,13 +298,20 @@ create policy "App Access Clients" on public.clients for all using (true);
           
           <CopyBlock label="SQL Setup Script" text={sqlScript} />
 
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-            <h4 className="font-bold text-yellow-800">Storage Buckets Setup</h4>
-            <p className="text-sm text-yellow-700 mt-1">
-              After running the SQL, go to the <strong>Storage</strong> tab in Supabase. Create the following <strong>Public</strong> buckets manually: 
-              <br/>
-              <code>portfolio</code>, <code>specials</code>, <code>showroom</code>, <code>booking-references</code>, <code>settings</code>.
+          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg shadow-sm">
+            <h4 className="font-bold text-yellow-800 text-lg mb-2">⚠️ CRITICAL STEP: Storage Buckets Setup</h4>
+            <p className="text-sm text-yellow-700 mt-1 mb-2">
+              The "Bucket not found" error happens because you must create these folders manually. SQL scripts cannot create storage buckets.
             </p>
+            <ol className="list-decimal pl-5 text-sm text-yellow-800 font-semibold space-y-1">
+                <li>Go to the <strong>Storage</strong> tab in your Supabase Dashboard.</li>
+                <li>Click <strong>"New Bucket"</strong>.</li>
+                <li>Enter name: <code>settings</code>. Toggle <strong>"Public Bucket"</strong> to ON. Click Create.</li>
+                <li>Repeat for: <code>portfolio</code> (Public: Yes)</li>
+                <li>Repeat for: <code>specials</code> (Public: Yes)</li>
+                <li>Repeat for: <code>showroom</code> (Public: Yes)</li>
+                <li>Repeat for: <code>booking-references</code> (Public: Yes)</li>
+            </ol>
           </div>
 
           <div className="mt-4">

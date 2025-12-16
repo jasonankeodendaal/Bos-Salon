@@ -6,37 +6,54 @@ type CollectionName = 'portfolio' | 'specials' | 'showroom' | 'bookings' | 'expe
 type Listener = (data: any[]) => void;
 type DocListener = (data: any) => void;
 
-// --- MOCK DATA GENERATORS ---
+// --- STORAGE HEALTH CHECK ---
+export const dbCheckStorageConnection = async (): Promise<{ connected: boolean; error?: string; details?: any }> => {
+  if (!isSupabaseConfigured || !supabase) {
+    return { connected: false, error: "Supabase client not initialized. Check environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY." };
+  }
+  try {
+    // Try to list buckets to verify connection and permissions
+    const { data, error } = await supabase.storage.listBuckets();
+    if (error) {
+      return { connected: false, error: error.message, details: error };
+    }
+    return { connected: true, details: data };
+  } catch (err: any) {
+    return { connected: false, error: err.message || "Unknown error connecting to storage." };
+  }
+};
+
+// --- MOCK DATA GENERATORS (TATTOO THEMED) ---
 const generateMockPortfolio = () => [
   {
     id: '1',
-    title: 'Marble & Gold Foil',
-    story: 'A luxurious combination of soft white marble textures accented with genuine gold leaf. Perfect for weddings or special occasions. Created using hand-painted techniques and premium foil.',
-    primaryImage: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
-    galleryImages: ['https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80'],
+    title: 'Neo-Traditional Tiger',
+    story: 'A fierce chest piece combining bold lines with muted earth tones. This session took 8 hours and focuses on the dynamic movement of the tiger.',
+    primaryImage: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=800&q=80',
+    galleryImages: ['https://images.unsplash.com/photo-1562962230-16e4623d36e6?auto=format&fit=crop&w=800&q=80'],
     featured: true
   },
   {
     id: '2',
-    title: 'Classic Red Stiletto',
-    story: 'Bold, timeless, and empowering. The perfect shape and shade to make a statement. Sculpted acrylics with a high-gloss gel finish.',
-    primaryImage: 'https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=800&q=80',
+    title: 'Geometric Sleeve',
+    story: 'Sacred geometry patterns flowing from shoulder to wrist. Dot-work shading creates depth without heavy blacks.',
+    primaryImage: 'https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=800&q=80',
     galleryImages: [],
     featured: true
   },
   {
     id: '3',
-    title: 'Pastel Abstract',
-    story: 'Playful swirls of pastel pinks, blues, and lilacs on a nude base. A fun, artistic expression perfect for spring.',
-    primaryImage: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80',
+    title: 'Realism Portrait',
+    story: 'Hyper-realistic portrait using single needle technique for fine details. Memorial piece.',
+    primaryImage: 'https://images.unsplash.com/photo-1560707303-4e98035872dc?auto=format&fit=crop&w=800&q=80',
     galleryImages: [],
     featured: true
   },
   {
     id: '4',
-    title: 'Matte Olive & Gold',
-    story: 'Understated elegance with a velvety matte finish, paired with subtle gold geometric lines.',
-    primaryImage: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=800&q=80',
+    title: 'Japanese Dragon',
+    story: 'Full back piece in progress. Traditional irezumi style with wind bars and cherry blossoms.',
+    primaryImage: 'https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&w=800&q=80',
     galleryImages: [],
     featured: true
   }
@@ -45,70 +62,70 @@ const generateMockPortfolio = () => [
 const generateMockSpecials = () => [
   {
     id: '1',
-    title: 'Gel Polish Special',
-    description: 'Get a flawless gel overlay on natural nails. Includes cuticle care, shaping, and a relaxing hand massage.',
-    price: 350,
-    imageUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=800&q=80'],
+    title: 'Friday the 13th Flash',
+    description: 'Classic superstition designs. Arms and legs only. First come, first served.',
+    price: 1300,
+    imageUrl: 'https://images.unsplash.com/photo-1590246296343-e5b306b4d32d?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1590246296343-e5b306b4d32d?auto=format&fit=crop&w=800&q=80'],
     active: true,
     priceType: 'fixed',
-    priceValue: 350,
-    details: ['Solid colors only', 'Soak-off not included', 'Approx 60 mins']
+    priceValue: 1300,
+    details: ['Pre-drawn designs only', 'Max size 3x3 inches', 'Black and grey only']
   },
   {
     id: '2',
-    title: 'Full Set Acrylics',
-    description: 'Extend your length with our durable sculpted acrylics. Includes one feature nail art per hand.',
-    price: 550,
-    imageUrl: 'https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=800&q=80'],
+    title: 'Full Day Tap-out',
+    description: '8 Hours of tattooing. Great for large scale work like sleeves or back pieces.',
+    price: 6000,
+    imageUrl: 'https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1598371839696-5c5bb00bdc28?auto=format&fit=crop&w=800&q=80'],
     active: true,
     priceType: 'fixed',
-    priceValue: 550,
-    voucherCode: 'NEWSET2024'
+    priceValue: 6000,
+    voucherCode: 'ALLDAYINK'
   },
   {
     id: '3',
-    title: 'Student Mani-Pedi',
-    description: '15% off any combination of manicure and pedicure treatments with a valid student ID card.',
-    price: 0,
-    imageUrl: 'https://images.unsplash.com/photo-1599693359672-8bb06c564102?auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1599693359672-8bb06c564102?auto=format&fit=crop&w=800&q=80'],
+    title: 'Apprentice Rates',
+    description: 'Book with our junior artist for heavily discounted rates on text and simple line work.',
+    price: 50,
+    imageUrl: 'https://images.unsplash.com/photo-1621112904887-419379ce6824?auto=format&fit=crop&w=800&q=80',
+    images: ['https://images.unsplash.com/photo-1621112904887-419379ce6824?auto=format&fit=crop&w=800&q=80'],
     active: true,
     priceType: 'percentage',
-    priceValue: 15
+    priceValue: 50
   }
 ];
 
 const generateMockShowroom = () => [
   {
     id: '1',
-    name: 'Minimalist',
+    name: 'Old School',
     items: [
-      { id: 's1', title: 'Negative Space', images: ['https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=400&q=80'] },
-      { id: 's2', title: 'Micro French', images: ['https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?auto=format&fit=crop&w=400&q=80'] }
+      { id: 's1', title: 'Panther Head', images: ['https://images.unsplash.com/photo-1550537602-366689b08e3f?auto=format&fit=crop&w=400&q=80'] },
+      { id: 's2', title: 'Dagger & Rose', images: ['https://images.unsplash.com/photo-1590246296343-e5b306b4d32d?auto=format&fit=crop&w=400&q=80'] }
     ]
   },
   {
     id: '2',
-    name: 'Nail Art',
+    name: 'Fine Line',
     items: [
-      { id: 's3', title: 'Florals', images: ['https://images.unsplash.com/photo-1596704017254-9b121068fb31?auto=format&fit=crop&w=400&q=80'] },
-      { id: 's4', title: 'Tortoise Shell', images: ['https://images.unsplash.com/photo-1632345031435-8727f6897d53?auto=format&fit=crop&w=400&q=80'] }
+      { id: 's3', title: 'Floral Bouquet', images: ['https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=400&q=80'] },
+      { id: 's4', title: 'Micro Script', images: ['https://images.unsplash.com/photo-1560707303-4e98035872dc?auto=format&fit=crop&w=400&q=80'] }
     ]
   },
   {
     id: '3',
-    name: 'Pedicures',
+    name: 'Flash Sheet 1',
     items: [
-      { id: 's5', title: 'Fresh White', images: ['https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=400&q=80'] }
+      { id: 's5', title: 'Skulls & Snakes', images: ['https://images.unsplash.com/photo-1542382257-80dedb725088?auto=format&fit=crop&w=400&q=80'] }
     ]
   }
 ];
 
 const generateMockBookings = () => {
   const bookings = [];
-  const services = ['Gel Manicure', 'Full Set Acrylics', 'Nail Art Consultation', 'Fill & Shape', 'Luxury Pedicure'];
+  const services = ['Consultation', 'Full Day Session', 'Half Day Session', 'Touch Up', 'Flash Piece'];
   const now = new Date();
   
   // Past year data for charts
@@ -124,8 +141,8 @@ const generateMockBookings = () => {
       bookingDate: date.toISOString().split('T')[0],
       status: 'completed',
       bookingType: 'online',
-      totalCost: 350 + Math.floor(Math.random() * 500),
-      amountPaid: 350 + Math.floor(Math.random() * 500),
+      totalCost: 1000 + Math.floor(Math.random() * 3000),
+      amountPaid: 1000 + Math.floor(Math.random() * 3000),
       paymentMethod: ['cash', 'card', 'eft'][Math.floor(Math.random() * 3)],
     });
   }
@@ -135,12 +152,12 @@ const generateMockBookings = () => {
     id: 'future_1',
     name: 'Sarah Connor',
     email: 'sarah@example.com',
-    message: 'Looking for chrome hearts design on long coffin shape.',
+    message: 'Looking to start a leg sleeve. Terminator theme.',
     bookingDate: new Date(now.getTime() + 86400000).toISOString().split('T')[0], // Tomorrow
     status: 'confirmed',
     bookingType: 'online',
-    totalCost: 650,
-    amountPaid: 300,
+    totalCost: 3500,
+    amountPaid: 1000,
     paymentMethod: 'eft'
   });
   
@@ -148,21 +165,11 @@ const generateMockBookings = () => {
     id: 'pending_1',
     name: 'John Wick',
     email: 'john@example.com',
-    message: 'Manicure and hand treatment. No polish.',
+    message: 'Portrait of my dog on my back.',
     bookingDate: new Date(now.getTime() + 172800000).toISOString().split('T')[0], // 2 days
     status: 'pending',
     bookingType: 'online',
-    totalCost: 250
-  });
-
-  bookings.push({
-    id: 'pending_2',
-    name: 'Alice Wonderland',
-    email: 'alice@example.com',
-    message: 'Quote for bridal party nails (5 people).',
-    bookingDate: new Date(now.getTime() + 259200000).toISOString().split('T')[0], // 3 days
-    status: 'pending',
-    bookingType: 'manual'
+    totalCost: 0
   });
 
   return bookings;
@@ -180,375 +187,279 @@ const generateMockExpenses = () => {
       id: `mock_e_${i}`,
       date: date.toISOString().split('T')[0],
       category: categories[Math.floor(Math.random() * categories.length)],
-      description: 'Monthly restocking',
-      amount: 100 + Math.floor(Math.random() * 1000)
+      description: 'Studio Consumables',
+      amount: 500 + Math.floor(Math.random() * 2000)
     });
   }
   return expenses;
 };
 
 const generateMockInventory = () => [
-  { id: '1', productName: 'Gel Polish - Classic Red', brand: 'OPI', category: 'Gel Polish', quantity: 12, minStockLevel: 5, unitCost: 250, supplier: 'Nail Supply Co' },
-  { id: '2', productName: 'Acrylic Powder - Clear', brand: 'Young Nails', category: 'Acrylic', quantity: 4, minStockLevel: 2, unitCost: 450, supplier: 'Nail Supply Co' },
-  { id: '3', productName: 'Acetone (5L)', brand: 'Generic', category: 'Removers', quantity: 2, minStockLevel: 1, unitCost: 300, supplier: 'Chemical Depot' },
-  { id: '4', productName: 'Nitrile Gloves (S)', brand: 'Black Dragon', category: 'Hygiene', quantity: 20, minStockLevel: 5, unitCost: 150, supplier: 'Medical Depot' },
-  { id: '5', productName: 'Nail Files 100/180', brand: 'Professional', category: 'Consumables', quantity: 50, minStockLevel: 20, unitCost: 15, supplier: 'Nail Supply Co' },
-  { id: '6', productName: 'Cuticle Oil', brand: 'Essie', category: 'Care', quantity: 10, minStockLevel: 3, unitCost: 120, supplier: 'Beauty Wholesalers' },
-  { id: '7', productName: 'Top Coat', brand: 'Gelish', category: 'Gel Polish', quantity: 6, minStockLevel: 3, unitCost: 380, supplier: 'Nail Supply Co' },
+  { id: '1', productName: 'Dynamic Black Ink (8oz)', brand: 'Dynamic', category: 'Ink', quantity: 4, minStockLevel: 2, unitCost: 800, supplier: 'Tattoo Supply Co' },
+  { id: '2', productName: 'Cartridges 3RL (Box)', brand: 'Kwadron', category: 'Needles', quantity: 15, minStockLevel: 5, unitCost: 450, supplier: 'Pro Arts' },
+  { id: '3', productName: 'Cartridges 9M (Box)', brand: 'Kwadron', category: 'Needles', quantity: 8, minStockLevel: 5, unitCost: 450, supplier: 'Pro Arts' },
+  { id: '4', productName: 'Black Gloves (M)', brand: 'Nitrile', category: 'Hygiene', quantity: 10, minStockLevel: 3, unitCost: 150, supplier: 'MedBase' },
+  { id: '5', productName: 'Green Soap Conc.', brand: 'Studio', category: 'Hygiene', quantity: 2, minStockLevel: 1, unitCost: 300, supplier: 'Tattoo Supply Co' },
 ];
 
 const generateMockInvoices = () => [
     {
-        id: '1',
-        type: 'quote',
-        number: 'Q-1001',
-        clientName: 'Alice Wonderland',
-        clientEmail: 'alice@example.com',
+        id: 'inv_1',
+        type: 'invoice',
+        number: 'INV-1001',
+        clientName: 'Sarah Connor',
+        clientEmail: 'sarah@example.com',
         clientPhone: '27123456789',
-        dateIssued: new Date().toISOString().split('T')[0],
-        dateDue: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-        status: 'sent',
-        items: [
-            { id: '1', description: 'Bridal Party: Gel Manicures (x5)', quantity: 5, unitPrice: 350 },
-            { id: '2', description: 'Bridal Nail Art (Intricate)', quantity: 1, unitPrice: 200 }
-        ],
-        notes: 'Deposit of 50% required to book the morning slot.',
-        subtotal: 1950,
-        taxAmount: 292.5,
-        total: 2242.5
+        dateIssued: '2023-10-01',
+        dateDue: '2023-10-08',
+        status: 'paid',
+        items: [{ id: 'i1', description: 'Tattoo Session - Leg Sleeve', quantity: 1, unitPrice: 3500 }],
+        subtotal: 3500,
+        taxAmount: 0,
+        total: 3500,
     },
     {
-        id: '2',
-        type: 'invoice',
-        number: 'INV-2023-44',
+        id: 'q_1',
+        type: 'quote',
+        number: 'Q-1005',
         clientName: 'John Wick',
         clientEmail: 'john@example.com',
-        clientPhone: '27999999999',
-        dateIssued: new Date(Date.now() - 5 * 86400000).toISOString().split('T')[0],
-        dateDue: new Date().toISOString().split('T')[0], // Due today
-        status: 'paid',
-        items: [
-            { id: '1', description: 'Men\'s Manicure', quantity: 1, unitPrice: 250 },
-            { id: '2', description: 'Hand Cream Purchase', quantity: 1, unitPrice: 150 }
-        ],
-        notes: 'Thank you for your business.',
-        subtotal: 400,
-        taxAmount: 60,
-        total: 460
+        clientPhone: '27987654321',
+        dateIssued: '2023-10-15',
+        dateDue: '2023-10-22',
+        status: 'sent',
+        items: [{ id: 'i2', description: 'Back Piece - Portrait', quantity: 1, unitPrice: 5000 }],
+        subtotal: 5000,
+        taxAmount: 0,
+        total: 5000,
     }
 ];
 
 const generateMockClients = () => [
     {
-        id: '1',
-        name: 'Alice Wonderland',
-        email: 'alice@example.com',
+        id: 'c1',
+        name: 'Sarah Connor',
+        email: 'sarah@example.com',
         phone: '27123456789',
-        password: 'nails', 
-        notes: 'Likes surreal designs.'
+        password: '1234',
+        stickers: 3,
+        loyaltyProgress: { 'legacy': 3 },
+        rewardsRedeemed: 0
     },
     {
-        id: '2',
+        id: 'c2',
         name: 'John Wick',
         email: 'john@example.com',
-        phone: '27999999999',
-        password: 'dog',
-        notes: 'VIP Client.'
+        phone: '27987654321',
+        password: '5678',
+        stickers: 8,
+        loyaltyProgress: { 'legacy': 8 },
+        rewardsRedeemed: 1
     }
 ];
 
-const generateMockSettings = () => ({
-    id: 'main',
-    companyName: 'Bos Salon',
-    logoUrl: 'https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png',
-    heroTattooGunImageUrl: 'https://i.ibb.co/8DFd4pt7/unnamed-1.jpg',
-    aboutUsImageUrl: 'https://images.unsplash.com/photo-1520699049698-acd2fcc51056?auto=format&fit=crop&w=500&q=80',
-    whatsAppNumber: '27795904162',
-    address: '123 Nature Way, Green Valley, 45678',
-    phone: '+27 12 345 6789',
-    email: 'bookings@bossalon.com',
-    socialLinks: [],
-    showroomTitle: 'Nail Art Gallery',
-    showroomDescription: "Browse our collection of hand-painted designs and natural treatments.",
-    bankName: 'FNB',
-    accountNumber: '1234567890',
-    branchCode: '250655',
-    accountType: 'Cheque',
-    vatNumber: '4200123456',
-    isMaintenanceMode: false,
-    apkUrl: '',
-    taxEnabled: true,
-    vatPercentage: 15,
-    emailServiceId: '',
-    emailTemplateId: '',
-    emailPublicKey: '',
-    hero: {
-        title: 'Nail and beauty',
-        subtitle: 'Experience the art of nature',
-        buttonText: 'Book an Appointment'
-    },
-    about: {
-        title: 'Our Story',
-        text1: 'Bos Salon was born from a love for natural beauty and intricate art.',
-        text2: 'We specialize in bespoke nail art, ensuring your hands and feet look their absolute best.'
-    },
-    contact: {
-        intro: 'Ready for a fresh look? Fill out the form below.'
-    }
-});
+// --- ADAPTER FUNCTIONS ---
 
-// --- Local Storage Helpers ---
-const getLocalCollection = (name: string): any[] => {
-  const data = localStorage.getItem(`bossalon_${name}`);
-  
-  if (data) {
-    try {
-      return JSON.parse(data);
-    } catch (e) {
-      console.error(`Error parsing local collection ${name}`, e);
-      return [];
-    }
-  }
-  
-  // --- INITIALIZE MOCK DATA IF EMPTY ---
-  let mockData: any[] = [];
-  switch (name) {
-    case 'portfolio': mockData = generateMockPortfolio(); break;
-    case 'specials': mockData = generateMockSpecials(); break;
-    case 'showroom': mockData = generateMockShowroom(); break;
-    case 'bookings': mockData = generateMockBookings(); break;
-    case 'expenses': mockData = generateMockExpenses(); break;
-    case 'inventory': mockData = generateMockInventory(); break;
-    case 'settings': mockData = [generateMockSettings()]; break;
-    case 'invoices': mockData = generateMockInvoices(); break;
-    case 'clients': mockData = generateMockClients(); break;
-  }
-  
-  if (mockData.length > 0) {
-      localStorage.setItem(`bossalon_${name}`, JSON.stringify(mockData));
-  }
-  
-  return mockData;
-};
-
-const setLocalCollection = (name: string, data: any[]) => {
-  localStorage.setItem(`bossalon_${name}`, JSON.stringify(data));
-  window.dispatchEvent(new Event(`local_update_${name}`));
-};
-
-const fileToBase64 = (file: File): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-  });
-};
-
-// --- AUTH ---
-export const dbLogin = async (email: string, passwordOrPin: string): Promise<{ user: any, error: any }> => {
+export const dbOnAuthStateChange = (callback: (user: any) => void) => {
   if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password: passwordOrPin,
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      callback(session?.user || null);
     });
-    return { user: data.user, error };
+    return () => subscription.unsubscribe();
   } else {
-    // Local Mode: Hardcoded Auth
-    if (email.toLowerCase() === 'jstyp' && passwordOrPin === '1723') {
-      const fakeUser = { id: 'local-admin', email };
-      localStorage.setItem('bossalon_user', JSON.stringify(fakeUser));
-      window.dispatchEvent(new Event('local_auth_change'));
-      return { user: fakeUser, error: null };
+    // Mock Auth: Check local storage
+    const storedUser = localStorage.getItem('mockUser');
+    if (storedUser) {
+        callback(JSON.parse(storedUser));
+    } else {
+        callback(null);
     }
-    return { user: null, error: { message: 'Invalid credentials (Local Mode)' } };
+    return () => {};
+  }
+};
+
+export const dbLogin = async (email: string, password?: string) => {
+  if (isSupabaseConfigured && supabase) {
+    return await supabase.auth.signInWithPassword({ email, password: password || '' });
+  } else {
+    // Mock Login
+    if (email === 'admin' && password === 'admin') {
+        const user = { id: 'mock-admin-id', email: 'admin@bossalon.com' };
+        localStorage.setItem('mockUser', JSON.stringify(user));
+        // Force reload to trigger auth state change in App.tsx (since we aren't using a real event emitter for mock)
+        window.location.reload(); 
+        return { user, error: null };
+    }
+    return { user: null, error: { message: 'Invalid mock credentials. Use admin/admin' } };
   }
 };
 
 export const dbLoginWithGoogle = async () => {
-  if (isSupabaseConfigured && supabase) {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    if (error) throw error;
-    return data;
-  } else {
-    alert("Google Login requires a live Supabase connection. It does not work in local mock mode.");
-    return null;
-  }
+    if (isSupabaseConfigured && supabase) {
+        return await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+    } else {
+        alert("Google Login requires Supabase configuration.");
+        return { error: { message: 'Supabase not configured' } };
+    }
 };
 
 export const dbLogout = async () => {
   if (isSupabaseConfigured && supabase) {
-    await supabase.auth.signOut();
+    return await supabase.auth.signOut();
   } else {
-    localStorage.removeItem('bossalon_user');
-    window.dispatchEvent(new Event('local_auth_change'));
+    localStorage.removeItem('mockUser');
+    window.location.reload();
   }
 };
 
-export const dbOnAuthStateChange = (callback: (user: any) => void) => {
-  if (isSupabaseConfigured && supabase) {
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      callback(session?.user || null);
-    });
-    return () => data.subscription.unsubscribe();
-  } else {
-    const stored = localStorage.getItem('bossalon_user');
-    if (stored) callback(JSON.parse(stored));
-    else callback(null);
-
-    const listener = () => {
-       const u = localStorage.getItem('bossalon_user');
-       callback(u ? JSON.parse(u) : null);
-    };
-    window.addEventListener('local_auth_change', listener);
-    return () => window.removeEventListener('local_auth_change', listener);
-  }
-};
-
-// --- DATA SUBSCRIPTIONS ---
 export const dbSubscribeToCollection = (collection: CollectionName, callback: Listener) => {
-  const client = supabase;
-  if (isSupabaseConfigured && client) {
-    client.from(collection).select('*').then(({ data }) => {
-      if (data) callback(data);
-    });
+  if (isSupabaseConfigured && supabase) {
+    // Initial fetch
+    supabase
+      .from(collection)
+      .select('*')
+      .then(({ data, error }) => {
+        if (!error && data) callback(data);
+        if (error) console.error(`Error fetching ${collection}:`, error);
+      });
 
-    const channel = client
-      .channel(`public:${collection}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: collection }, (payload) => {
-         client.from(collection).select('*').then(({ data }) => {
-            if(data) callback(data);
-         });
-      })
+    // Subscription
+    const channel = supabase
+      .channel(`${collection}_changes`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: collection },
+        (payload) => {
+            // Re-fetch all data to keep it simple and consistent
+            supabase.from(collection).select('*').then(({ data }) => {
+                if (data) callback(data);
+            });
+        }
+      )
       .subscribe();
 
-    return () => { client.removeChannel(channel); };
+    return () => {
+      supabase!.removeChannel(channel);
+    };
   } else {
-    const load = () => callback(getLocalCollection(collection));
-    load(); 
-    const eventName = `local_update_${collection}`;
-    window.addEventListener(eventName, load);
-    return () => window.removeEventListener(eventName, load);
+    // Mock Data
+    let data: any[] = [];
+    switch(collection) {
+        case 'portfolio': data = generateMockPortfolio(); break;
+        case 'specials': data = generateMockSpecials(); break;
+        case 'showroom': data = generateMockShowroom(); break;
+        case 'bookings': data = generateMockBookings(); break;
+        case 'expenses': data = generateMockExpenses(); break;
+        case 'inventory': data = generateMockInventory(); break;
+        case 'invoices': data = generateMockInvoices(); break;
+        case 'clients': data = generateMockClients(); break;
+        case 'settings': data = []; break; // handled by doc subscriber
+    }
+    // Simulate async load
+    setTimeout(() => callback(data), 500);
+    return () => {};
   }
 };
 
-export const dbSubscribeToDoc = (collection: CollectionName, docId: string, callback: DocListener) => {
-    const client = supabase;
-    if (isSupabaseConfigured && client) {
-        const fetch = () => client.from(collection).select('*').eq('id', docId).single().then(({ data }) => {
-            if (data) callback(data);
-        });
-        fetch();
-        const channel = client.channel(`public:${collection}:${docId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: collection, filter: `id=eq.${docId}` }, (payload) => {
-                fetch();
-            })
-            .subscribe();
-        return () => { client.removeChannel(channel); };
+export const dbSubscribeToDoc = (collection: string, docId: string, callback: DocListener) => {
+    if (isSupabaseConfigured && supabase) {
+        supabase
+            .from(collection)
+            .select('*')
+            .eq('id', docId)
+            .single()
+            .then(({ data }) => {
+                if (data) callback(data);
+            });
+            
+        // For simplicity, we reuse the collection subscriber logic or just poll if needed.
+        // But here let's just do a one-time fetch for settings mainly.
+        return () => {};
     } else {
-        const load = () => {
-            const list = getLocalCollection(collection);
-            const item = list.find(i => i.id === docId);
-            if (item) callback(item);
+        // Mock Settings
+        if (collection === 'settings') {
+             setTimeout(() => callback({
+                 companyName: 'Bos Salon Mock',
+                 // ... other defaults handled in App.tsx state init
+             }), 500);
         }
-        load();
-        const eventName = `local_update_${collection}`;
-        window.addEventListener(eventName, load);
-        return () => window.removeEventListener(eventName, load);
+        return () => {};
     }
 };
 
-// --- CRUD OPERATIONS ---
 export const dbAddItem = async (collection: CollectionName, item: any) => {
-  const newItem = { ...item, id: item.id || crypto.randomUUID() };
-  const client = supabase;
-
-  if (isSupabaseConfigured && client) {
-    const { error } = await client.from(collection).insert(newItem);
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from(collection).insert([item]);
     if (error) throw error;
   } else {
-    const list = getLocalCollection(collection);
-    list.push(newItem);
-    setLocalCollection(collection, list);
+    console.log(`[MOCK] Added to ${collection}:`, item);
   }
-  return newItem;
 };
 
 export const dbUpdateItem = async (collection: CollectionName, item: any) => {
-  if (!item.id) throw new Error("Item must have an ID to update");
-  const client = supabase;
-
-  if (isSupabaseConfigured && client) {
-    const { error } = await client.from(collection).update(item).eq('id', item.id);
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from(collection).update(item).eq('id', item.id);
     if (error) throw error;
   } else {
-    const list = getLocalCollection(collection);
-    const index = list.findIndex(i => i.id === item.id);
-    if (index !== -1) {
-      list[index] = { ...list[index], ...item };
-      setLocalCollection(collection, list);
-    }
+    console.log(`[MOCK] Updated in ${collection}:`, item);
   }
 };
 
 export const dbDeleteItem = async (collection: CollectionName, id: string) => {
-  const client = supabase;
-  if (isSupabaseConfigured && client) {
-    const { error } = await client.from(collection).delete().eq('id', id);
+  if (isSupabaseConfigured && supabase) {
+    const { error } = await supabase.from(collection).delete().eq('id', id);
     if (error) throw error;
   } else {
-    const list = getLocalCollection(collection);
-    const newList = list.filter(i => i.id !== id);
-    setLocalCollection(collection, newList);
+    console.log(`[MOCK] Deleted from ${collection}:`, id);
   }
 };
 
-export const dbSetDoc = async (collection: CollectionName, docId: string, data: any) => {
-    const client = supabase;
-    if (isSupabaseConfigured && client) {
-        const { error } = await client.from(collection).upsert({ ...data, id: docId });
-        if(error) throw error;
-    } else {
-        const list = getLocalCollection(collection);
-        const index = list.findIndex(i => i.id === docId);
-        if (index !== -1) {
-            list[index] = { ...list[index], ...data };
-        } else {
-            list.push({ ...data, id: docId });
-        }
-        setLocalCollection(collection, list);
-    }
-}
-
-// --- STORAGE ---
-export const dbUploadFile = async (file: File, bucket: string, pathPrefix: string = ''): Promise<string> => {
-  const client = supabase;
-  if (isSupabaseConfigured && client) {
-    const filePath = `${pathPrefix}${Date.now()}-${file.name}`;
-    const { data, error } = await client.storage.from(bucket).upload(filePath, file);
-    if (error) throw error;
-    
-    const { data: publicUrlData } = client.storage.from(bucket).getPublicUrl(filePath);
-    return publicUrlData.publicUrl;
-  } else {
-    console.warn("Local Mode: converting file to Base64. This may exceed storage limits.");
-    return await fileToBase64(file);
-  }
-};
-
-// --- BATCH DELETE (Used for clearing data) ---
-export const dbClearCollection = async (collection: CollectionName) => {
-    const client = supabase;
-    if(isSupabaseConfigured && client) {
-        const { error } = await client.from(collection).delete().neq('id', '00000000-0000-0000-0000-000000000000'); 
+export const dbSetDoc = async (collection: string, docId: string, data: any) => {
+    if (isSupabaseConfigured && supabase) {
+        const { error } = await supabase.from(collection).upsert({ id: docId, ...data });
         if (error) throw error;
     } else {
-        localStorage.removeItem(`bossalon_${collection}`);
-        window.dispatchEvent(new Event(`local_update_${collection}`));
+        console.log(`[MOCK] Set Doc ${collection}/${docId}:`, data);
+    }
+};
+
+export const dbUploadFile = async (file: File, bucket: string, pathPrefix: string = ''): Promise<string> => {
+    if (isSupabaseConfigured && supabase) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${pathPrefix}${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from(bucket)
+            .upload(fileName, file);
+
+        if (uploadError) {
+            throw uploadError;
+        }
+
+        const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+        return data.publicUrl;
+    } else {
+        // Mock upload: return a fake URL (or blob URL for immediate preview if feasible in context)
+        console.log(`[MOCK] Uploaded ${file.name} to ${bucket}`);
+        return URL.createObjectURL(file);
+    }
+};
+
+export const dbClearCollection = async (collection: CollectionName) => {
+    if (isSupabaseConfigured && supabase) {
+        // Supabase doesn't have a 'delete all', so we select all IDs then delete
+        const { data } = await supabase.from(collection).select('id');
+        if (data && data.length > 0) {
+            const ids = data.map(d => d.id);
+            const { error } = await supabase.from(collection).delete().in('id', ids);
+            if (error) throw error;
+        }
+    } else {
+        console.log(`[MOCK] Cleared collection: ${collection}`);
     }
 }
