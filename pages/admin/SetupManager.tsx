@@ -182,7 +182,7 @@ create table if not exists public.settings (
   id text primary key,
   "companyName" text,
   "logoUrl" text,
-  "heroTattooGunImageUrl" text,
+  "heroBgUrl" text,
   "aboutUsImageUrl" text,
   "whatsAppNumber" text,
   address text,

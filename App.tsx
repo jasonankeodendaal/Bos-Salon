@@ -167,10 +167,10 @@ const App: React.FC = () => {
   
   // Site settings - Now includes nested objects for specific sections
   const [settings, setSettings] = useState<any>({
-    companyName: 'Die Bos Salon',
+    companyName: 'Bos Salon',
     logoUrl: 'https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png',
-    heroTattooGunImageUrl: 'https://i.ibb.co/8DFd4pt7/unnamed-1.jpg',
-    aboutUsImageUrl: 'https://picsum.photos/seed/nail-artist/500/500',
+    heroBgUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=1920&q=80',
+    aboutUsImageUrl: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80',
     whatsAppNumber: '27795904162',
     address: '123 Nature Way, Green Valley, 45678',
     phone: '+27 12 345 6789',
@@ -505,7 +505,7 @@ const App: React.FC = () => {
           <Hero 
             portfolioData={portfolioData} 
             onNavigate={navigate} 
-            heroTattooGunImageUrl={settings.heroTattooGunImageUrl}
+            heroBgUrl={settings.heroBgUrl}
             title={settings.hero?.title}
             subtitle={settings.hero?.subtitle}
             buttonText={settings.hero?.buttonText}

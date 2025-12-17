@@ -59,7 +59,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     heroTitle: props.hero?.title || 'Nail and beauty',
     heroSubtitle: props.hero?.subtitle || 'Experience the art of nature',
     heroButtonText: props.hero?.buttonText || 'Book an Appointment',
-    heroTattooGunImageUrl: props.heroTattooGunImageUrl || '', 
+    heroBgUrl: props.heroBgUrl || '', 
     
     // About Section
     aboutTitle: props.about?.title || 'Our Story',
@@ -104,7 +104,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         heroTitle: props.hero?.title || prev.heroTitle,
         heroSubtitle: props.hero?.subtitle || prev.heroSubtitle,
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
-        heroTattooGunImageUrl: props.heroTattooGunImageUrl || prev.heroTattooGunImageUrl,
+        heroBgUrl: props.heroBgUrl || prev.heroBgUrl,
         aboutTitle: props.about?.title || prev.aboutTitle,
         aboutText1: props.about?.text1 || prev.aboutText1,
         aboutText2: props.about?.text2 || prev.aboutText2,
@@ -131,7 +131,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
     }
-  }, [props.companyName, props.socialLinks, props.loyaltyPrograms]);
+  }, [props.companyName, props.socialLinks, props.loyaltyPrograms, props.heroBgUrl]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -239,8 +239,34 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     setIsLoading(true);
     setMessage(null);
     try {
-      const finalSettings = {
-        ...settings,
+      // STRICT PAYLOAD CONSTRUCTION
+      const dbPayload = {
+        // Direct Columns
+        companyName: settings.companyName,
+        logoUrl: settings.logoUrl,
+        heroBgUrl: settings.heroBgUrl,
+        aboutUsImageUrl: settings.aboutUsImageUrl,
+        whatsAppNumber: settings.whatsAppNumber,
+        address: settings.address,
+        phone: settings.phone,
+        email: settings.email,
+        socialLinks: settings.socialLinks,
+        showroomTitle: settings.showroomTitle,
+        showroomDescription: settings.showroomDescription,
+        bankName: settings.bankName,
+        accountNumber: settings.accountNumber,
+        branchCode: settings.branchCode,
+        accountType: settings.accountType,
+        vatNumber: settings.vatNumber,
+        isMaintenanceMode: settings.isMaintenanceMode,
+        apkUrl: settings.apkUrl,
+        taxEnabled: settings.taxEnabled,
+        vatPercentage: settings.vatPercentage,
+        emailServiceId: settings.emailServiceId,
+        emailTemplateId: settings.emailTemplateId,
+        emailPublicKey: settings.emailPublicKey,
+        
+        // JSONB Columns (Nested Objects)
         hero: {
           title: settings.heroTitle,
           subtitle: settings.heroSubtitle,
@@ -251,20 +277,16 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
           text1: settings.aboutText1,
           text2: settings.aboutText2,
         },
+        contact: {
+             intro: props.contact?.intro || 'Ready for a fresh look? Fill out the form below.'
+        },
         loyaltyPrograms: loyaltyPrograms,
-        // Legacy fallback
+        // Legacy fallback support
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
-        
-        companyName: settings.companyName,
-        logoUrl: settings.logoUrl,
-        heroTattooGunImageUrl: settings.heroTattooGunImageUrl,
-        aboutUsImageUrl: settings.aboutUsImageUrl,
-        showroomTitle: settings.showroomTitle,
-        showroomDescription: settings.showroomDescription,
       };
 
-      await props.onSaveAllSettings(finalSettings);
-      setMessage({ text: 'Saved!', type: 'success' }); // Shortened for mobile
+      await props.onSaveAllSettings(dbPayload);
+      setMessage({ text: 'Saved!', type: 'success' });
     } catch (error) {
       console.error("Save failed", error);
       setMessage({ text: 'Failed.', type: 'error' });
@@ -381,8 +403,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                  <div>
                     <label className={labelClass}>Background Image</label>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                       {settings.heroTattooGunImageUrl && <img src={settings.heroTattooGunImageUrl} alt="Hero" className="w-full sm:w-32 h-20 object-cover rounded-lg" />}
-                       <input type="file" onChange={(e) => handleFileUpload(e, 'heroTattooGunImageUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
+                       {settings.heroBgUrl && <img src={settings.heroBgUrl} alt="Hero" className="w-full sm:w-32 h-20 object-cover rounded-lg" />}
+                       <input type="file" onChange={(e) => handleFileUpload(e, 'heroBgUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
                     </div>
                  </div>
                </div>

@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { BullHead, BuckHead, Bush } from './icons/TattooFlashIcons';
+import { Bush, Leaf, BullHead, BuckHead } from './icons/TattooFlashIcons';
 
 // Explicitly select the icons requested
-const icons = [BullHead, BuckHead, Bush];
+const icons = [Leaf, Bush, BullHead, BuckHead];
 
 // Configuration for "Perfectly Spaced and Scattered"
 const COLS = 8; // Number of columns

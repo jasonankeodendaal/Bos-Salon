@@ -8,7 +8,7 @@ import CarouselMediaItem from './CarouselMediaItem';
 interface HeroProps {
   portfolioData: PortfolioItem[];
   onNavigate: (view: 'home' | 'admin') => void;
-  heroTattooGunImageUrl: string;
+  heroBgUrl: string;
   // New props for CMS
   title?: string;
   subtitle?: string;
@@ -18,7 +18,7 @@ interface HeroProps {
 const Hero: React.FC<HeroProps> = ({ 
   portfolioData, 
   onNavigate, 
-  heroTattooGunImageUrl,
+  heroBgUrl,
   title = "Nail and beauty",
   subtitle = "Experience the art of nature",
   buttonText = "Book an Appointment"
@@ -58,16 +58,16 @@ const Hero: React.FC<HeroProps> = ({
     <>
       <section className="relative h-screen bg-brand-dark text-brand-light overflow-hidden perspective-1000">
         
-        {/* Light Mode Gradient */}
-        <div className="absolute top-0 left-0 w-full h-full z-0 bg-gradient-to-t from-white via-white/70 to-transparent"></div>
+        {/* Light Mode Gradient - Reduced opacity to show image better */}
+        <div className="absolute top-0 left-0 w-full h-full z-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
         
         {/* Background Image - Moved here to sit behind text and carousel */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] z-0 w-full text-center pointer-events-none">
             <img 
-                src={heroTattooGunImageUrl}
+                src={heroBgUrl}
                 alt="Background Art"
                 aria-hidden="true"
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] sm:w-[50rem] md:w-[65rem] lg:w-[80rem] max-w-none h-auto opacity-80 transform rotate-[15deg] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_70%)]"
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] sm:w-[50rem] md:w-[65rem] lg:w-[80rem] max-w-none h-auto opacity-75 object-cover"
             />
         </div>
 

@@ -230,7 +230,7 @@ const generateMockSettings = () => ({
     id: 'main',
     companyName: 'Bos Salon',
     logoUrl: 'https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png',
-    heroTattooGunImageUrl: 'https://i.ibb.co/8DFd4pt7/unnamed-1.jpg',
+    heroBgUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=1920&q=80',
     aboutUsImageUrl: 'https://images.unsplash.com/photo-1520699049698-acd2fcc51056?auto=format&fit=crop&w=500&q=80',
     whatsAppNumber: '27795904162',
     address: '123 Nature Way, Green Valley, 45678',
