@@ -94,7 +94,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     isMaintenanceMode: props.isMaintenanceMode || false,
   });
 
-  // Sync state with props when database content loads (Critical for fixing blank fields on refresh)
+  // Sync state with props when database content loads
   useEffect(() => {
     setSettings(prev => ({
         ...prev,
@@ -146,9 +146,9 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         const url = await dbUploadFile(e.target.files[0], bucket);
         setSettings(prev => ({ ...prev, [fieldName]: url }));
         setMessage({ text: 'Image uploaded successfully!', type: 'success' });
-      } catch (error) {
+      } catch (error: any) {
         console.error("Upload failed", error);
-        setMessage({ text: 'Upload failed', type: 'error' });
+        setMessage({ text: `Upload failed: ${error.message || 'Unknown error'}`, type: 'error' });
       } finally {
         setIsLoading(false);
       }
@@ -174,9 +174,10 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         }));
         setNewSocialUrl('');
         setNewSocialIcon(null);
-    } catch (error) {
+        setMessage({ text: 'Social link added (remember to Save All)', type: 'success' });
+    } catch (error: any) {
         console.error("Failed to upload icon", error);
-        alert("Failed to upload icon");
+        alert(`Failed to upload icon: ${error.message}`);
     } finally {
         setIsLoading(false);
     }
@@ -286,10 +287,12 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       };
 
       await props.onSaveAllSettings(dbPayload);
-      setMessage({ text: 'Saved!', type: 'success' });
-    } catch (error) {
+      setMessage({ text: 'Saved successfully!', type: 'success' });
+    } catch (error: any) {
       console.error("Save failed", error);
-      setMessage({ text: 'Failed.', type: 'error' });
+      // Display detailed error
+      const errorMessage = error.message || (typeof error === 'string' ? error : 'Unknown error');
+      setMessage({ text: `Failed: ${errorMessage}`, type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -322,7 +325,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
              disabled={isLoading}
              className="bg-admin-dark-primary text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
            >
-             {isLoading ? '...' : 'Save All'}
+             {isLoading ? 'Saving...' : 'Save All'}
            </button>
         </div>
       </header>

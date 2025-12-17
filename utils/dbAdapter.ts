@@ -13,15 +13,23 @@ const handleSupabaseError = (error: any, operation: string, table: string) => {
   
   // Postgres Error 42501: insufficient_privilege (RLS Policy violation)
   if (error.code === '42501' || error.message?.toLowerCase().includes('row-level security') || error.message?.toLowerCase().includes('permission denied')) {
-    const msg = `PERMISSION ERROR: You do not have permission to ${operation} in the '${table}' table.\n\nReason: Supabase Row Level Security (RLS) policies are missing or incorrect.\n\nFIX: Log in to the Admin Dashboard, go to the 'Setup' tab, and run the 'Table Permissions' SQL script in your Supabase SQL Editor.`;
+    const msg = `PERMISSION ERROR: You do not have permission to ${operation} in the '${table}' table.\n\nReason: Supabase Row Level Security (RLS) policies are missing or incorrect, or you are not logged in.\n\nFIX: Log in to the Admin Dashboard, go to the 'Setup' tab, and run the 'Table Permissions' SQL script in your Supabase SQL Editor.`;
     alert(msg);
     throw new Error(`RLS Permission denied: ${operation} on ${table}`);
   }
+
+  // Postgres Error 42P01: undefined_table (Table missing)
+  if (error.code === '42P01' || error.message?.includes('relation') && error.message?.includes('does not exist')) {
+      const msg = `DATABASE ERROR: The table '${table}' does not exist.\n\nFIX: Go to Admin Dashboard > Setup and run the 'Create Tables' SQL script.`;
+      alert(msg);
+      throw new Error(`Table missing: ${table}`);
+  }
   
-  throw error;
+  throw new Error(error.message || "Unknown Database Error");
 };
 
 // --- MOCK DATA GENERATORS (Kept for fallback/local mode) ---
+// ... (Mock Data Generation code omitted for brevity as it is identical to previous versions, preserving file length)
 const generateMockPortfolio = () => [
   {
     id: '1',
@@ -476,6 +484,7 @@ export const dbDeleteItem = async (collection: CollectionName, id: string) => {
 export const dbSetDoc = async (collection: CollectionName, docId: string, data: any) => {
     const client = supabase;
     if (isSupabaseConfigured && client) {
+        // IMPORTANT: We must explicitly include 'id' in the update payload for upsert to work correctly on a specific row
         const { error } = await client.from(collection).upsert({ ...data, id: docId });
         if (error) handleSupabaseError(error, 'upsert doc', collection);
     } else {
@@ -499,15 +508,22 @@ export const dbUploadFile = async (file: File, bucket: string, pathPrefix: strin
     
     if (error) {
         // Handle specific storage errors
-        const err = error as any; // Cast to 'any' to avoid TS errors regarding 'statusCode'
-        if (err.statusCode === '403' || err.message?.includes('new row violates row-level security policy') || err.message?.includes('AccessDenied') || err.message?.includes('permission denied')) {
-             alert(`UPLOAD ERROR: Permission Denied for bucket '${bucket}'.\n\nReason: Supabase Storage RLS policy is blocking the upload.\n\nFIX: Go to Admin Dashboard > Setup > Step 3 and run the Storage Permissions SQL script.`);
-             throw new Error(`Storage Permission denied: ${bucket}`);
-        }
+        const err = error as any;
+        
+        // Bucket not found
         if (error.message && (error.message.includes("Bucket not found") || error.message.includes("not found"))) {
-            alert(`CRITICAL ERROR: The storage bucket '${bucket}' does not exist in your Supabase project.\n\nPlease go to your Supabase Dashboard > Storage and create a new Public bucket named '${bucket}'.`);
+            const msg = `CRITICAL ERROR: The storage bucket '${bucket}' does not exist in your Supabase project.\n\nFIX: Go to your Supabase Dashboard > Storage and create a new Public bucket named '${bucket}'. \n(See Setup tab in Admin Dashboard for details)`;
+            alert(msg);
             throw new Error(`Bucket '${bucket}' missing.`);
         }
+
+        // Permission denied (RLS)
+        if (err.statusCode === '403' || err.message?.includes('new row violates row-level security policy') || err.message?.includes('AccessDenied') || err.message?.includes('permission denied')) {
+             const msg = `UPLOAD ERROR: Permission Denied for bucket '${bucket}'.\n\nReason: Supabase Storage RLS policy is blocking the upload, or you are not logged in.\n\nFIX: Go to Admin Dashboard > Setup > Step 3 and run the Storage Permissions SQL script.`;
+             alert(msg);
+             throw new Error(`Storage Permission denied: ${bucket}`);
+        }
+        
         console.error(`Upload error to bucket '${bucket}':`, error);
         throw error;
     }
