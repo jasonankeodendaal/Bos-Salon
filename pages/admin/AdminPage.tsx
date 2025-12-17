@@ -1,7 +1,7 @@
 
 import React from 'react';
-import AdminLoginPage from './AdminLoginPage';
-import AdminDashboard from './admin/AdminDashboard';
+import AdminLoginPage from '../AdminLoginPage';
+import AdminDashboard from './AdminDashboard';
 import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client, LoyaltyProgram } from '../../App';
 
 export interface AdminPageProps {

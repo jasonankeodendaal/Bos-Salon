@@ -1,14 +1,14 @@
 
 import React from 'react';
-import { Bush, Leaf, BullHead, BuckHead } from './icons/TattooFlashIcons';
+import { Bush, Leaf, NailPolish } from './icons/SalonIcons';
 
-// Explicitly select the icons requested
-const icons = [Leaf, Bush, BullHead, BuckHead];
+// Explicitly select the icons requested for Bos Salon
+const icons = [Leaf, Bush, NailPolish];
 
 // Configuration for "Perfectly Spaced and Scattered"
 const COLS = 8; // Number of columns
 const ROWS = 8; // Number of rows
-const TOTAL_ITEMS = COLS * ROWS; // 64 items total (Added more)
+const TOTAL_ITEMS = COLS * ROWS; // 64 items total
 
 // Generate items using a stratified sampling (grid + jitter) approach
 const floatingItems = Array.from({ length: TOTAL_ITEMS }).map((_, i) => {
