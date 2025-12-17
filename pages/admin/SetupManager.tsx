@@ -37,7 +37,7 @@ const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = (
 
 const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline font-semibold decoration-blue-300 underline-offset-2 inline-flex items-center gap-1">
-        {children} <span className="text-[10px]">↗</span>
+        {children} <span className="text-[10px]">&rarr;</span>
     </a>
 );
 
@@ -348,9 +348,9 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
           </p>
           <div className="inline-flex flex-wrap justify-center gap-3 mt-4">
               <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">GitHub</span>
-              <span className="text-gray-400 self-center">→</span>
+              <span className="text-gray-400 self-center">&rarr;</span>
               <span className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">Supabase</span>
-              <span className="text-gray-400 self-center">→</span>
+              <span className="text-gray-400 self-center">&rarr;</span>
               <span className="bg-black text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">Vercel</span>
           </div>
         </div>
@@ -391,7 +391,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
               <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-inner">
                   <h3 className="font-bold text-blue-900 mb-4 text-lg">Instructions:</h3>
                   <ol className="list-decimal pl-5 space-y-3 text-blue-800 text-sm font-medium">
-                      <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> -> "New Project".</li>
+                      <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> &rarr; "New Project".</li>
                       <li>Name: <code>Bos Salon</code>. Region: Choose closest to you (e.g., Cape Town). Password: Generate a strong one.</li>
                       <li><strong>Wait:</strong> Setting up the database takes about 2 minutes.</li>
                       <li>Once active (green light), look for the <strong>SQL Editor</strong> icon (terminal symbol `>_`) on the left sidebar.</li>
@@ -456,7 +456,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
 
               <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
                   <h3 className="font-bold text-gray-900 mb-4">1. Get your Secret Keys</h3>
-                  <p className="text-sm mb-3">Go to Supabase Dashboard. Click <strong>Settings (Cogwheel)</strong> → <strong>API</strong>.</p>
+                  <p className="text-sm mb-3">Go to Supabase Dashboard. Click <strong>Settings (Cogwheel)</strong> &rarr; <strong>API</strong>.</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                       <div className="bg-white p-3 rounded border border-gray-200">
                           <span className="text-xs text-gray-400 uppercase font-bold block mb-1">Project URL</span>
@@ -473,7 +473,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
                   <h3 className="font-bold text-gray-900 mb-4">2. Deploy on Vercel</h3>
                   <ol className="list-decimal pl-5 space-y-4 text-sm text-gray-700">
                       <li>Go to <ExternalLink href="https://vercel.com/signup">Vercel.com</ExternalLink> and sign up with <strong>GitHub</strong>.</li>
-                      <li>Click <strong>"Add New..."</strong> → <strong>"Project"</strong>.</li>
+                      <li>Click <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
                       <li>Select your <code>bos-salon-website</code> repo. Click <strong>Import</strong>.</li>
                       <li className="bg-yellow-50 p-3 rounded border border-yellow-100">
                           <strong>Environment Variables:</strong> Expand this section. Add these two:
@@ -504,7 +504,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
                   <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
                       <h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide mb-2">Part A: Supabase Config</h4>
                       <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm text-blue-800">
-                          <li>Go to Supabase → <strong>Authentication</strong> → <strong>Providers</strong>.</li>
+                          <li>Go to Supabase &rarr; <strong>Authentication</strong> &rarr; <strong>Providers</strong>.</li>
                           <li>Select <strong>Google</strong>. Enable it.</li>
                           <li>Copy the <strong>"Callback URL"</strong> (e.g. <code>https://xyz.supabase.co/auth/v1/callback</code>). Keep this tab open.</li>
                       </ol>
@@ -515,8 +515,8 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
                       <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm text-gray-600">
                           <li>Go to <ExternalLink href="https://console.cloud.google.com/">Google Cloud Console</ExternalLink>.</li>
                           <li>Create a project named "Bos Salon Auth".</li>
-                          <li>Go to <strong>APIs & Services</strong> → <strong>OAuth consent screen</strong>. Select "External". Fill in basic app info.</li>
-                          <li>Go to <strong>Credentials</strong> → <strong>Create Credentials</strong> → <strong>OAuth Client ID</strong>.</li>
+                          <li>Go to <strong>APIs & Services</strong> &rarr; <strong>OAuth consent screen</strong>. Select "External". Fill in basic app info.</li>
+                          <li>Go to <strong>Credentials</strong> &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth Client ID</strong>.</li>
                           <li>Type: <strong>Web Application</strong>.</li>
                           <li>Under <strong>Authorized redirect URIs</strong>, paste the Callback URL from Part A.</li>
                           <li>Click Create. Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
@@ -543,7 +543,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
                   <li><strong>Add Template:</strong> Create a template. Use variables like <code>{'{{from_name}}'}</code>, <code>{'{{message}}'}</code>. Copy <code>Template ID</code>.</li>
                   <li><strong>Public Key:</strong> Found in Account Settings. Copy it.</li>
                   <li className="bg-admin-dark-primary/10 p-3 rounded font-medium text-admin-dark-text">
-                      <strong>Final Action:</strong> Once your site is live, log in to this Admin Dashboard. Go to <strong>Settings</strong> → <strong>Integrations</strong> and paste these 3 keys.
+                      <strong>Final Action:</strong> Once your site is live, log in to this Admin Dashboard. Go to <strong>Settings</strong> &rarr; <strong>Integrations</strong> and paste these 3 keys.
                   </li>
               </ol>
           </div>
@@ -558,8 +558,8 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
             <div className="mt-8 p-4 bg-gray-100 rounded-lg inline-block text-left">
                 <p className="text-xs text-gray-500 uppercase font-bold mb-1">First Time Login:</p>
                 <p className="text-sm text-gray-800 font-mono">
-                    1. Go to Supabase -> Authentication -> Users<br/>
-                    2. Click "Add User" -> Create your admin email/password.<br/>
+                    1. Go to Supabase &rarr; Authentication &rarr; Users<br/>
+                    2. Click "Add User" &rarr; Create your admin email/password.<br/>
                     3. Use these to log in to your new live site.
                 </p>
             </div>
