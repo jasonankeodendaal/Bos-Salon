@@ -158,7 +158,7 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ isOpen, onClose, item }
                 >
                   {isVideo(src) ? (
                      <video
-                        ref={el => videoRefs.current[index] = el}
+                        ref={el => { videoRefs.current[index] = el; }}
                         src={src}
                         poster={item.primaryImage}
                         className={`w-full h-full object-cover transition-opacity duration-500 ease-in-out ${isMediaLoading ? 'opacity-0' : 'opacity-100'}`}
