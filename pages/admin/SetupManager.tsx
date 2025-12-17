@@ -11,9 +11,9 @@ const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = (
   };
 
   return (
-    <div className="my-3">
+    <div className="my-4">
       {label && <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider">{label}</p>}
-      <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 shadow-md">
+      <div className="bg-gray-900 rounded-lg overflow-hidden border border-gray-700 shadow-md relative group">
         <div className="flex justify-between items-center px-4 py-2 bg-gray-800 border-b border-gray-700">
           <div className="flex space-x-1.5">
             <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
@@ -36,22 +36,54 @@ const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = (
 };
 
 const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
-    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline font-semibold decoration-blue-300 underline-offset-2">
-        {children} &rarr;
+    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline font-semibold decoration-blue-300 underline-offset-2 inline-flex items-center gap-1">
+        {children} <span className="text-[10px]">↗</span>
     </a>
 );
 
-const Step: React.FC<{ number: string; title: string; children: React.ReactNode }> = ({ number, title, children }) => (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-8">
-        <div className="bg-gray-50 p-6 border-b border-gray-100 sticky top-0 z-10">
-            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                <span className="bg-admin-dark-primary text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm">{number}</span>
-                {title}
-            </h2>
+const Step: React.FC<{ number: string; title: string; subtitle?: string; children: React.ReactNode }> = ({ number, title, subtitle, children }) => (
+    <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-xl border border-gray-200 overflow-hidden mb-12 relative z-10">
+        <div className="bg-gradient-to-r from-gray-50 to-white p-6 border-b border-gray-100">
+            <div className="flex items-center gap-4">
+                <span className="bg-admin-dark-primary text-white w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold shadow-lg ring-4 ring-admin-dark-primary/20">{number}</span>
+                <div>
+                    <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+                    {subtitle && <p className="text-sm text-gray-500 font-medium">{subtitle}</p>}
+                </div>
+            </div>
         </div>
         <div className="p-6 md:p-8 space-y-6 text-gray-600 leading-relaxed">
             {children}
         </div>
+    </div>
+);
+
+const BackgroundIllustrations = () => (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        {/* Top Right - Bull Skull */}
+        <img 
+            src="https://i.ibb.co/B7KCtsq/bull-skull-art-free-vector-removebg-preview.png" 
+            alt="" 
+            className="absolute -top-20 -right-20 w-[400px] h-auto opacity-10 rotate-12"
+        />
+        {/* Bottom Left - Deer Skull */}
+        <img 
+            src="https://i.ibb.co/27RkP4jn/deer-skull-decal-bone-white-270c0255-d6d3-4ee2-bc02-6906b9f0de72-removebg-preview.png" 
+            alt="" 
+            className="absolute bottom-0 -left-20 w-[500px] h-auto opacity-10 -rotate-12"
+        />
+        {/* Middle Right - Floral */}
+        <img 
+            src="https://i.ibb.co/NdLtXyLB/OIP-1-removebg-preview.png" 
+            alt="" 
+            className="absolute top-1/3 -right-10 w-[300px] h-auto opacity-5 rotate-45"
+        />
+        {/* Top Left - Floral Flipped */}
+        <img 
+            src="https://i.ibb.co/NdLtXyLB/OIP-1-removebg-preview.png" 
+            alt="" 
+            className="absolute top-20 -left-10 w-[250px] h-auto opacity-5 -scale-x-100 -rotate-12"
+        />
     </div>
 );
 
@@ -215,6 +247,7 @@ create table if not exists public.settings (
   const script2_permissions = `
 -- 1. ENABLE ROW LEVEL SECURITY (RLS)
 -- This tells the database "Don't let anyone touch data unless I explicitly say so."
+-- We enable this on ALL tables to stay secure.
 alter table public.expenses enable row level security;
 alter table public.inventory enable row level security;
 alter table public.portfolio enable row level security;
@@ -243,27 +276,26 @@ drop policy if exists "App Access Clients" on public.clients;
 
 -- 3. CREATE POLICIES (The Rules)
 
--- RULE: Only logged-in Admins can see or touch Expenses and Inventory
+-- RULE: Only logged-in Admins (Authentication Tab) can see or touch Expenses and Inventory
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 
--- RULE: Everyone (Public) can SEE Portfolio, Specials, Showroom, and Settings
--- But only Admins can EDIT them.
+-- RULE: Everyone (Public) can SEE Portfolio, Specials, Showroom, and Settings.
+-- This ensures your website visitors can see your work.
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
-create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
-
 create policy "Public Read Specials" on public.specials for select using (true);
-create policy "Admin Write Specials" on public.specials for all using (auth.role() = 'authenticated');
-
 create policy "Public Read Showroom" on public.showroom for select using (true);
-create policy "Admin Write Showroom" on public.showroom for all using (auth.role() = 'authenticated');
-
 create policy "Public Read Settings" on public.settings for select using (true);
+
+-- RULE: Only Admins can EDIT Portfolio, Specials, etc.
+create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
+create policy "Admin Write Specials" on public.specials for all using (auth.role() = 'authenticated');
+create policy "Admin Write Showroom" on public.showroom for all using (auth.role() = 'authenticated');
 create policy "Admin Write Settings" on public.settings for all using (auth.role() = 'authenticated');
 
 -- RULE: Operational Data (Bookings, Invoices, Clients)
--- We allow broad access here so the Client Portal works without complex auth logic for now.
--- In a stricter app, you would limit this to "auth.uid() = client_id", but for this system, we keep it simple.
+-- We allow the App to access these so the Client Portal works.
+-- In a stricter enterprise app, you would limit this to "auth.uid() = client_id".
 create policy "App Access Bookings" on public.bookings for all using (true);
 create policy "App Access Invoices" on public.invoices for all using (true);
 create policy "App Access Clients" on public.clients for all using (true);
@@ -272,9 +304,6 @@ create policy "App Access Clients" on public.clients for all using (true);
   const script3_storage = `
 -- 1. STORAGE SECURITY
 -- We create policies to control who can upload/view files.
-
--- Note: We skipped "alter table storage.objects enable row level security" 
--- because it is already handled by Supabase internally.
 
 -- Drop old policies to prevent duplicates
 drop policy if exists "Public Read Access" on storage.objects;
@@ -288,6 +317,7 @@ on storage.objects for select
 using ( bucket_id in ('portfolio', 'specials', 'showroom', 'booking-references', 'settings') );
 
 -- RULE: Only Admins can UPLOAD, UPDATE, or DELETE files
+-- This prevents random visitors from uploading content.
 create policy "Admin Insert Access"
 on storage.objects for insert
 with check ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials', 'showroom', 'booking-references', 'settings') );
@@ -302,259 +332,240 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
 `.trim();
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12 pb-32 font-sans">
+    <div className="relative min-h-screen font-sans">
+      <BackgroundIllustrations />
       
-      {/* Intro Header */}
-      <div className="text-center space-y-6 py-8">
-        <h1 className="text-3xl md:text-5xl font-black text-gray-800 tracking-tight">Zero to Hero Setup Guide</h1>
-        <p className="text-lg text-gray-500 max-w-3xl mx-auto">
-          The complete guide to taking these files and turning them into a live, professional website accessible to the world.
-          Follow each step exactly.
-        </p>
-        <div className="inline-flex flex-wrap justify-center gap-2">
-            <span className="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">GitHub</span>
-            <span className="text-gray-400">&rarr;</span>
-            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Supabase</span>
-            <span className="text-gray-400">&rarr;</span>
-            <span className="bg-black text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Vercel</span>
-        </div>
-      </div>
-
-      {/* STEP 1: GITHUB */}
-      <Step number="1" title="Put the Code Safe (GitHub)">
-        <p>
-            Before we can launch the site, we need to put the code into a "Repository" (Repo). 
-            This is where Vercel will grab the files from.
-        </p>
+      <div className="relative z-10 max-w-5xl mx-auto space-y-12 pb-32">
         
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-            <h3 className="font-bold text-gray-900 mb-2">Instructions:</h3>
-            <ol className="list-decimal pl-5 space-y-3 text-gray-800 text-sm">
-                <li>Create a free account at <ExternalLink href="https://github.com/">GitHub.com</ExternalLink>.</li>
-                <li>In the top right corner, click the <strong>+</strong> icon and select <strong>New repository</strong>.</li>
-                <li>Name it something like <code>bos-salon-website</code>. Make it <strong>Private</strong> if you don't want others to see the code yet.</li>
-                <li>Click <strong>Create repository</strong>.</li>
-                <li>
-                    <strong>Upload your files:</strong>
-                    <ul className="list-disc pl-5 mt-1 text-gray-600">
-                        <li>If you downloaded this project as a ZIP, unzip it.</li>
-                        <li>On the GitHub screen, look for the link "uploading an existing file".</li>
-                        <li>Drag and drop ALL your project files into that window.</li>
-                        <li>Wait for them to upload, type "Initial commit" in the box at the bottom, and click <strong>Commit changes</strong>.</li>
-                    </ul>
-                </li>
-            </ol>
-        </div>
-      </Step>
-
-      {/* STEP 2: SUPABASE */}
-      <Step number="2" title="Create the Brain (Supabase)">
-        <p>
-            Supabase is the database. It stores all your bookings, settings, and client info.
-        </p>
-        
-        <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-            <h3 className="font-bold text-blue-900 mb-2">Instructions:</h3>
-            <ol className="list-decimal pl-5 space-y-2 text-blue-800 text-sm">
-                <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> and create a "New Project".</li>
-                <li>Give it a name (e.g., "Bos Salon") and a strong password. Region: Choose one close to you (e.g., Cape Town).</li>
-                <li><strong>Wait:</strong> It takes about 2 minutes to setup.</li>
-                <li>Once the project is ready (green "Active" badge), look for the <strong>SQL Editor</strong> icon (looks like a terminal `&gt;_`) on the left sidebar.</li>
-                <li>Paste the code below into the SQL Editor and click <strong>RUN</strong>.</li>
-            </ol>
-        </div>
-
-        <CopyBlock label="Script A: Create Tables" text={script1_structure} height="h-64" />
-        
-        <div className="border-t border-gray-100 pt-6 mt-6">
-            <p className="mb-4">Now, delete the text in the SQL Editor, paste this second script, and click <strong>RUN</strong> again. This sets up security.</p>
-            <CopyBlock label="Script B: Security Rules" text={script2_permissions} height="h-48" />
-        </div>
-      </Step>
-
-      {/* STEP 3: STORAGE */}
-      <Step number="3" title="Enable File Uploads">
-        <p>
-            We need to tell Supabase to allow image uploads for your portfolio.
-        </p>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-                <h3 className="font-bold text-gray-800 mb-2">Manual Setup Required:</h3>
-                <ol className="list-decimal pl-5 space-y-3 text-sm">
-                    <li>Go to the <strong>Storage</strong> icon (looks like a box) in the Supabase sidebar.</li>
-                    <li>Click <strong>"New Bucket"</strong>.</li>
-                    <li>Name it <code>portfolio</code>.</li>
-                    <li><strong>IMPORTANT:</strong> Toggle "Public Bucket" to <strong>ON</strong>.</li>
-                    <li>Click Save.</li>
-                    <li>Repeat this for these 4 other names:
-                        <ul className="list-disc pl-5 mt-2 font-mono text-xs text-purple-600 font-bold bg-purple-50 p-2 rounded">
-                            <li>specials</li>
-                            <li>showroom</li>
-                            <li>booking-references</li>
-                            <li>settings</li>
-                        </ul>
-                    </li>
-                </ol>
-            </div>
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <h3 className="font-bold text-gray-800 mb-2">Final Script:</h3>
-                <p className="text-sm mb-2">Once you created the buckets manually, run this SQL script to finish the permissions.</p>
-                <CopyBlock label="Script C: Storage Permissions" text={script3_storage} height="h-40" />
-            </div>
-        </div>
-      </Step>
-
-      {/* STEP 4: VERCEL */}
-      <Step number="4" title="Launch the Website (Vercel)">
-        <p>
-            Now we connect the Code (GitHub) to the Brain (Supabase) using Vercel.
-        </p>
-
-        <div className="space-y-6">
-            <div>
-                <h3 className="font-bold text-gray-800 mb-2">1. Get your Secret Keys</h3>
-                <p className="text-sm mb-2">Go back to your Supabase Dashboard. Click <strong>Settings (Cogwheel)</strong> &rarr; <strong>API</strong>.</p>
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 text-sm">
-                    <p>Keep this tab open. You will need:</p>
-                    <ul className="list-disc pl-5 mt-1 font-bold text-yellow-800">
-                        <li>Project URL</li>
-                        <li>anon / public key</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div>
-                <h3 className="font-bold text-gray-800 mb-2">2. Deploy on Vercel</h3>
-                <ol className="list-decimal pl-5 space-y-3 text-sm">
-                    <li>Go to <ExternalLink href="https://vercel.com/signup">Vercel.com</ExternalLink> and sign up with <strong>GitHub</strong>.</li>
-                    <li>Click <strong>"Add New..."</strong> &rarr; <strong>"Project"</strong>.</li>
-                    <li>You should see your `bos-salon-website` repo from Step 1. Click <strong>Import</strong>.</li>
-                    <li>
-                        <strong>Environment Variables:</strong> This is the most critical step. Click the dropdown named "Environment Variables".
-                        Add these two exactly as written:
-                    </li>
-                </ol>
-                
-                <div className="mt-4 space-y-3">
-                    <div className="flex flex-col sm:flex-row gap-2 items-center bg-gray-100 p-2 rounded">
-                        <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-full sm:w-1/3">VITE_SUPABASE_URL</span>
-                        <span className="text-xs text-gray-500 w-full sm:w-2/3">Paste the <strong>Project URL</strong> from Supabase here.</span>
-                    </div>
-                    <div className="flex flex-col sm:flex-row gap-2 items-center bg-gray-100 p-2 rounded">
-                        <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-full sm:w-1/3">VITE_SUPABASE_ANON_KEY</span>
-                        <span className="text-xs text-gray-500 w-full sm:w-2/3">Paste the <strong>anon / public key</strong> from Supabase here.</span>
-                    </div>
-                </div>
-
-                <div className="mt-4 text-sm">
-                    <p>Click <strong>Deploy</strong>. Vercel will now build your site. In about 1 minute, you will get a live URL (e.g., <code>bos-salon.vercel.app</code>).</p>
-                </div>
-            </div>
-        </div>
-      </Step>
-
-      {/* STEP 5: GOOGLE AUTH */}
-      <Step number="5" title="Enable Google Login">
-        <p>
-            This allows clients to "Sign in with Google" on their personal portal.
-        </p>
-
-        <div className="space-y-6">
-            <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                <h3 className="font-bold text-blue-900 mb-2">Part A: Prepare Supabase</h3>
-                <ol className="list-decimal pl-5 space-y-2 text-blue-800 text-sm">
-                    <li>Go to Supabase Dashboard &rarr; <strong>Authentication</strong> (Icon of people) &rarr; <strong>Providers</strong>.</li>
-                    <li>Select <strong>Google</strong>.</li>
-                    <li>Toggle "Enable Google provider".</li>
-                    <li><strong>Copy</strong> the "Callback URL (for OAuth)". It looks like `https://xyz.supabase.co/auth/v1/callback`.</li>
-                    <li>Keep this tab open!</li>
-                </ol>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                <h3 className="font-bold text-gray-900 mb-2">Part B: Get Google Keys</h3>
-                <ol className="list-decimal pl-5 space-y-2 text-gray-800 text-sm">
-                    <li>Go to <ExternalLink href="https://console.cloud.google.com/">Google Cloud Console</ExternalLink>.</li>
-                    <li>Create a <strong>New Project</strong> (name it "Bos Salon Auth").</li>
-                    <li>Go to <strong>APIs & Services</strong> &rarr; <strong>OAuth consent screen</strong>.
-                        <ul className="list-disc pl-5 mt-1 text-xs text-gray-600">
-                            <li>Select <strong>External</strong> &rarr; Create.</li>
-                            <li>Fill in App Name, Support Email, and Developer Email. Click Save & Continue until finished.</li>
-                        </ul>
-                    </li>
-                    <li>Go to <strong>Credentials</strong> (Left sidebar) &rarr; <strong>Create Credentials</strong> &rarr; <strong>OAuth client ID</strong>.</li>
-                    <li>Application type: <strong>Web application</strong>.</li>
-                    <li>
-                        <strong>Authorized redirect URIs:</strong> Click "Add URI" and paste the <strong>Callback URL</strong> you copied from Supabase in Part A.
-                    </li>
-                    <li>Click Create.</li>
-                    <li>Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
-                </ol>
-            </div>
-
-            <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                <h3 className="font-bold text-green-900 mb-2">Part C: Finish in Supabase</h3>
-                <p className="text-sm text-green-800">
-                    Go back to your Supabase tab (Authentication &rarr; Providers &rarr; Google).
-                    <br/>Paste the <strong>Client ID</strong> and <strong>Client Secret</strong> you just got.
-                    <br/>Click <strong>Save</strong>.
-                </p>
-            </div>
-        </div>
-      </Step>
-
-      {/* STEP 6: EMAILJS */}
-      <Step number="6" title="Connect Emails (EmailJS)">
-        <p>
-            To receive booking requests in your Gmail/Outlook, we link EmailJS.
-        </p>
-
-        <div className="space-y-4 mt-4">
-            <ol className="list-decimal pl-5 space-y-4 text-sm">
-                <li>
-                    Go to <ExternalLink href="https://www.emailjs.com/">EmailJS.com</ExternalLink> and create a free account.
-                </li>
-                <li>
-                    <strong>Add Service:</strong> Click "Add Service", select "Gmail" (or your provider), connect your account. 
-                    <br/>Copy the <strong>Service ID</strong> (e.g., <code>service_xyz</code>).
-                </li>
-                <li>
-                    <strong>Add Template:</strong> Click "Email Templates" &rarr; "Create New Template".
-                    <br/>Design the email you want to receive. Use these variables in the design:
-                    <ul className="list-disc pl-5 mt-1 font-mono text-xs text-blue-600">
-                        <li>{'{{from_name}}'} (Client Name)</li>
-                        <li>{'{{from_email}}'} (Client Email)</li>
-                        <li>{'{{message}}'} (Booking Details)</li>
-                    </ul>
-                    Save and copy the <strong>Template ID</strong> (e.g., <code>template_abc</code>).
-                </li>
-                <li>
-                    <strong>Get Public Key:</strong> Click on your Account Name (top right) &rarr; "Public Key".
-                </li>
-            </ol>
-
-            <div className="bg-green-50 p-4 rounded-xl border border-green-200 mt-4">
-                <h3 className="font-bold text-green-900 mb-2">Final Step: Connect it</h3>
-                <p className="text-sm text-green-800">
-                    Once your site is live, log in to this Admin Dashboard using the URL Vercel gave you.
-                    <br/>
-                    Go to <strong>Settings Tab</strong> &rarr; <strong>Integrations Section</strong> and paste your 3 EmailJS keys there.
-                </p>
-            </div>
-        </div>
-      </Step>
-
-      <div className="text-center pt-10 pb-10">
-          <p className="text-4xl">🎉</p>
-          <p className="text-2xl font-bold text-gray-800 mt-4">You are done!</p>
-          <p className="text-gray-500 mt-2">Your system is now fully live, secure, and ready for business.</p>
-          <p className="text-sm text-gray-400 mt-6">
-            Default Admin Login (first time): <br/>
-            Email: <code>admin@bossalon.com</code> (You must create this user in Supabase Authentication tab manually first!)
+        {/* Intro Header */}
+        <div className="text-center space-y-6 py-12">
+          <h1 className="text-4xl md:text-6xl font-black text-gray-800 tracking-tight drop-shadow-sm">
+            Zero to Hero Setup Guide
+          </h1>
+          <div className="w-24 h-1 bg-admin-dark-primary mx-auto rounded-full"></div>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto font-medium leading-relaxed">
+            The complete, step-by-step guide to taking this codebase and launching a professional, secure website for <strong className="text-admin-dark-primary">Bos Salon</strong>.
           </p>
-      </div>
+          <div className="inline-flex flex-wrap justify-center gap-3 mt-4">
+              <span className="bg-gray-800 text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">GitHub</span>
+              <span className="text-gray-400 self-center">→</span>
+              <span className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">Supabase</span>
+              <span className="text-gray-400 self-center">→</span>
+              <span className="bg-black text-white px-4 py-1.5 rounded-full text-sm font-bold uppercase tracking-wider shadow-lg">Vercel</span>
+          </div>
+        </div>
 
+        {/* STEP 1: GITHUB */}
+        <Step number="1" title="Secure the Code (GitHub)" subtitle="Store your project files safely in the cloud.">
+          <div className="flex flex-col gap-4">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">GitHub is like a cloud backup for code. It also allows Vercel (Step 4) to automatically update your website whenever you make changes.</p>
+              
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-inner">
+                  <h3 className="font-bold text-gray-900 mb-4 text-lg">Instructions:</h3>
+                  <ol className="list-decimal pl-5 space-y-4 text-gray-800 text-sm font-medium">
+                      <li>Go to <ExternalLink href="https://github.com/">GitHub.com</ExternalLink> and sign up/login.</li>
+                      <li>In the top right corner, click the <strong className="bg-gray-200 px-1 rounded">+</strong> icon and select <strong>New repository</strong>.</li>
+                      <li>Repository name: <code>bos-salon-website</code>. Select <strong>Private</strong> (keep your code safe).</li>
+                      <li>Click <strong>Create repository</strong>.</li>
+                      <li>
+                          <strong>Upload files:</strong>
+                          <ul className="list-disc pl-5 mt-2 text-gray-600 space-y-1 font-normal">
+                              <li>Look for the link saying "uploading an existing file".</li>
+                              <li>Drag and drop ALL files from this project folder into that window.</li>
+                              <li>Wait for the files to process.</li>
+                              <li>In "Commit changes" box, type "Initial Setup". Click <strong>Commit changes</strong>.</li>
+                          </ul>
+                      </li>
+                  </ol>
+              </div>
+          </div>
+        </Step>
+
+        {/* STEP 2: SUPABASE */}
+        <Step number="2" title="Build the Brain (Supabase)" subtitle="Setup the Database and Backend.">
+          <div className="flex flex-col gap-4">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">Supabase is the engine. It stores your clients, bookings, invoices, and settings. It provides the "API" that the website talks to.</p>
+              
+              <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 shadow-inner">
+                  <h3 className="font-bold text-blue-900 mb-4 text-lg">Instructions:</h3>
+                  <ol className="list-decimal pl-5 space-y-3 text-blue-800 text-sm font-medium">
+                      <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> -> "New Project".</li>
+                      <li>Name: <code>Bos Salon</code>. Region: Choose closest to you (e.g., Cape Town). Password: Generate a strong one.</li>
+                      <li><strong>Wait:</strong> Setting up the database takes about 2 minutes.</li>
+                      <li>Once active (green light), look for the <strong>SQL Editor</strong> icon (terminal symbol `>_`) on the left sidebar.</li>
+                      <li>Paste the scripts below one by one and click <strong>RUN</strong>.</li>
+                  </ol>
+              </div>
+
+              <div className="space-y-6">
+                  <div>
+                      <h4 className="font-bold text-gray-800 mb-2">Script A: Create Tables</h4>
+                      <p className="text-sm text-gray-500 mb-2">This builds the drawers to store your data (Inventory, Expenses, etc).</p>
+                      <CopyBlock label="SQL Script 1" text={script1_structure} height="h-64" />
+                  </div>
+                  
+                  <div className="border-t border-gray-100 pt-6">
+                      <h4 className="font-bold text-gray-800 mb-2">Script B: Security Rules (RLS)</h4>
+                      <p className="text-sm text-gray-500 mb-2">Clear the editor, then run this. It ensures only Admins can edit data, while the public can only view the Gallery/Services.</p>
+                      <CopyBlock label="SQL Script 2" text={script2_permissions} height="h-48" />
+                  </div>
+              </div>
+          </div>
+        </Step>
+
+        {/* STEP 3: STORAGE */}
+        <Step number="3" title="Enable Image Uploads" subtitle="Configure file storage buckets.">
+          <div className="flex flex-col gap-4">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">We need specific folders (buckets) in the cloud to store your Portfolio images, Special offers, and Client reference photos.</p>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div>
+                      <h3 className="font-bold text-gray-800 mb-3 bg-yellow-100 inline-block px-3 py-1 rounded text-sm">Part A: Manual Setup</h3>
+                      <ol className="list-decimal pl-5 space-y-3 text-sm text-gray-700">
+                          <li>Click the <strong>Storage</strong> icon (box/archive symbol) in the Supabase sidebar.</li>
+                          <li>Click <strong>"New Bucket"</strong>.</li>
+                          <li>Name: <code>portfolio</code></li>
+                          <li><strong>CRITICAL:</strong> Toggle "Public Bucket" to <strong className="text-green-600">ON</strong>.</li>
+                          <li>Click Save.</li>
+                          <li>Repeat exactly for these names:
+                              <ul className="grid grid-cols-2 gap-2 mt-2">
+                                  {['specials', 'showroom', 'booking-references', 'settings'].map(n => (
+                                      <li key={n} className="bg-gray-100 px-2 py-1 rounded font-mono text-xs font-bold text-gray-600">{n}</li>
+                                  ))}
+                              </ul>
+                          </li>
+                      </ol>
+                  </div>
+                  <div>
+                      <h3 className="font-bold text-gray-800 mb-3 bg-purple-100 inline-block px-3 py-1 rounded text-sm">Part B: Permissions Script</h3>
+                      <p className="text-sm mb-3 text-gray-600">Go back to the <strong>SQL Editor</strong> and run this to allow the app to upload files to those buckets.</p>
+                      <CopyBlock label="SQL Script 3" text={script3_storage} height="h-48" />
+                  </div>
+              </div>
+          </div>
+        </Step>
+
+        {/* STEP 4: VERCEL */}
+        <Step number="4" title="Go Live (Vercel)" subtitle="Connect the pieces and publish to the internet.">
+          <div className="flex flex-col gap-6">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">Vercel takes the code from GitHub and connects it to the Supabase database. It builds the website and gives you a URL (e.g., bossalon.vercel.app).</p>
+
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="font-bold text-gray-900 mb-4">1. Get your Secret Keys</h3>
+                  <p className="text-sm mb-3">Go to Supabase Dashboard. Click <strong>Settings (Cogwheel)</strong> → <strong>API</strong>.</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                          <span className="text-xs text-gray-400 uppercase font-bold block mb-1">Project URL</span>
+                          <code className="text-blue-600 break-all">https://xyz...supabase.co</code>
+                      </div>
+                      <div className="bg-white p-3 rounded border border-gray-200">
+                          <span className="text-xs text-gray-400 uppercase font-bold block mb-1">anon / public key</span>
+                          <code className="text-blue-600 break-all">eyJxh...</code>
+                      </div>
+                  </div>
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="font-bold text-gray-900 mb-4">2. Deploy on Vercel</h3>
+                  <ol className="list-decimal pl-5 space-y-4 text-sm text-gray-700">
+                      <li>Go to <ExternalLink href="https://vercel.com/signup">Vercel.com</ExternalLink> and sign up with <strong>GitHub</strong>.</li>
+                      <li>Click <strong>"Add New..."</strong> → <strong>"Project"</strong>.</li>
+                      <li>Select your <code>bos-salon-website</code> repo. Click <strong>Import</strong>.</li>
+                      <li className="bg-yellow-50 p-3 rounded border border-yellow-100">
+                          <strong>Environment Variables:</strong> Expand this section. Add these two:
+                          <div className="mt-3 space-y-2">
+                              <div className="flex gap-2 items-center">
+                                  <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-1/3">VITE_SUPABASE_URL</span>
+                                  <span className="text-xs text-gray-500 w-2/3">Paste <strong>Project URL</strong> here</span>
+                              </div>
+                              <div className="flex gap-2 items-center">
+                                  <span className="font-mono text-xs font-bold bg-white px-2 py-1 border rounded w-1/3">VITE_SUPABASE_ANON_KEY</span>
+                                  <span className="text-xs text-gray-500 w-2/3">Paste <strong>anon / public key</strong> here</span>
+                              </div>
+                          </div>
+                      </li>
+                      <li>Click <strong>Deploy</strong>. Wait 1 minute. You are live!</li>
+                  </ol>
+              </div>
+          </div>
+        </Step>
+
+        {/* STEP 5: AUTH */}
+        <Step number="5" title="Google Login Setup" subtitle="Enable 'Sign in with Google' for the Client Portal.">
+          <div className="flex flex-col gap-4">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">Clients hate remembering passwords. This lets them tap one button to access their booking history and invoices securely.</p>
+
+              <div className="space-y-6">
+                  <div className="bg-blue-50 p-5 rounded-lg border border-blue-100">
+                      <h4 className="font-bold text-blue-900 text-sm uppercase tracking-wide mb-2">Part A: Supabase Config</h4>
+                      <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm text-blue-800">
+                          <li>Go to Supabase → <strong>Authentication</strong> → <strong>Providers</strong>.</li>
+                          <li>Select <strong>Google</strong>. Enable it.</li>
+                          <li>Copy the <strong>"Callback URL"</strong> (e.g. <code>https://xyz.supabase.co/auth/v1/callback</code>). Keep this tab open.</li>
+                      </ol>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-lg border border-gray-200">
+                      <h4 className="font-bold text-gray-900 text-sm uppercase tracking-wide mb-2">Part B: Google Cloud Console</h4>
+                      <ol className="list-decimal pl-5 space-y-2 text-xs sm:text-sm text-gray-600">
+                          <li>Go to <ExternalLink href="https://console.cloud.google.com/">Google Cloud Console</ExternalLink>.</li>
+                          <li>Create a project named "Bos Salon Auth".</li>
+                          <li>Go to <strong>APIs & Services</strong> → <strong>OAuth consent screen</strong>. Select "External". Fill in basic app info.</li>
+                          <li>Go to <strong>Credentials</strong> → <strong>Create Credentials</strong> → <strong>OAuth Client ID</strong>.</li>
+                          <li>Type: <strong>Web Application</strong>.</li>
+                          <li>Under <strong>Authorized redirect URIs</strong>, paste the Callback URL from Part A.</li>
+                          <li>Click Create. Copy the <strong>Client ID</strong> and <strong>Client Secret</strong>.</li>
+                      </ol>
+                  </div>
+
+                  <div className="bg-green-50 p-5 rounded-lg border border-green-100">
+                      <h4 className="font-bold text-green-900 text-sm uppercase tracking-wide mb-2">Part C: Finish</h4>
+                      <p className="text-sm text-green-800">Paste the Client ID and Secret back into the Supabase Google Provider settings and click Save.</p>
+                  </div>
+              </div>
+          </div>
+        </Step>
+
+        {/* STEP 6: EMAILJS */}
+        <Step number="6" title="Booking Notifications (EmailJS)" subtitle="Get emails when clients book.">
+          <div className="flex flex-col gap-4">
+              <p className="font-medium text-lg">Why?</p>
+              <p className="text-sm">Since this is a "Serverless" app, we use EmailJS to handle sending booking confirmations without needing a backend server.</p>
+
+              <ol className="list-decimal pl-5 space-y-4 text-sm text-gray-700 bg-white p-6 rounded-xl border border-gray-200">
+                  <li>Register at <ExternalLink href="https://www.emailjs.com/">EmailJS.com</ExternalLink> (Free tier).</li>
+                  <li><strong>Add Service:</strong> Connect your Gmail/Outlook. Copy the <code>Service ID</code>.</li>
+                  <li><strong>Add Template:</strong> Create a template. Use variables like <code>{'{{from_name}}'}</code>, <code>{'{{message}}'}</code>. Copy <code>Template ID</code>.</li>
+                  <li><strong>Public Key:</strong> Found in Account Settings. Copy it.</li>
+                  <li className="bg-admin-dark-primary/10 p-3 rounded font-medium text-admin-dark-text">
+                      <strong>Final Action:</strong> Once your site is live, log in to this Admin Dashboard. Go to <strong>Settings</strong> → <strong>Integrations</strong> and paste these 3 keys.
+                  </li>
+              </ol>
+          </div>
+        </Step>
+
+        <div className="text-center pt-16 pb-10">
+            <div className="text-6xl mb-6">🎉</div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">You are Ready!</h2>
+            <p className="text-gray-500 max-w-xl mx-auto">
+              Your system is now enterprise-grade. It is secure, backed up, and ready to scale.
+            </p>
+            <div className="mt-8 p-4 bg-gray-100 rounded-lg inline-block text-left">
+                <p className="text-xs text-gray-500 uppercase font-bold mb-1">First Time Login:</p>
+                <p className="text-sm text-gray-800 font-mono">
+                    1. Go to Supabase -> Authentication -> Users<br/>
+                    2. Click "Add User" -> Create your admin email/password.<br/>
+                    3. Use these to log in to your new live site.
+                </p>
+            </div>
+        </div>
+
+      </div>
     </div>
   );
 };

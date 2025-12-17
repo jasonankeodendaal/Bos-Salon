@@ -72,7 +72,7 @@ export interface AdminPageProps {
   socialLinks: SocialLink[];
   showroomTitle: string;
   showroomDescription: string;
-  heroTattooGunImageUrl: string;
+  heroBgUrl: string;
   bankName: string;
   accountNumber: string;
   branchCode: string;

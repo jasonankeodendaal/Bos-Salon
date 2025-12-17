@@ -1,7 +1,7 @@
 
 import React from 'react';
 
-// Using the provided images as icons for the Salon theme.
+// Using the provided images as icons for the Salon/Tattoo theme.
 
 export const Bush: React.FC<{ className?: string }> = ({ className }) => (
   <img 
@@ -11,14 +11,26 @@ export const Bush: React.FC<{ className?: string }> = ({ className }) => (
   />
 );
 
-export const NailPolish: React.FC<{ className?: string }> = ({ className }) => (
-  // Keeping the SVG for Nail Polish to maintain the 'Nail' aspect of the salon.
-  <svg viewBox="0 0 64 64" className={className} stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none">
-    <path d="M24,24 L40,24 L40,54 Q40,58 36,58 L28,58 Q24,58 24,54 Z" />
-    <path d="M28,6 L36,6 L36,24 L28,24 Z" fill="currentColor" fillOpacity="0.2" />
-    <path d="M26,35 Q32,40 38,35" strokeOpacity="0.5" />
-  </svg>
+export const BullSkull: React.FC<{ className?: string }> = ({ className }) => (
+  <img 
+    src="https://i.ibb.co/B7KCtsq/bull-skull-art-free-vector-removebg-preview.png" 
+    alt="Bull Skull" 
+    className={`${className} object-contain`} 
+  />
 );
+
+export const DeerSkull: React.FC<{ className?: string }> = ({ className }) => (
+  <img 
+    src="https://i.ibb.co/27RkP4jn/deer-skull-decal-bone-white-270c0255-d6d3-4ee2-bc02-6906b9f0de72-removebg-preview.png" 
+    alt="Deer Skull" 
+    className={`${className} object-contain`} 
+  />
+);
+
+// Retaining NailPolish export for compatibility but re-routing it to BullSkull or marking deprecated if strictly sticking to request.
+// However, since we are rebranding, let's just alias it or remove it.
+// To prevent breaking changes in WelcomeBackground if it wasn't updated simultaneously (though I will update it), I will export it as BullSkull temporarily or just export a new set.
+// The WelcomeBackground import will be updated.
 
 export const Leaf: React.FC<{ className?: string }> = ({ className }) => (
   // Reusing the floral element but flipped for variety

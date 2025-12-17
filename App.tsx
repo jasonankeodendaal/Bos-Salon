@@ -24,6 +24,7 @@ import WelcomeIntro from './components/WelcomeIntro';
 import MaintenancePage from './components/MaintenancePage';
 import SpecialsSection from './components/SpecialsSection';
 import ClientPortal from './pages/ClientPortal';
+import StaticBosSalonBackground from './components/StaticBosSalonBackground';
 
 // --- INTERFACES ---
 export interface PortfolioItem {
@@ -176,8 +177,8 @@ const App: React.FC = () => {
     phone: '+27 12 345 6789',
     email: 'bookings@bossalon.com',
     socialLinks: [],
-    showroomTitle: 'Nail Art Gallery',
-    showroomDescription: "Browse our collection of hand-painted designs and natural treatments.",
+    showroomTitle: 'Tattoo Flash Gallery',
+    showroomDescription: "Browse our collection of custom designs and flash art.",
     bankName: 'FNB',
     accountNumber: '1234567890',
     branchCode: '250655',
@@ -195,7 +196,7 @@ const App: React.FC = () => {
     loyaltyProgram: {
         enabled: true,
         stickersRequired: 10,
-        rewardDescription: '50% Off your next treatment',
+        rewardDescription: '50% Off your next session',
         terms: 'Valid on treatments over R300. Not exchangeable for cash.'
     },
     
@@ -204,17 +205,17 @@ const App: React.FC = () => {
     
     // Default sub-objects for specific sections
     hero: {
-        title: 'Nail and beauty',
-        subtitle: 'Experience the art of nature',
+        title: 'Ink & Artistry',
+        subtitle: 'Experience the art of skin',
         buttonText: 'Book an Appointment'
     },
     about: {
         title: 'Our Story',
-        text1: 'Bos Salon was born from a love for natural beauty and intricate art.',
-        text2: 'We specialize in bespoke nail art, ensuring your hands and feet look their absolute best.'
+        text1: 'Bos Salon was born from a passion for permanent art and self-expression.',
+        text2: 'We specialize in custom tattoos, ensuring every piece tells a unique story.'
     },
     contact: {
-        intro: 'Ready for a fresh look? Fill out the form below.'
+        intro: 'Ready for new ink? Fill out the form below.'
     }
   });
 
@@ -407,7 +408,7 @@ const App: React.FC = () => {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-dark">
          <img src={settings.logoUrl || "https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png"} alt="Bos Salon Logo" className="w-48 h-48 object-contain animate-pulse"/>
-         <p className="text-brand-light/70 mt-4">Opening Salon...</p>
+         <p className="text-brand-light/70 mt-4">Opening Studio...</p>
       </div>
     );
   }
@@ -499,6 +500,7 @@ const App: React.FC = () => {
 
   return (
     <div className="relative">
+      <StaticBosSalonBackground />
       <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none' : ''}>
         <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
         <main>

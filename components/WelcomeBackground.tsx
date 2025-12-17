@@ -1,9 +1,9 @@
 
 import React from 'react';
-import { Bush, Leaf, NailPolish } from './icons/SalonIcons';
+import { Bush, Leaf, BullSkull, DeerSkull } from './icons/SalonIcons';
 
-// Explicitly select the icons requested for Bos Salon
-const icons = [Leaf, Bush, NailPolish];
+// Explicitly select the icons requested for Bos Salon Tattoo Theme
+const icons = [Leaf, Bush, BullSkull, DeerSkull];
 
 // Configuration for "Perfectly Spaced and Scattered"
 const COLS = 8; // Number of columns
@@ -30,7 +30,7 @@ const floatingItems = Array.from({ length: TOTAL_ITEMS }).map((_, i) => {
   const left = (col * cellWidth) + jitterX - (cellWidth / 2); // Adjust to center in cell roughly
   const top = (row * cellHeight) + jitterY - (cellHeight / 2);
 
-  const size = 50 + Math.random() * 70; // Size between 50px and 120px
+  const size = 50 + Math.random() * 100; // Larger size for detailed skulls
   const duration = 25 + Math.random() * 20; // Slower float for a relaxed vibe
   const delay = -Math.random() * 20; // Start at random times
   const rotation = Math.random() * 360;
@@ -71,7 +71,7 @@ const WelcomeBackground: React.FC = () => {
             // - Scale down on mobile (scale-75 vs sm:scale-100)
             className={`absolute animate-subtle-float items-center justify-center text-brand-light grayscale-[20%] hover:grayscale-0 hover:opacity-60 transition-all duration-500 ease-in-out hover:scale-110
               ${id % 2 === 0 ? 'flex' : 'hidden sm:flex'}
-              opacity-10 sm:opacity-35
+              opacity-10 sm:opacity-30
               scale-75 sm:scale-100`}
             style={style}
           >
