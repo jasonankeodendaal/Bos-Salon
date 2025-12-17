@@ -394,7 +394,7 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
                       <li>Go to <ExternalLink href="https://supabase.com/dashboard">Supabase Dashboard</ExternalLink> &rarr; "New Project".</li>
                       <li>Name: <code>Bos Salon</code>. Region: Choose closest to you (e.g., Cape Town). Password: Generate a strong one.</li>
                       <li><strong>Wait:</strong> Setting up the database takes about 2 minutes.</li>
-                      <li>Once active (green light), look for the <strong>SQL Editor</strong> icon (terminal symbol `>_`) on the left sidebar.</li>
+                      <li>Once active (green light), look for the <strong>SQL Editor</strong> icon (terminal symbol `&gt;_`) on the left sidebar.</li>
                       <li>Paste the scripts below one by one and click <strong>RUN</strong>.</li>
                   </ol>
               </div>
