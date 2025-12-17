@@ -36,8 +36,14 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate, logoUrl }) 
   };
 
   return (
-    <div className="min-h-screen bg-brand-dark flex flex-col justify-center items-center text-brand-light p-4">
-      <div className="w-full max-w-sm mx-auto">
+    <div 
+      className="min-h-screen flex flex-col justify-center items-center text-brand-light p-4 relative bg-cover bg-center bg-no-repeat"
+      style={{ backgroundImage: "url('https://i.ibb.co/cSRB4Mg4/image.png')" }}
+    >
+      {/* Dark Overlay */}
+      <div className="absolute inset-0 bg-black/60 z-0"></div>
+
+      <div className="w-full max-w-sm mx-auto relative z-10">
         <a href="#" onClick={handleLinkClick} className="flex justify-center mb-6">
           <img src={logoUrl} alt="Bos Salon Logo" className="w-32 h-32 object-contain" />
         </a>
@@ -90,7 +96,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate, logoUrl }) 
             </div>
           </form>
         </div>
-        <p className="text-center text-xs text-gray-600 mt-6">
+        <p className="text-center text-xs text-white/80 mt-6 font-bold shadow-sm">
           <a href="#" onClick={handleLinkClick} className="hover:text-brand-green transition-colors">
             &larr; Back to Main Site
           </a>
