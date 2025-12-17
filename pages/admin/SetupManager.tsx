@@ -242,6 +242,16 @@ create table if not exists public.settings (
   contact jsonb,
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- 3. UPDATE SCHEMA (Safe Migration)
+-- Run this block if you are getting "Column not found" errors.
+alter table public.settings add column if not exists "heroBgUrl" text;
+alter table public.settings add column if not exists "aboutUsImageUrl" text;
+alter table public.settings add column if not exists "loyaltyPrograms" jsonb;
+alter table public.settings add column if not exists "socialLinks" jsonb default '[]'::jsonb;
+alter table public.settings add column if not exists "emailServiceId" text;
+alter table public.settings add column if not exists "emailTemplateId" text;
+alter table public.settings add column if not exists "emailPublicKey" text;
 `.trim();
 
   const script2_permissions = `
@@ -401,8 +411,8 @@ using ( auth.role() = 'authenticated' AND bucket_id in ('portfolio', 'specials',
 
               <div className="space-y-6">
                   <div>
-                      <h4 className="font-bold text-gray-800 mb-2">Script A: Create Tables</h4>
-                      <p className="text-sm text-gray-500 mb-2">This builds the drawers to store your data (Inventory, Expenses, etc).</p>
+                      <h4 className="font-bold text-gray-800 mb-2">Script A: Create & Update Tables</h4>
+                      <p className="text-sm text-gray-500 mb-2">This builds the drawers to store your data. It also includes migration commands to add missing columns if you are updating.</p>
                       <CopyBlock label="SQL Script 1" text={script1_structure} height="h-64" />
                   </div>
                   

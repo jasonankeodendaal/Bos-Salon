@@ -19,10 +19,17 @@ const handleSupabaseError = (error: any, operation: string, table: string) => {
   }
 
   // Postgres Error 42P01: undefined_table (Table missing)
-  if (error.code === '42P01' || error.message?.includes('relation') && error.message?.includes('does not exist')) {
+  if (error.code === '42P01' || (error.message?.includes('relation') && error.message?.includes('does not exist'))) {
       const msg = `DATABASE ERROR: The table '${table}' does not exist.\n\nFIX: Go to Admin Dashboard > Setup and run the 'Create Tables' SQL script.`;
       alert(msg);
       throw new Error(`Table missing: ${table}`);
+  }
+
+  // Postgres Error PGRST204: Column not found (Schema Mismatch)
+  if (error.code === 'PGRST204' || (error.message && error.message.includes("Could not find the") && error.message.includes("column"))) {
+      const msg = `DATABASE SCHEMA ERROR: Your database is missing a required column.\n\nDetails: ${error.message}\n\nFIX: Go to Admin Dashboard > Setup > Script A. \n\nRun the script again to update your table structure with the missing columns.`;
+      alert(msg);
+      throw new Error(`Schema mismatch: ${error.message}`);
   }
   
   throw new Error(error.message || "Unknown Database Error");
