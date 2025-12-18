@@ -206,7 +206,7 @@ const App: React.FC = () => {
     // Default sub-objects for specific sections
     hero: {
         title: 'Ink & Artistry',
-        subtitle: 'Experience the art of skin',
+        subtitle: 'Experience the art of nature',
         buttonText: 'Book an Appointment'
     },
     about: {
@@ -261,12 +261,25 @@ const App: React.FC = () => {
       const unsubSettings = dbSubscribeToDoc("settings", "main", (fetchedSettings: any) => {
           if (fetchedSettings) {
              // NORMALIZE DATA: Check for both camelCase and lowercase keys to handle Postgres vagaries
+             // Postgres creates lowercase column names unless double quoted in SQL, so we check both.
              const normalizedSettings = {
                  ...fetchedSettings,
-                 // Force socialLinks to populate from either socialLinks OR sociallinks
+                 // Handle common naming inconsistencies across DB providers
                  socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
-                 // Same for loyalty programs
                  loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
+                 isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? false,
+                 companyName: fetchedSettings.companyName || fetchedSettings.companyname,
+                 logoUrl: fetchedSettings.logoUrl || fetchedSettings.logourl,
+                 heroBgUrl: fetchedSettings.heroBgUrl || fetchedSettings.herobgurl,
+                 aboutUsImageUrl: fetchedSettings.aboutUsImageUrl || fetchedSettings.aboutusimageurl,
+                 whatsAppNumber: fetchedSettings.whatsAppNumber || fetchedSettings.whatsappnumber,
+                 showroomTitle: fetchedSettings.showroomTitle || fetchedSettings.showroomtitle,
+                 showroomDescription: fetchedSettings.showroomDescription || fetchedSettings.showroomdescription,
+                 taxEnabled: fetchedSettings.taxEnabled ?? fetchedSettings.taxenabled,
+                 vatPercentage: fetchedSettings.vatPercentage ?? fetchedSettings.vatpercentage,
+                 emailServiceId: fetchedSettings.emailServiceId || fetchedSettings.emailserviceid,
+                 emailTemplateId: fetchedSettings.emailTemplateId || fetchedSettings.emailtemplateid,
+                 emailPublicKey: fetchedSettings.emailPublicKey || fetchedSettings.emailpublickey,
              };
              setSettings((prev: any) => ({ ...prev, ...normalizedSettings }));
           }
@@ -510,12 +523,13 @@ const App: React.FC = () => {
     return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
   }
   
+  // Maintenance Mode Logic: Triggered if enabled and user is NOT an admin (auth user)
   const showMaintenance = settings.isMaintenanceMode && !user;
 
   return (
     <div className="relative">
       <StaticBosSalonBackground />
-      <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none' : ''}>
+      <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none h-screen overflow-hidden' : ''}>
         <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
         <main>
           <Hero 
