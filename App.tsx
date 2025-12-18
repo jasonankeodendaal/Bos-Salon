@@ -235,6 +235,18 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<'home' | 'admin' | 'client-portal'>('home');
   const [isIntroVisible, setIsIntroVisible] = useState(true);
   
+  // --- REFRESH AUTO LOGOUT LOGIC ---
+  useEffect(() => {
+      // User specifically requested auto-logout on every refresh
+      const performAutoLogoutOnRefresh = async () => {
+          await dbLogout();
+          setUser(null);
+      };
+      
+      // If we want it strictly on every fresh mount (refresh)
+      performAutoLogoutOnRefresh();
+  }, []);
+
   // --- AUTH STATE LISTENER ---
   useEffect(() => {
     const unsubscribe = dbOnAuthStateChange((currentUser) => {
@@ -260,11 +272,9 @@ const App: React.FC = () => {
       // Subscribe to settings document
       const unsubSettings = dbSubscribeToDoc("settings", "main", (fetchedSettings: any) => {
           if (fetchedSettings) {
-             // NORMALIZE DATA: Check for both camelCase and lowercase keys to handle Postgres vagaries
-             // Postgres creates lowercase column names unless double quoted in SQL, so we check both.
+             // NORMALIZE DATA
              const normalizedSettings = {
                  ...fetchedSettings,
-                 // Handle common naming inconsistencies across DB providers
                  socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
                  loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
                  isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? false,
@@ -288,11 +298,11 @@ const App: React.FC = () => {
 
       // Subscribe to public collections
       unsubscribers.push(dbSubscribeToCollection('portfolio', (data) => setPortfolioData(data)));
-      unsubscribers.push(dbSubscribeToCollection('specials', (data) => setSpecialsData(data))); // Public specials
+      unsubscribers.push(dbSubscribeToCollection('specials', (data) => setSpecialsData(data))); 
       unsubscribers.push(dbSubscribeToCollection('showroom', (data) => setShowroomData(data)));
-      unsubscribers.push(dbSubscribeToCollection('clients', (data) => setClients(data))); // Clients need to be public for portal login check (simulated)
-      unsubscribers.push(dbSubscribeToCollection('bookings', (data) => setBookings(data))); // Bookings public for portal (filtered by client)
-      unsubscribers.push(dbSubscribeToCollection('invoices', (data) => setInvoices(data))); // Invoices public for portal (filtered by client)
+      unsubscribers.push(dbSubscribeToCollection('clients', (data) => setClients(data))); 
+      unsubscribers.push(dbSubscribeToCollection('bookings', (data) => setBookings(data))); 
+      unsubscribers.push(dbSubscribeToCollection('invoices', (data) => setInvoices(data))); 
       
     } catch (error) {
       console.error("Error setting up DB listeners:", error);
@@ -314,7 +324,6 @@ const App: React.FC = () => {
 
     const unsubscribers: (() => void)[] = [];
     try {
-        // Admin only collections
         unsubscribers.push(dbSubscribeToCollection('expenses', (data) => setExpenses(data)));
         unsubscribers.push(dbSubscribeToCollection('inventory', (data) => setInventory(data)));
     } catch (error) {
@@ -375,12 +384,6 @@ const App: React.FC = () => {
       bookingType: 'online',
     };
     await dbAddItem('bookings', newBooking);
-    
-    // Email Notification Mock Logic (Simulating Backend/EmailJS)
-    if(settings.emailServiceId && settings.emailTemplateId && settings.emailPublicKey) {
-       console.log("Attempting to send email notification via EmailJS configuration...");
-       // Here you would implement emailjs.send(...)
-    }
   };
   const handleManualAddBooking = async (newBookingData: Omit<Booking, 'id' | 'bookingType'>) => {
     const newBooking = {
@@ -396,17 +399,14 @@ const App: React.FC = () => {
   const handleUpdateExpense = async (updatedExpense: Expense) => await dbUpdateItem('expenses', updatedExpense);
   const handleDeleteExpense = async (expenseId: string) => await dbDeleteItem('expenses', expenseId);
 
-  // Inventory CRUD
   const handleAddInventoryItem = async (item: Omit<InventoryItem, 'id'>) => await dbAddItem('inventory', item);
   const handleUpdateInventoryItem = async (item: InventoryItem) => await dbUpdateItem('inventory', item);
   const handleDeleteInventoryItem = async (id: string) => await dbDeleteItem('inventory', id);
 
-  // Invoice CRUD
   const handleAddInvoice = async (item: Omit<Invoice, 'id'>) => await dbAddItem('invoices', item);
   const handleUpdateInvoice = async (item: Invoice) => await dbUpdateItem('invoices', item);
   const handleDeleteInvoice = async (id: string) => await dbDeleteItem('invoices', id);
 
-  // Client CRUD
   const handleAddClient = async (item: Omit<Client, 'id'>) => await dbAddItem('clients', item);
   const handleUpdateClient = async (item: Client) => await dbUpdateItem('clients', item);
   const handleDeleteClient = async (id: string) => await dbDeleteItem('clients', id);
@@ -435,7 +435,7 @@ const App: React.FC = () => {
     return (
       <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-brand-dark">
          <img src={settings.logoUrl || "https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png"} alt="Bos Salon Logo" className="w-48 h-48 object-contain animate-pulse"/>
-         <p className="text-brand-light/70 mt-4">Opening Studio...</p>
+         <p className="text-brand-light/70 mt-4 font-bold uppercase tracking-widest text-xs">Opening Studio...</p>
       </div>
     );
   }
@@ -453,6 +453,7 @@ const App: React.FC = () => {
     );
   }
 
+  // Admin and Client Portal views are always accessible if explicitly navigated to
   if (currentView === 'admin') {
     return (
       <AdminPage
@@ -493,7 +494,6 @@ const App: React.FC = () => {
         onSaveAllSettings={handleSaveAllSettings}
         onClearAllData={handleClearAllData}
         onSuccessfulLogout={handleLogoutSuccess}
-        // Spread all settings as props so Admin page gets everything
         {...settings}
       />
     );
@@ -508,28 +508,33 @@ const App: React.FC = () => {
             clients={clients}
             bookings={bookings}
             invoices={invoices}
-            specials={specialsData} // Passed specials
-            onAddBooking={handleAddBooking} // Passed booking function
+            specials={specialsData}
+            onAddBooking={handleAddBooking}
             onUpdateBooking={handleUpdateBooking}
             onUpdateInvoice={handleUpdateInvoice}
-            settings={settings} // Pass settings for loyalty program config
-            onAddClient={handleAddClient} // Pass ability to create new client record
-            authenticatedUser={user} // Pass the auth user state
+            settings={settings}
+            onAddClient={handleAddClient}
+            authenticatedUser={user}
           />
       );
+  }
+
+  // Maintenance Mode Logic: Triggered if enabled AND user is NOT an admin (auth user)
+  // This ensures admins can still see the dashboard even if maintenance is on
+  const showMaintenance = settings.isMaintenanceMode && !user;
+
+  if (showMaintenance) {
+    return <MaintenancePage onNavigate={navigate} logoUrl={settings.logoUrl} />;
   }
 
   if (isIntroVisible) {
     return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
   }
   
-  // Maintenance Mode Logic: Triggered if enabled and user is NOT an admin (auth user)
-  const showMaintenance = settings.isMaintenanceMode && !user;
-
   return (
     <div className="relative">
       <StaticBosSalonBackground />
-      <div className={showMaintenance ? 'blur-sm brightness-50 pointer-events-none h-screen overflow-hidden' : ''}>
+      <div>
         <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
         <main>
           <Hero 
@@ -540,7 +545,6 @@ const App: React.FC = () => {
             subtitle={settings.hero?.subtitle}
             buttonText={settings.hero?.buttonText}
           />
-          {/* Legacy Collage for Showroom/Portfolio - kept as "Flash Designs" */}
           <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
           <AboutUs 
             aboutUsImageUrl={settings.aboutUsImageUrl} 
@@ -548,7 +552,6 @@ const App: React.FC = () => {
             text1={settings.about?.text1}
             text2={settings.about?.text2}
           />
-          {/* New Public Specials Section */}
           <SpecialsSection specials={specialsData} onNavigate={navigate} whatsAppNumber={settings.whatsAppNumber} />
           <Showroom 
             showroomData={showroomData} 
@@ -567,8 +570,6 @@ const App: React.FC = () => {
           onNavigate={navigate}
         />
       </div>
-
-      {showMaintenance && <MaintenancePage onNavigate={navigate} logoUrl={settings.logoUrl} />}
     </div>
   );
 };
