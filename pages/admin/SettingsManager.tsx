@@ -6,16 +6,18 @@ import TrashIcon from '../../components/icons/TrashIcon';
 import PlusIcon from '../../components/icons/PlusIcon';
 import { LoyaltyProgram } from '../../App';
 
+// Types passed from parent
 interface SettingsManagerProps {
   onSaveAllSettings: (settings: any) => Promise<void>;
   onClearAllData: () => Promise<void>;
   startTour: (tourKey: 'settings') => void;
+  // All current settings (now including specific section objects)
   [key: string]: any; 
 }
 
+// Section Tabs
 const TABS = [
   { id: 'general', label: 'General & Branding' },
-  { id: 'company', label: 'Company Profile' },
   { id: 'hero', label: 'Home Page (Hero)' },
   { id: 'about', label: 'About Page' },
   { id: 'showroom', label: 'Showroom & Specials' },
@@ -53,29 +55,23 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     whatsAppNumber: props.whatsAppNumber || '',
     logoUrl: props.logoUrl || '',
     
-    // Company Profile (New)
-    legalName: props.company?.legalName || '',
-    licenseNumber: props.company?.licenseNumber || '',
-    openingHours: props.company?.openingHours || 'Mon-Fri: 09:00 - 18:00',
-    studioTagline: props.company?.tagline || 'Artistry in Every Ink',
-    
     // Hero Section
-    heroTitle: props.hero?.title || 'Ink & Artistry',
-    heroSubtitle: props.hero?.subtitle || 'Experience the art of skin',
+    heroTitle: props.hero?.title || 'Nail and beauty',
+    heroSubtitle: props.hero?.subtitle || 'Experience the art of nature',
     heroButtonText: props.hero?.buttonText || 'Book an Appointment',
     heroBgUrl: props.heroBgUrl || '', 
     
     // About Section
     aboutTitle: props.about?.title || 'Our Story',
-    aboutText1: props.about?.text1 || 'Bos Salon was born from a passion for permanent art...',
-    aboutText2: props.about?.text2 || 'We specialize in custom tattoos...',
+    aboutText1: props.about?.text1 || 'Bos Salon was born from a love for natural beauty...',
+    aboutText2: props.about?.text2 || 'We specialize in bespoke nail art...',
     aboutUsImageUrl: props.aboutUsImageUrl || '',
     
     // Showroom Section
-    showroomTitle: props.showroomTitle || 'Tattoo Flash Gallery',
-    showroomDescription: props.showroomDescription || 'Browse our collection of custom designs...',
+    showroomTitle: props.showroomTitle || 'Nail Art Gallery',
+    showroomDescription: props.showroomDescription || 'Browse our collection...',
     
-    // Contact & Footer
+    // Contact & Footer & Booking Info
     address: props.address || '',
     phone: props.phone || '',
     email: props.email || '',
@@ -85,20 +81,20 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     accountType: props.accountType || '',
     socialLinks: props.socialLinks || [],
     
-    // Detailed Booking Config
-    contactIntro: props.contact?.intro || 'Ready for new ink? Fill out the form below.',
+    // NEW: Detailed Booking/Process Config
+    contactIntro: props.contact?.intro || 'Ready for a fresh look? Fill out the form below.',
     processTitle: props.contact?.processTitle || 'Our Process',
-    processIntro: props.contact?.processIntro || "We believe in personal care. Every detail matters.",
+    processIntro: props.contact?.processIntro || "We believe in personal care. Whether it's a simple tattoo or complex custom art, we ensure every detail is perfect.",
     processSteps: props.contact?.processSteps || [
-      "Request Appointment: Use this form to tell us what you need.",
-      "Consultation: We'll contact you to confirm details.",
-      "Relax & Enjoy: Come in and let us work our magic."
+      "Request Appointment: Use this form to tell us what service you need.",
+      "Consultation: We'll contact you to confirm details, colors, and specific requirements.",
+      "Relax & Enjoy: Come in, relax in our studio, and let us work our magic."
     ],
     designTitle: props.contact?.designTitle || 'Design Ideas?',
-    designIntro: props.contact?.designIntro || "Have a specific design in mind?",
+    designIntro: props.contact?.designIntro || "If you have a specific design in mind, let us know!",
     designPoints: props.contact?.designPoints || [
-      "Service Type: Fine Line, Traditional, or Realism?",
-      "Inspiration: Upload photos you love."
+      "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
+      "Inspiration: Upload photos of designs you love."
     ],
 
     // Financials
@@ -114,16 +110,13 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     isMaintenanceMode: props.isMaintenanceMode || false,
   });
 
+  // Sync state with props when database content loads
   useEffect(() => {
     setSettings(prev => ({
         ...prev,
         companyName: props.companyName || prev.companyName,
         whatsAppNumber: props.whatsAppNumber || prev.whatsAppNumber,
         logoUrl: props.logoUrl || prev.logoUrl,
-        legalName: props.company?.legalName || prev.legalName,
-        licenseNumber: props.company?.licenseNumber || prev.licenseNumber,
-        openingHours: props.company?.openingHours || prev.openingHours,
-        studioTagline: props.company?.tagline || prev.studioTagline,
         heroTitle: props.hero?.title || prev.heroTitle,
         heroSubtitle: props.hero?.subtitle || prev.heroSubtitle,
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
@@ -150,6 +143,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         emailPublicKey: props.emailPublicKey || prev.emailPublicKey,
         apkUrl: props.apkUrl || prev.apkUrl,
         isMaintenanceMode: props.isMaintenanceMode ?? prev.isMaintenanceMode,
+        // Sync new contact fields
         contactIntro: props.contact?.intro || prev.contactIntro,
         processTitle: props.contact?.processTitle || prev.processTitle,
         processIntro: props.contact?.processIntro || prev.processIntro,
@@ -161,7 +155,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
     }
-  }, [props.companyName, props.socialLinks, props.loyaltyPrograms, props.heroBgUrl, props.contact, props.company]);
+  }, [props.companyName, props.socialLinks, props.loyaltyPrograms, props.heroBgUrl, props.contact]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -172,11 +166,10 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: string, bucket: string) => {
     if (e.target.files && e.target.files[0]) {
       setIsLoading(true);
-      setMessage({ text: 'Uploading media...', type: 'success' });
       try {
         const url = await dbUploadFile(e.target.files[0], bucket);
         setSettings(prev => ({ ...prev, [fieldName]: url }));
-        setMessage({ text: 'Media ready! Remember to click Save All.', type: 'success' });
+        setMessage({ text: 'Image uploaded successfully!', type: 'success' });
       } catch (error: any) {
         console.error("Upload failed", error);
         setMessage({ text: `Upload failed: ${error.message || 'Unknown error'}`, type: 'error' });
@@ -205,7 +198,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         }));
         setNewSocialUrl('');
         setNewSocialIcon(null);
-        setMessage({ text: 'Social link added locally. Save All to publish.', type: 'success' });
+        setMessage({ text: 'Social link added (remember to Save All)', type: 'success' });
     } catch (error: any) {
         console.error("Failed to upload icon", error);
         alert(`Failed to upload icon: ${error.message}`);
@@ -221,11 +214,59 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     }));
   };
 
+  // --- Loyalty Program Handlers ---
+  const handleAddProgram = async () => {
+      if (!newProgram.name || !newProgram.rewardDescription) {
+          alert("Name and reward description are required.");
+          return;
+      }
+      setIsLoading(true);
+      try {
+          let iconUrl = '';
+          if (newProgramIcon) {
+              iconUrl = await dbUploadFile(newProgramIcon, 'settings', 'loyalty_');
+          } else {
+              iconUrl = settings.logoUrl; // Default to main logo if no specific icon
+          }
+
+          const programToAdd: LoyaltyProgram = {
+              id: crypto.randomUUID(),
+              name: newProgram.name!,
+              stickersRequired: Number(newProgram.stickersRequired) || 10,
+              rewardDescription: newProgram.rewardDescription!,
+              terms: newProgram.terms,
+              active: newProgram.active !== false,
+              iconUrl
+          };
+
+          setLoyaltyPrograms(prev => [...prev, programToAdd]);
+          setNewProgram({ name: '', stickersRequired: 10, rewardDescription: '', terms: '', active: true });
+          setNewProgramIcon(null);
+      } catch (err) {
+          console.error(err);
+          alert("Failed to create loyalty program.");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
+  const handleDeleteProgram = (id: string) => {
+      if(window.confirm("Delete this loyalty program? Clients currently using it will lose their view of it.")) {
+          setLoyaltyPrograms(prev => prev.filter(p => p.id !== id));
+      }
+  };
+
+  const handleToggleProgram = (id: string) => {
+      setLoyaltyPrograms(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
+  };
+
   const handleSave = async () => {
     setIsLoading(true);
-    setMessage({ text: 'Synchronizing with database...', type: 'success' });
+    setMessage(null);
     try {
+      // STRICT PAYLOAD CONSTRUCTION
       const dbPayload = {
+        // Direct Columns
         companyName: settings.companyName,
         logoUrl: settings.logoUrl,
         heroBgUrl: settings.heroBgUrl,
@@ -250,12 +291,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         emailTemplateId: settings.emailTemplateId,
         emailPublicKey: settings.emailPublicKey,
         
-        company: {
-            legalName: settings.legalName,
-            licenseNumber: settings.licenseNumber,
-            openingHours: settings.openingHours,
-            tagline: settings.studioTagline,
-        },
+        // JSONB Columns (Nested Objects)
         hero: {
           title: settings.heroTitle,
           subtitle: settings.heroSubtitle,
@@ -276,20 +312,22 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
              designPoints: settings.designPoints
         },
         loyaltyPrograms: loyaltyPrograms,
+        // Legacy fallback support
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
 
       await props.onSaveAllSettings(dbPayload);
-      setMessage({ text: 'Live Website Updated Instantly! 🎉', type: 'success' });
-      setTimeout(() => setMessage(null), 5000);
+      setMessage({ text: 'Saved successfully!', type: 'success' });
     } catch (error: any) {
       console.error("Save failed", error);
-      setMessage({ text: `Failed: ${error.message || 'Error'}`, type: 'error' });
+      const errorMessage = error.message || (typeof error === 'string' ? error : 'Unknown error');
+      setMessage({ text: `Failed: ${errorMessage}`, type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  // List Editor Helper
   const updateList = (listName: 'processSteps' | 'designPoints', index: number, value: string) => {
     setSettings(prev => {
         const newList = [...(prev[listName] as string[])];
@@ -301,7 +339,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const addListItem = (listName: 'processSteps' | 'designPoints') => {
     setSettings(prev => ({
         ...prev,
-        [listName]: [...(prev[listName] as string[]), "New Step..."]
+        [listName]: [...(prev[listName] as string[]), "New Item..."]
     }));
   };
 
@@ -320,35 +358,52 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     <div className="bg-admin-dark-card border border-admin-dark-border rounded-xl shadow-lg flex flex-col h-full overflow-hidden">
       <HelpGuideModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} section="integrations" />
       
+      {/* Header */}
       <header className="p-3 sm:p-6 border-b border-admin-dark-border flex justify-between items-center bg-white/50 flex-shrink-0">
-        <div>
-            <h2 className="text-lg sm:text-xl font-bold text-admin-dark-text">Studio CMS</h2>
-            <p className="text-xs text-admin-dark-text-secondary">Changes reflect instantly on your live site.</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-lg sm:text-xl font-bold text-admin-dark-text">CMS</h2>
+            <p className="text-xs text-admin-dark-text-secondary hidden sm:block">Edit every aspect of your website.</p>
+          </div>
         </div>
         <div className="flex gap-2 items-center">
            {message && (
-             <div className={`px-2 sm:px-4 py-1 sm:py-2 rounded-lg text-xs font-bold shadow-sm ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+             <div className={`px-2 sm:px-4 py-1 sm:py-2 rounded-lg text-xs font-bold animate-pulse ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                {message.text}
              </div>
            )}
            <button 
              onClick={handleSave} 
              disabled={isLoading}
-             className="bg-admin-dark-primary text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm hover:opacity-90 disabled:opacity-50 transition-all shadow-md active:scale-95"
+             className="bg-admin-dark-primary text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
            >
-             {isLoading ? 'Syncing...' : 'Publish Changes'}
+             {isLoading ? 'Saving...' : 'Save All'}
            </button>
         </div>
       </header>
 
+      {/* Mobile Nav */}
+      <div className="md:hidden p-3 border-b border-admin-dark-border bg-gray-50 flex-shrink-0">
+          <select 
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value)}
+            className="w-full bg-white border border-gray-300 text-gray-700 py-2 px-3 rounded-lg text-sm font-bold focus:outline-none focus:ring-2 focus:ring-admin-dark-primary"
+          >
+              {TABS.map(tab => (
+                  <option key={tab.id} value={tab.id}>{tab.label}</option>
+              ))}
+          </select>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Tabs (Desktop) */}
         <aside className="w-64 bg-white/50 border-r border-admin-dark-border overflow-y-auto hidden md:block flex-shrink-0">
           <nav className="p-4 space-y-2">
             {TABS.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-admin-dark-primary text-white shadow-md' : 'text-admin-dark-text-secondary hover:bg-black/5'}`}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-bold transition-colors ${activeTab === tab.id ? 'bg-admin-dark-primary text-white shadow-md' : 'text-admin-dark-text-secondary hover:bg-black/5 hover:text-admin-dark-text'}`}
               >
                 {tab.label}
               </button>
@@ -356,24 +411,26 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
           </nav>
         </aside>
 
+        {/* Content Area */}
         <main className="flex-1 overflow-y-auto p-3 sm:p-8 bg-admin-dark-bg">
           
+          {/* General Tab */}
           {activeTab === 'general' && (
             <div className={sectionClass}>
-              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2">Branding</h3>
+              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Branding & Core Info</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                   <label className={labelClass}>Public Display Name</label>
+                   <label className={labelClass}>Company Name</label>
                    <input name="companyName" value={settings.companyName} onChange={handleChange} className={inputClass} />
                 </div>
                 <div>
-                   <label className={labelClass}>WhatsApp Number</label>
-                   <input name="whatsAppNumber" value={settings.whatsAppNumber} onChange={handleChange} className={inputClass} placeholder="e.g. 27791234567" />
+                   <label className={labelClass}>WhatsApp (e.g. 27795904162)</label>
+                   <input name="whatsAppNumber" value={settings.whatsAppNumber} onChange={handleChange} className={inputClass} placeholder="No +" />
                 </div>
                 <div className="lg:col-span-2">
-                   <label className={labelClass}>Studio Logo</label>
-                   <div className="flex items-center gap-4 bg-white p-4 rounded-xl border border-dashed border-gray-300">
-                      {settings.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-20 h-20 object-contain bg-gray-50 rounded-lg p-2 border" />}
+                   <label className={labelClass}>Logo</label>
+                   <div className="flex items-center gap-4">
+                      {settings.logoUrl && <img src={settings.logoUrl} alt="Logo" className="w-12 h-12 sm:w-16 sm:h-16 object-contain bg-white rounded-lg p-2 border border-gray-200" />}
                       <input type="file" onChange={(e) => handleFileUpload(e, 'logoUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
                    </div>
                 </div>
@@ -381,50 +438,27 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             </div>
           )}
 
-          {activeTab === 'company' && (
-            <div className={sectionClass}>
-                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2">Studio Identity</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div>
-                        <label className={labelClass}>Legal Entity Name</label>
-                        <input name="legalName" value={settings.legalName} onChange={handleChange} className={inputClass} placeholder="Official business name for invoices" />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Tattoo License / Reg #</label>
-                        <input name="licenseNumber" value={settings.licenseNumber} onChange={handleChange} className={inputClass} placeholder="Studio Registration No." />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Business Hours</label>
-                        <textarea name="openingHours" rows={2} value={settings.openingHours} onChange={handleChange} className={inputClass} placeholder="e.g. Mon-Sat 10:00 - 19:00" />
-                    </div>
-                    <div>
-                        <label className={labelClass}>Studio Tagline</label>
-                        <input name="studioTagline" value={settings.studioTagline} onChange={handleChange} className={inputClass} placeholder="The slogan displayed in the welcome screen" />
-                    </div>
-                </div>
-            </div>
-          )}
-
+          {/* Hero Tab */}
           {activeTab === 'hero' && (
             <div className={sectionClass}>
-               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2">Hero Section (Home)</h3>
-               <div className="grid grid-cols-1 gap-4">
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Home Page Hero</h3>
+               <div className="grid grid-cols-1 gap-4 sm:gap-6">
                  <div>
-                    <label className={labelClass}>Main Heading</label>
+                    <label className={labelClass}>Main Title</label>
                     <input name="heroTitle" value={settings.heroTitle} onChange={handleChange} className={inputClass} />
                  </div>
                  <div>
-                    <label className={labelClass}>Secondary Heading</label>
+                    <label className={labelClass}>Subtitle</label>
                     <input name="heroSubtitle" value={settings.heroSubtitle} onChange={handleChange} className={inputClass} />
                  </div>
                  <div>
-                    <label className={labelClass}>Call to Action Text</label>
+                    <label className={labelClass}>Button Text</label>
                     <input name="heroButtonText" value={settings.heroButtonText} onChange={handleChange} className={inputClass} />
                  </div>
                  <div>
-                    <label className={labelClass}>Background Banner</label>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-white p-4 rounded-xl border border-dashed border-gray-300">
-                       {settings.heroBgUrl && <img src={settings.heroBgUrl} alt="Hero" className="w-full sm:w-48 h-24 object-cover rounded-lg shadow-sm" />}
+                    <label className={labelClass}>Background Image</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                       {settings.heroBgUrl && <img src={settings.heroBgUrl} alt="Hero" className="w-full sm:w-32 h-20 object-cover rounded-lg" />}
                        <input type="file" onChange={(e) => handleFileUpload(e, 'heroBgUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
                     </div>
                  </div>
@@ -432,28 +466,336 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             </div>
           )}
 
-          {/* ... Rest of tabs (About, Showroom, Contact, etc) remain optimized for instant saving via the handleSave function ... */}
+          {/* About Tab */}
+          {activeTab === 'about' && (
+             <div className={sectionClass}>
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">About Us</h3>
+                <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                  <div>
+                     <label className={labelClass}>Title</label>
+                     <input name="aboutTitle" value={settings.aboutTitle} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Story Part 1</label>
+                     <textarea name="aboutText1" rows={4} value={settings.aboutText1} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Story Part 2</label>
+                     <textarea name="aboutText2" rows={4} value={settings.aboutText2} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Feature Image</label>
+                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        {settings.aboutUsImageUrl && <img src={settings.aboutUsImageUrl} alt="About" className="w-24 h-24 object-cover rounded-full" />}
+                        <input type="file" onChange={(e) => handleFileUpload(e, 'aboutUsImageUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
+                     </div>
+                  </div>
+                </div>
+             </div>
+          )}
+
+          {/* Showroom Tab */}
+          {activeTab === 'showroom' && (
+             <div className={sectionClass}>
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Showroom</h3>
+               <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                  <div>
+                     <label className={labelClass}>Title</label>
+                     <input name="showroomTitle" value={settings.showroomTitle} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Description</label>
+                     <textarea name="showroomDescription" rows={3} value={settings.showroomDescription} onChange={handleChange} className={inputClass} />
+                  </div>
+               </div>
+             </div>
+          )}
+
+          {/* Contact Tab */}
+          {activeTab === 'contact' && (
+             <div className={sectionClass}>
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Contact Details</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                   <div className="lg:col-span-2">
+                      <label className={labelClass}>Address</label>
+                      <input name="address" value={settings.address} onChange={handleChange} className={inputClass} />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Phone</label>
+                      <input name="phone" value={settings.phone} onChange={handleChange} className={inputClass} />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Email</label>
+                      <input name="email" value={settings.email} onChange={handleChange} className={inputClass} />
+                   </div>
+                </div>
+
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mt-8 mb-4">Social Links</h3>
+                <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {settings.socialLinks && settings.socialLinks.length > 0 ? (
+                            settings.socialLinks.map((link: any) => (
+                                <div key={link.id} className="flex items-center gap-3 bg-white p-2 sm:p-3 rounded-lg border border-admin-dark-border">
+                                    <img src={link.icon} alt="Icon" className="w-6 h-6 sm:w-8 sm:h-8 object-contain bg-gray-50 rounded-md p-1" />
+                                    <span className="flex-1 text-xs sm:text-sm text-admin-dark-text truncate" title={link.url}>{link.url}</span>
+                                    <button onClick={() => handleRemoveSocialLink(link.id)} className="text-red-500 hover:text-red-600 p-2 bg-gray-50 rounded-lg hover:bg-red-50 transition-colors">
+                                        <TrashIcon className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-xs sm:text-sm text-admin-dark-text-secondary italic col-span-2">No social media links.</p>
+                        )}
+                    </div>
+
+                    <div className="bg-white/50 p-3 sm:p-4 rounded-lg border border-admin-dark-border border-dashed">
+                        <h4 className="text-xs sm:text-sm font-bold text-admin-dark-text mb-3">Add New Link</h4>
+                        <div className="flex flex-col gap-3">
+                            <input 
+                                placeholder="URL" 
+                                value={newSocialUrl} 
+                                onChange={(e) => setNewSocialUrl(e.target.value)} 
+                                className={inputClass}
+                            />
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                <input 
+                                    type="file" 
+                                    onChange={(e) => e.target.files && setNewSocialIcon(e.target.files[0])} 
+                                    className="w-full sm:flex-1 text-xs text-admin-dark-text-secondary"
+                                />
+                                <button 
+                                    onClick={handleAddSocialLink} 
+                                    disabled={!newSocialUrl || !newSocialIcon || isLoading}
+                                    className="w-full sm:w-auto bg-green-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm"
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* NEW: Process & Design Ideas Editor */}
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mt-8 mb-4 uppercase tracking-widest">Process & Design UI</h3>
+                <div className="space-y-8">
+                    {/* Our Process Section */}
+                    <div className="bg-white/50 p-4 sm:p-6 rounded-xl border border-admin-dark-border">
+                        <h4 className="font-bold text-admin-dark-text mb-4 flex items-center gap-2">
+                           <span className="bg-admin-dark-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span>
+                           Our Process Configuration
+                        </h4>
+                        <div className="space-y-4">
+                            <div>
+                                <label className={labelClass}>Section Title</label>
+                                <input name="processTitle" value={settings.processTitle} onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Intro Text</label>
+                                <textarea name="processIntro" rows={2} value={settings.processIntro} onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Numbered Steps</label>
+                                <div className="space-y-2">
+                                    {settings.processSteps.map((step: string, idx: number) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <span className="flex-shrink-0 w-8 h-8 bg-gray-100 flex items-center justify-center rounded-lg text-xs font-bold">{idx + 1}</span>
+                                            <input value={step} onChange={(e) => updateList('processSteps', idx, e.target.value)} className={inputClass} />
+                                            <button onClick={() => removeListItem('processSteps', idx)} className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    ))}
+                                    <button onClick={() => addListItem('processSteps')} className="text-xs font-bold text-admin-dark-primary flex items-center gap-1 mt-2 hover:underline">
+                                        <PlusIcon className="w-3 h-3"/> Add Step
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Design Ideas Section */}
+                    <div className="bg-white/50 p-4 sm:p-6 rounded-xl border border-admin-dark-border">
+                        <h4 className="font-bold text-admin-dark-text mb-4 flex items-center gap-2">
+                           <span className="bg-admin-dark-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]">2</span>
+                           Design Ideas Configuration
+                        </h4>
+                        <div className="space-y-4">
+                            <div>
+                                <label className={labelClass}>Section Title</label>
+                                <input name="designTitle" value={settings.designTitle} onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Intro Text</label>
+                                <textarea name="designIntro" rows={2} value={settings.designIntro} onChange={handleChange} className={inputClass} />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Bullet Points</label>
+                                <div className="space-y-2">
+                                    {settings.designPoints.map((point: string, idx: number) => (
+                                        <div key={idx} className="flex gap-2">
+                                            <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-xs">🌿</span>
+                                            <input value={point} onChange={(e) => updateList('designPoints', idx, e.target.value)} className={inputClass} />
+                                            <button onClick={() => removeListItem('designPoints', idx)} className="text-red-400 p-2 hover:bg-red-50 rounded-lg"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    ))}
+                                    <button onClick={() => addListItem('designPoints')} className="text-xs font-bold text-admin-dark-primary flex items-center gap-1 mt-2 hover:underline">
+                                        <PlusIcon className="w-3 h-3"/> Add Point
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mt-8 mb-4">APK & Banking</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                   <div className="md:col-span-2">
+                      <label className={labelClass}>Android APK URL</label>
+                      <input name="apkUrl" value={settings.apkUrl} onChange={handleChange} className={inputClass} placeholder="https://..." />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Bank Name</label>
+                      <input name="bankName" value={settings.bankName} onChange={handleChange} className={inputClass} />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Account No</label>
+                      <input name="accountNumber" value={settings.accountNumber} onChange={handleChange} className={inputClass} />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Branch Code</label>
+                      <input name="branchCode" value={settings.branchCode} onChange={handleChange} className={inputClass} />
+                   </div>
+                   <div>
+                      <label className={labelClass}>Account Type</label>
+                      <input name="accountType" value={settings.accountType} onChange={handleChange} className={inputClass} />
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {/* Financials Tab */}
+          {activeTab === 'financials' && (
+             <div className={sectionClass}>
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Tax Config</h3>
+               <div className="space-y-4">
+                 <div className="flex items-center gap-3 bg-white p-3 sm:p-4 rounded-lg border border-admin-dark-border">
+                    <input type="checkbox" id="taxEnabled" name="taxEnabled" checked={settings.taxEnabled} onChange={handleChange} className="w-5 h-5 accent-admin-dark-primary rounded" />
+                    <label htmlFor="taxEnabled" className="text-admin-dark-text font-bold text-sm">Enable VAT</label>
+                 </div>
+                 {settings.taxEnabled && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                       <div>
+                          <label className={labelClass}>VAT %</label>
+                          <input type="number" name="vatPercentage" value={settings.vatPercentage} onChange={handleChange} className={inputClass} />
+                       </div>
+                       <div>
+                          <label className={labelClass}>Reg Number</label>
+                          <input name="vatNumber" value={settings.vatNumber} onChange={handleChange} className={inputClass} />
+                       </div>
+                    </div>
+                 )}
+               </div>
+             </div>
+          )}
+
+          {/* Loyalty Program Tab */}
+          {activeTab === 'loyalty' && (
+             <div className={sectionClass}>
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Loyalty Programs</h3>
+               
+               <div className="space-y-6">
+                 {/* List Programs */}
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                     {loyaltyPrograms.map(prog => (
+                         <div key={prog.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative">
+                             <div className="flex justify-between items-start mb-2">
+                                 <h4 className="font-bold text-admin-dark-text text-sm">{prog.name}</h4>
+                                 <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${prog.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{prog.active ? 'Active' : 'Inactive'}</span>
+                             </div>
+                             <div className="flex items-center gap-3 mb-3">
+                                 {prog.iconUrl ? <img src={prog.iconUrl} className="w-8 h-8 sm:w-10 sm:h-10 object-contain bg-gray-50 rounded-full border" /> : <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-xs">?</div>}
+                                 <div className="text-xs text-gray-500">
+                                     <p>Need: {prog.stickersRequired}</p>
+                                     <p className="truncate max-w-[150px]">{prog.rewardDescription}</p>
+                                 </div>
+                             </div>
+                             <div className="flex justify-end gap-2 mt-2 border-t pt-2">
+                                 <button onClick={() => handleToggleProgram(prog.id)} className="text-xs text-blue-500 hover:underline">{prog.active ? 'Disable' : 'Enable'}</button>
+                                 <button onClick={() => handleDeleteProgram(prog.id)} className="text-xs text-red-500 hover:text-red-700 font-bold"><TrashIcon className="w-3 h-3" /></button>
+                             </div>
+                         </div>
+                     ))}
+                 </div>
+
+                 {/* Add New Program */}
+                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6">
+                     <h4 className="font-bold text-admin-dark-text mb-4 text-sm">Create New Card</h4>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <div>
+                             <label className={labelClass}>Name</label>
+                             <input className={inputClass} placeholder="e.g. Manicure Card" value={newProgram.name} onChange={e => setNewProgram({...newProgram, name: e.target.value})} />
+                         </div>
+                         <div>
+                             <label className={labelClass}>Stickers</label>
+                             <input type="number" className={inputClass} value={newProgram.stickersRequired} onChange={e => setNewProgram({...newProgram, stickersRequired: parseInt(e.target.value)})} />
+                         </div>
+                         <div className="md:col-span-2">
+                             <label className={labelClass}>Reward</label>
+                             <input className={inputClass} placeholder="e.g. 50% Off" value={newProgram.rewardDescription} onChange={e => setNewProgram({...newProgram, rewardDescription: e.target.value})} />
+                         </div>
+                         <div>
+                             <label className={labelClass}>Icon</label>
+                             <input type="file" onChange={e => e.target.files && setNewProgramIcon(e.target.files[0])} className="text-xs w-full text-gray-500" />
+                         </div>
+                     </div>
+                     <div className="mt-4 text-right">
+                         <button onClick={handleAddProgram} disabled={isLoading} className="bg-admin-dark-primary text-white px-4 py-2 rounded-lg font-bold text-xs hover:opacity-90 flex items-center gap-2 ml-auto">
+                             <PlusIcon className="w-3 h-3"/> Create
+                         </button>
+                     </div>
+                 </div>
+               </div>
+             </div>
+          )}
+
+          {/* Integrations Tab */}
           {activeTab === 'integrations' && (
              <div className={sectionClass}>
-               <div className="flex justify-between items-center border-b border-admin-dark-border pb-2">
-                   <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">Email Notifications</h3>
-                   <button onClick={() => setIsHelpOpen(true)} className="text-blue-600 font-bold text-xs hover:underline">Setup Guide</button>
+               <div className="flex justify-between items-center border-b border-admin-dark-border pb-2 mb-4">
+                   <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">EmailJS</h3>
+                   <button onClick={() => setIsHelpOpen(true)} className="flex items-center gap-1 sm:gap-2 bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors">
+                       ℹ️ Guide
+                   </button>
                </div>
-               <div className="bg-white p-6 rounded-xl border border-admin-dark-border space-y-4">
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               
+               <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-dark-border mb-8">
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                       <div>
-                         <label className={labelClass}>EmailJS Service ID</label>
+                         <label className={labelClass}>Service ID</label>
                          <input name="emailServiceId" value={settings.emailServiceId} onChange={handleChange} className={inputClass} />
                       </div>
                       <div>
                          <label className={labelClass}>Template ID</label>
                          <input name="emailTemplateId" value={settings.emailTemplateId} onChange={handleChange} className={inputClass} />
                       </div>
+                      <div className="md:col-span-2">
+                         <label className={labelClass}>Public Key</label>
+                         <input type="password" name="emailPublicKey" value={settings.emailPublicKey} onChange={handleChange} className={inputClass} />
+                      </div>
                    </div>
-                   <div>
-                      <label className={labelClass}>Public Key</label>
-                      <input type="password" name="emailPublicKey" value={settings.emailPublicKey} onChange={handleChange} className={inputClass} />
-                   </div>
+               </div>
+
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Actions</h3>
+               <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                     <div className="flex items-center gap-3">
+                        <input type="checkbox" id="isMaintenanceMode" name="isMaintenanceMode" checked={settings.isMaintenanceMode} onChange={handleChange} className="w-5 h-5 accent-yellow-500 rounded" />
+                        <label htmlFor="isMaintenanceMode" className="text-yellow-800 font-bold text-sm">Maintenance Mode</label>
+                     </div>
+                     <p className="text-xs text-yellow-700 ml-0 sm:ml-2">Closes the public site with a "Curtain Down" animation.</p>
+                  </div>
+                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                      <h4 className="text-red-800 font-bold mb-2 text-sm">Danger Zone</h4>
+                      <button onClick={props.onClearAllData} className="bg-red-600 text-white px-4 py-2 rounded text-xs font-bold hover:bg-red-700">Clear All Data</button>
+                  </div>
                </div>
              </div>
           )}

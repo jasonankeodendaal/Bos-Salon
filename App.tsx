@@ -243,8 +243,9 @@ const App: React.FC = () => {
 
       // Check for redirect intent from Google Login
       const redirectDest = localStorage.getItem('login_redirect_destination');
-      if (currentUser && redirectDest === 'client-portal') {
-          setCurrentView('client-portal');
+      if (currentUser && redirectDest) {
+          if (redirectDest === 'client-portal') setCurrentView('client-portal');
+          if (redirectDest === 'admin') setCurrentView('admin');
           localStorage.removeItem('login_redirect_destination');
       }
     });
