@@ -5,9 +5,10 @@ import { dbUploadFile } from '../utils/dbAdapter';
 
 interface ContactFormProps {
     onAddBooking: (booking: Omit<Booking, 'id' | 'status' | 'bookingType'>) => void;
+    settings?: any;
 }
 
-const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking }) => {
+const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -19,6 +20,22 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [referenceImages, setReferenceImages] = useState<File[]>([]);
   const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
+
+  // Destructure content settings with fallbacks
+  const contactContent = settings?.contact || {};
+  const processTitle = contactContent.processTitle || 'Our Process';
+  const processIntro = contactContent.processIntro || "We believe in personal care. Whether it's a simple tattoo or complex custom art, we ensure every detail is perfect.";
+  const processSteps = contactContent.processSteps || [
+      "Request Appointment: Use this form to tell us what service you need.",
+      "Consultation: We'll contact you to confirm details, colors, and specific requirements.",
+      "Relax & Enjoy: Come in, relax in our studio, and let us work our magic."
+  ];
+  const designTitle = contactContent.designTitle || 'Design Ideas?';
+  const designIntro = contactContent.designIntro || "If you have a specific design in mind, let us know!";
+  const designPoints = contactContent.designPoints || [
+      "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
+      "Inspiration: Upload photos of designs you love."
+  ];
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     // Clean up old object URLs to prevent memory leaks
@@ -102,44 +119,36 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking }) => {
           <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                   <h2 className="font-script text-5xl sm:text-6xl mb-4 text-brand-green">Get In Touch</h2>
-                  <p className="text-gray-600 max-w-2xl mx-auto">Ready for a fresh look? Fill out the form below and we'll get back to you as soon as possible.</p>
+                  <p className="text-gray-600 max-w-2xl mx-auto">{settings?.contact?.intro || 'Ready for a fresh look? Fill out the form below.'}</p>
               </div>
               <div className="grid lg:grid-cols-2 gap-16 items-start">
                   <div className="lg:mt-8 text-gray-700">
                       <div className="border-l-4 border-brand-green pl-6">
-                          <h4 className="font-bold text-2xl text-brand-light mb-2">Our Process</h4>
+                          <h4 className="font-bold text-2xl text-brand-light mb-2">{processTitle}</h4>
                            <p className="text-sm leading-relaxed text-gray-600 mb-4">
-                              We believe in personal care. Whether it's a simple manicure or complex nail art, we ensure every detail is perfect.
+                              {processIntro}
                           </p>
                           <ol className="list-none space-y-3 text-sm">
-                              <li className="flex items-start gap-3">
-                                  <span className="font-bold text-brand-green">1.</span>
-                                  <span><strong>Request Appointment:</strong> Use this form to tell us what service you need.</span>
-                              </li>
-                              <li className="flex items-start gap-3">
-                                  <span className="font-bold text-brand-green">2.</span>
-                                  <span><strong>Consultation:</strong> We'll contact you to confirm details, colors, and specific nail art requirements.</span>
-                              </li>
-                              <li className="flex items-start gap-3">
-                                  <span className="font-bold text-brand-green">3.</span>
-                                  <span><strong>Relax & Enjoy:</strong> Come in, relax in our nature-inspired salon, and let us pamper you.</span>
-                              </li>
+                              {processSteps.map((step: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-3">
+                                    <span className="font-bold text-brand-green">{idx + 1}.</span>
+                                    <span>{step}</span>
+                                </li>
+                              ))}
                           </ol>
                       </div>
                        <div className="mt-10 border-l-4 border-brand-green pl-6">
-                          <h4 className="font-bold text-2xl text-brand-light mb-2">Design Ideas?</h4>
+                          <h4 className="font-bold text-2xl text-brand-light mb-2">{designTitle}</h4>
                           <p className="text-sm leading-relaxed text-gray-600 mb-4">
-                              If you have a specific nail art design in mind, let us know!
+                              {designIntro}
                           </p>
                            <ul className="list-none space-y-3 text-sm mt-4">
-                              <li className="flex items-start gap-3">
-                                  <span className="text-brand-green mt-1">🌿</span>
-                                  <span><strong>Service Type:</strong> Gel, Acrylic, Manicure, Pedicure, or Custom Art?</span>
-                              </li>
-                              <li className="flex items-start gap-3">
-                                  <span className="text-brand-green mt-1">🌿</span>
-                                  <span><strong>Inspiration:</strong> Upload photos of designs you love.</span>
-                              </li>
+                              {designPoints.map((point: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-3">
+                                    <span className="text-brand-green mt-1">🌿</span>
+                                    <span>{point}</span>
+                                </li>
+                              ))}
                            </ul>
                       </div>
                   </div>

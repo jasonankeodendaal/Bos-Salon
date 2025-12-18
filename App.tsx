@@ -215,7 +215,20 @@ const App: React.FC = () => {
         text2: 'We specialize in custom tattoos, ensuring every piece tells a unique story.'
     },
     contact: {
-        intro: 'Ready for new ink? Fill out the form below.'
+        intro: 'Ready for new ink? Fill out the form below.',
+        processTitle: 'Our Process',
+        processIntro: "We believe in personal care. Whether it's a simple tattoo or complex custom art, we ensure every detail is perfect.",
+        processSteps: [
+            "Request Appointment: Use this form to tell us what service you need.",
+            "Consultation: We'll contact you to confirm details, colors, and specific requirements.",
+            "Relax & Enjoy: Come in, relax in our studio, and let us work our magic."
+        ],
+        designTitle: 'Design Ideas?',
+        designIntro: "If you have a specific design in mind, let us know!",
+        designPoints: [
+            "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
+            "Inspiration: Upload photos of designs you love."
+        ]
     }
   });
 
@@ -527,7 +540,7 @@ const App: React.FC = () => {
             showroomTitle={settings.showroomTitle} 
             showroomDescription={settings.showroomDescription} 
           />
-          <ContactForm onAddBooking={handleAddBooking} />
+          <ContactForm onAddBooking={handleAddBooking} settings={settings} />
         </main>
         <Footer
           companyName={settings.companyName}
