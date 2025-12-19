@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { 
   dbOnAuthStateChange, 
@@ -220,6 +221,14 @@ const App: React.FC = () => {
     // NEW: Multiple Loyalty Programs
     loyaltyPrograms: [], // Array of LoyaltyProgram objects
     
+    // Default sanctuary perks
+    sanctuaryPerks: [
+        'Exclusive early access to seasonal flash collections.',
+        'Priority booking for holiday sessions.',
+        'Personalized aftercare consultations after every masterpiece.',
+        'Digital reward cards with tiered benefits.'
+    ],
+    
     // Default sub-objects for specific sections
     hero: {
         title: 'Nails & Beauty',
@@ -321,6 +330,7 @@ const App: React.FC = () => {
                  ...fetchedSettings,
                  socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
                  loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
+                 sanctuaryPerks: fetchedSettings.sanctuaryPerks || fetchedSettings.sanctuaryperks || [],
                  bookingOptions: fetchedSettings.bookingOptions || fetchedSettings.bookingoptions || [],
                  isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? false,
                  companyName: fetchedSettings.companyName || fetchedSettings.companyname,

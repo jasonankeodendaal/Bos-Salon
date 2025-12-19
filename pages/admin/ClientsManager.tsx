@@ -383,8 +383,10 @@ const ClientsManager: React.FC<{
 
   const inputClass = "w-full bg-white border border-admin-dark-border rounded-lg p-2 text-admin-dark-text text-sm outline-none focus:ring-1 focus:ring-admin-dark-primary font-medium transition-all shadow-sm";
   const isActiveAccount = selectedClient && selectedClient.password && selectedClient.password !== 'N/A';
-  const currentProgram = activePrograms.find(p => p.id === selectedLoyaltyProgramId) || activePrograms[0];
-  const currentProgramCount = selectedClient?.loyaltyProgress?.[currentProgram?.id] || (currentProgram?.id === 'legacy' ? selectedClient?.stickers : 0) || 0;
+  
+  // Logic for showing and adding stickers to specific programs
+  const currentProgramForHub = activePrograms.find(p => p.id === selectedLoyaltyProgramId) || activePrograms[0];
+  const currentProgramCountForHub = selectedClient?.loyaltyProgress?.[currentProgramForHub?.id] || (currentProgramForHub?.id === 'legacy' ? selectedClient?.stickers : 0) || 0;
 
   return (
     <div className="h-full flex flex-col bg-admin-dark-bg">
@@ -591,57 +593,77 @@ const ClientsManager: React.FC<{
             )}
         </div>
 
-        {isLoyaltyPopupOpen && selectedClient && currentProgram && (
+        {/* UPGRADED LOYALTY HUB MODAL */}
+        {isLoyaltyPopupOpen && selectedClient && (
             <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsLoyaltyPopupOpen(false)}>
-                <div className="bg-white rounded-[3rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up border border-gray-100" onClick={e => e.stopPropagation()}>
+                <div className="bg-white rounded-[3rem] w-full max-w-lg overflow-hidden shadow-2xl animate-fade-in-up border border-gray-100" onClick={e => e.stopPropagation()}>
                     <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20 relative">
-                        <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg mb-6 transform rotate-3">
-                            {currentProgram.iconUrl ? <img src={currentProgram.iconUrl} className="w-14 h-14 object-contain" /> : <span className="text-3xl">✨</span>}
-                        </div>
-                        <div className="text-center w-full">
-                            <select value={selectedLoyaltyProgramId} onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)} className="bg-transparent text-[#4e342e] font-black text-xl outline-none cursor-pointer text-center appearance-none border-b border-[#f48fb1]/30 uppercase tracking-tighter">
-                                {activePrograms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                            </select>
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f48fb1] mt-3">Digital Stamp Card</p>
+                        <div className="flex items-center gap-6 w-full px-4">
+                            <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg transform rotate-3 shrink-0">
+                                {currentProgramForHub?.iconUrl ? <img src={currentProgramForHub.iconUrl} className="w-14 h-14 object-contain" /> : <span className="text-3xl">✨</span>}
+                            </div>
+                            <div className="flex-grow">
+                                <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f48fb1] mb-1">Sanctuary Rewards Manager</p>
+                                <select 
+                                    value={selectedLoyaltyProgramId} 
+                                    onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)} 
+                                    className="bg-transparent text-[#4e342e] font-black text-xl outline-none cursor-pointer border-b-2 border-[#f48fb1]/30 uppercase tracking-tighter w-full py-1"
+                                >
+                                    {activePrograms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            </div>
                         </div>
                         <button onClick={() => setIsLoyaltyPopupOpen(false)} className="absolute top-6 right-6 text-[#f48fb1] hover:text-[#ff1493] transition-colors text-2xl font-bold">&times;</button>
                     </div>
 
                     <div className="p-10">
-                        <div className="grid grid-cols-5 gap-3 mb-10">
-                            {Array.from({ length: currentProgram.stickersRequired }).map((_, i) => {
-                                const isFilled = i < currentProgramCount;
-                                return (
-                                    <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 relative ${isFilled ? 'bg-[#ff1493] border-[#ff1493] shadow-lg shadow-[#ff1493]/30 scale-105' : 'bg-gray-50 border-gray-100'}`}>
-                                        {isFilled ? <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-black text-gray-300">{i + 1}</span>}
+                        {currentProgramForHub ? (
+                            <>
+                                <div className="flex justify-between items-center mb-6">
+                                    <h4 className="text-xs font-black uppercase tracking-widest text-gray-400">Collector's Progress</h4>
+                                    <div className="text-lg font-black text-[#ff1493]">{currentProgramCountForHub} / {currentProgramForHub.stickersRequired}</div>
+                                </div>
+                                <div className="grid grid-cols-5 gap-3 mb-10">
+                                    {Array.from({ length: currentProgramForHub.stickersRequired }).map((_, i) => {
+                                        const isFilled = i < currentProgramCountForHub;
+                                        return (
+                                            <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 relative ${isFilled ? 'bg-[#ff1493] border-[#ff1493] shadow-lg shadow-[#ff1493]/30 scale-105' : 'bg-gray-50 border-gray-100'}`}>
+                                                {isFilled ? <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-black text-gray-300">{i + 1}</span>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* REWARD LOGIC: 9th visit triggers coupon */}
+                                {currentProgramCountForHub === currentProgramForHub.stickersRequired - 1 ? (
+                                    <div className="bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 text-center mb-6 animate-pulse">
+                                        <p className="text-xs font-black uppercase text-yellow-800 mb-4">🎉 Collector Milestone Reached!</p>
+                                        <button 
+                                            onClick={() => sendRewardCoupon(currentProgramForHub)}
+                                            className="w-full bg-yellow-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-yellow-600"
+                                        >
+                                            <WhatsAppIcon className="w-4 h-4" /> Send Reward Notification
+                                        </button>
                                     </div>
-                                );
-                            })}
-                        </div>
+                                ) : null}
 
-                        {/* REWARD LOGIC: 9th visit triggers coupon */}
-                        {currentProgramCount === currentProgram.stickersRequired - 1 ? (
-                             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 text-center mb-6 animate-bounce">
-                                <p className="text-xs font-black uppercase text-yellow-800 mb-4">🎉 Reached 9 Stickers!</p>
-                                <button 
-                                    onClick={() => sendRewardCoupon(currentProgram)}
-                                    className="w-full bg-yellow-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-yellow-600"
-                                >
-                                    <WhatsAppIcon className="w-4 h-4" /> Send 10th visit Coupon
-                                </button>
-                                <p className="text-[9px] text-yellow-700 mt-2 italic">Sends the discount code via WhatsApp.</p>
-                             </div>
-                        ) : null}
-
-                        {currentProgramCount >= currentProgram.stickersRequired ? (
-                            <button onClick={() => { if(window.confirm('Redeem reward?')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); }} className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all">Redeem Reward</button>
+                                <div className="space-y-4">
+                                    <div className="flex gap-4">
+                                        <button onClick={() => updateStickers(currentProgramForHub.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-red-50 hover:text-red-400 transition-all border border-transparent hover:border-red-100 shadow-inner">－</button>
+                                        <button onClick={() => updateStickers(currentProgramForHub.id, 1)} className="flex-1 bg-[#4e342e] text-white rounded-3xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-[#4e342e]/20 hover:bg-black active:scale-95 transition-all">Add Stamp</button>
+                                    </div>
+                                    {currentProgramCountForHub >= currentProgramForHub.stickersRequired && (
+                                        <button onClick={() => { if(window.confirm('Redeem reward and reset stamps for this program?')) updateStickers(currentProgramForHub.id, -currentProgramForHub.stickersRequired); }} className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all">Redeem Reward</button>
+                                    )}
+                                </div>
+                                <div className="mt-8 p-6 bg-gray-50 rounded-3xl border border-gray-100">
+                                    <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest mb-1">Active Reward</p>
+                                    <p className="text-sm font-bold text-gray-700 leading-tight">{currentProgramForHub.rewardDescription}</p>
+                                </div>
+                            </>
                         ) : (
-                            <div className="flex gap-4">
-                                <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-red-50 hover:text-red-400 transition-all border border-transparent hover:border-red-100 shadow-inner">－</button>
-                                <button onClick={() => updateStickers(currentProgram.id, 1)} className="flex-1 bg-[#4e342e] text-white rounded-3xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-[#4e342e]/20 hover:bg-black active:scale-95 transition-all">Add Sticker</button>
-                            </div>
+                            <p className="text-center text-gray-400 italic py-10">No active programs available.</p>
                         )}
-                        <p className="text-center text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-8">Reward: {currentProgram.rewardDescription}</p>
                     </div>
                 </div>
             </div>

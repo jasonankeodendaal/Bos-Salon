@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { Client, Booking, Invoice, SpecialItem, LoyaltyProgram, BookingOption } from '../App';
 import { dbUploadFile, dbLoginWithGoogle, dbLogout } from '../utils/dbAdapter';
@@ -508,9 +509,17 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const bookingOptions: BookingOption[] = settings?.bookingOptions || [];
 
   const getClientStatus = (visitCount: number) => {
+      if (visitCount >= 10) return 'Diamond Sanctuary Member';
       if (visitCount >= 5) return 'VIP Collector';
       if (visitCount >= 2) return 'Returning Collector';
       return 'New Collector';
+  };
+
+  const getTierIcon = (visitCount: number) => {
+      if (visitCount >= 10) return '💎';
+      if (visitCount >= 5) return '👑';
+      if (visitCount >= 2) return '✨';
+      return '🌱';
   };
 
   if (!isLoggedIn) {
@@ -646,7 +655,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 </div>
             </div>
             <div className="sm:hidden flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
-                {['overview', 'book', 'history', 'loyalty', 'aftercare', 'financials'].map(t => (
+                {['overview', 'book', 'history', 'loyalty', 'aftercare'].map(t => (
                     <button key={t} onClick={() => setActiveTab(t as any)} className={`flex-shrink-0 px-4 py-2 text-[10px] font-bold rounded-lg border transition-all capitalize ${activeTab === t ? 'bg-brand-green text-white border-brand-green shadow-md shadow-brand-green/20' : 'bg-white text-gray-600 border-gray-200'}`}>{t}</button>
                 ))}
             </div>
@@ -655,115 +664,88 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
         <main className="max-w-6xl mx-auto p-4 sm:p-8 space-y-8 mt-4 no-print">
             
             {activeTab === 'overview' && (
-                <div className="space-y-8 animate-fade-in">
+                <div className="space-y-10 animate-fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-2 bg-gradient-to-br from-gray-900 to-brand-light p-8 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
-                            <div className="absolute -top-20 -right-20 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl group-hover:bg-brand-green/20 transition-all duration-700"></div>
+                        <div className="md:col-span-2 bg-gradient-to-br from-[#4e342e] to-black p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border border-white/5">
+                            <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                                <img src={logoUrl} className="w-64 h-64 object-contain grayscale invert" />
+                            </div>
                             <div className="relative z-10">
-                                <div className="flex justify-between items-start mb-1">
-                                    <h2 className="text-3xl font-bold">Welcome back, {currentUser?.name.split(' ')[0]}!</h2>
-                                    {/* TINY LOYALTY OVERVIEW */}
-                                    {firstProgram && (
-                                        <div onClick={() => setActiveTab('loyalty')} className="bg-white/10 backdrop-blur-md border border-white/10 p-2 rounded-xl flex items-center gap-2 cursor-pointer hover:bg-white/20 transition-all scale-90 sm:scale-100 origin-right">
-                                            <div className="w-8 h-8 rounded-lg bg-brand-green/20 flex items-center justify-center text-sm">🎁</div>
-                                            <div className="hidden xs:block">
-                                                <p className="text-[8px] font-black uppercase text-brand-green leading-none">Rewards</p>
-                                                <p className="text-xs font-bold">{firstProgramCount}/{firstProgram.stickersRequired}</p>
-                                            </div>
+                                <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-8">
+                                    <div>
+                                        <span className="bg-brand-green/20 text-brand-green px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-brand-green/30">Sanctuary Member</span>
+                                        <h2 className="text-4xl font-black mt-2 tracking-tight">Welcome, {currentUser?.name.split(' ')[0]}</h2>
+                                    </div>
+                                    <div className="flex items-center gap-4 bg-white/5 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-lg">
+                                        <div className="text-4xl">{getTierIcon(currentUser?.visitCount || 0)}</div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-brand-green uppercase tracking-widest leading-none mb-1">Status Level</p>
+                                            <p className="text-sm font-bold text-white/90">{getClientStatus(currentUser?.visitCount || 0)}</p>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                                <p className="text-gray-400 text-sm mb-8">You have {upcomingBookings.length} upcoming appointments.</p>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Lifetime Spend</p>
-                                        <p className="text-xl font-bold">R {totalSpend.toFixed(0)}</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-colors">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Lifetime Value</p>
+                                        <p className="text-2xl font-black text-brand-green">R {totalSpend.toFixed(0)}</p>
                                     </div>
-                                    <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Sessions</p>
-                                        <p className="text-xl font-bold">{currentUser?.visitCount || 0}</p>
+                                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-colors">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Masterpieces</p>
+                                        <p className="text-2xl font-black text-white">{currentUser?.visitCount || 0}</p>
                                     </div>
-                                    <div className="hidden sm:block bg-brand-green/10 border border-brand-green/20 p-4 rounded-2xl">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-brand-green mb-1">Status</p>
-                                        <p className="text-xl font-bold">{getClientStatus(currentUser?.visitCount || 0)}</p>
+                                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-colors">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Balance</p>
+                                        <p className={`text-2xl font-black ${outstanding > 0 ? 'text-red-400' : 'text-green-400'}`}>R {outstanding.toFixed(0)}</p>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 p-5 rounded-3xl hover:bg-white/10 transition-colors">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">Next Stamp</p>
+                                        <p className="text-2xl font-black text-brand-pink">{firstProgramCount}/{firstProgram?.stickersRequired || 10}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl flex flex-col justify-between">
+                        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl flex flex-col justify-between group hover:shadow-2xl transition-all">
                             <div>
-                                <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Next Session
+                                <h3 className="font-black text-gray-400 mb-6 flex items-center gap-3 uppercase tracking-[0.3em] text-[10px]">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-brand-green animate-pulse"></span> Your Sanctuary Slot
                                 </h3>
                                 {upcomingBookings.length > 0 ? (
-                                    <div className="space-y-4">
-                                        <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
-                                            <p className="font-bold text-2xl text-blue-900">{new Date(upcomingBookings[0].bookingDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</p>
-                                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${upcomingBookings[0].status === 'confirmed' ? 'text-green-600' : 'text-blue-600'}`}>{upcomingBookings[0].status.replace('_', ' ')}</p>
+                                    <div className="space-y-6">
+                                        <div className="p-6 bg-brand-green/5 rounded-[2rem] border border-brand-green/10 group-hover:bg-brand-green/10 transition-colors">
+                                            <p className="font-black text-4xl text-brand-green leading-none mb-2">{new Date(upcomingBookings[0].bookingDate).getDate()}</p>
+                                            <p className="font-bold text-xl text-gray-900 uppercase tracking-tighter">{new Date(upcomingBookings[0].bookingDate).toLocaleDateString(undefined, {month:'long', year:'numeric'})}</p>
+                                            <p className={`text-[10px] font-black uppercase tracking-[0.2em] mt-3 py-1 px-3 rounded-full border inline-block ${upcomingBookings[0].status === 'confirmed' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-blue-100 text-blue-700 border-blue-200'}`}>{upcomingBookings[0].status.replace('_', ' ')}</p>
                                         </div>
-                                        <p className="text-sm text-gray-600 line-clamp-2 italic">"{upcomingBookings[0].message}"</p>
+                                        <div className="space-y-2">
+                                            <p className="text-xs font-black text-gray-300 uppercase tracking-widest">Planned Artistry:</p>
+                                            <p className="text-sm text-gray-600 italic leading-relaxed line-clamp-2">"{upcomingBookings[0].message}"</p>
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="text-center py-8">
-                                        <p className="text-gray-400 text-sm italic">No upcoming sessions.</p>
-                                        <button onClick={() => setActiveTab('book')} className="mt-4 text-xs font-bold text-brand-green hover:underline uppercase tracking-widest">Book Now &rarr;</button>
+                                    <div className="text-center py-10">
+                                        <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl opacity-50">📅</div>
+                                        <p className="text-gray-400 text-sm italic font-medium">Your calendar is open.</p>
+                                        <button onClick={() => setActiveTab('book')} className="mt-6 bg-[#4e342e] text-white px-6 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all">Claim a Slot</button>
                                     </div>
                                 )}
                             </div>
-                            <div className="pt-6 mt-6 border-t border-gray-50">
-                                <button onClick={() => setActiveTab('loyalty')} className="w-full bg-brand-green text-white py-3 rounded-2xl font-bold text-xs shadow-lg shadow-brand-green/20 hover:scale-[1.02] transition-all">Check Rewards</button>
-                            </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                            <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Documents & Invoices
-                            </h3>
-                            {myInvoices.filter(i => i.status === 'sent' || i.status === 'accepted').length > 0 ? (
-                                <div className="space-y-3">
-                                    {myInvoices.filter(i => i.status === 'sent' || i.status === 'accepted').map(inv => (
-                                        <div key={inv.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center group hover:bg-white hover:shadow-lg transition-all">
-                                            <div><p className="font-bold text-sm text-gray-900">{inv.number}</p><p className="text-xs text-gray-500">R {inv.total.toFixed(2)}</p></div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setViewInvoice(inv)} className="bg-white px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 hover:bg-gray-50">View</button>
-                                                {inv.status === 'sent' && (
-                                                    <button 
-                                                        onClick={() => {
-                                                            const booking = bookings.find(b => b.id === inv.bookingId);
-                                                            setConfirmationModal({ isOpen: true, booking: booking || null, invoice: inv });
-                                                        }} 
-                                                        className="bg-brand-green text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95"
-                                                    >
-                                                        Confirm & Pay
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
+                    {/* Sanctuary Perks Section */}
+                    <section className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-xl overflow-hidden relative">
+                         <div className="absolute bottom-0 right-0 p-10 opacity-5 pointer-events-none text-9xl">🏛️</div>
+                         <h3 className="text-2xl font-black text-gray-900 mb-8 tracking-tight">Your Sanctuary Perks</h3>
+                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {(settings?.sanctuaryPerks || []).map((perk: string, idx: number) => (
+                                <div key={idx} className="bg-gray-50 p-6 rounded-[2rem] border border-gray-100 hover:border-brand-green/30 transition-all hover:bg-white hover:shadow-lg">
+                                    <div className="w-10 h-10 rounded-2xl bg-brand-green/10 flex items-center justify-center text-brand-green font-black mb-4">0{idx+1}</div>
+                                    <p className="text-xs text-gray-600 font-medium leading-relaxed">{perk}</p>
                                 </div>
-                            ) : (<div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200"><p className="text-gray-400 text-sm italic">All documents settled.</p></div>)}
-                        </div>
-
-                        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                            <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                <span className="w-2 h-2 rounded-full bg-gray-400"></span> Recent Journey
-                            </h3>
-                            {pastBookings.length > 0 ? (
-                                <div className="space-y-4">
-                                    {pastBookings.slice(0, 3).map(b => (
-                                        <div key={b.id} className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 text-xs shrink-0">{new Date(b.bookingDate).getDate()}</div>
-                                            <div className="flex-grow"><p className="font-bold text-sm text-gray-900">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'long', year:'numeric'})}</p><p className="text-xs text-gray-500 truncate">{b.message}</p></div>
-                                            <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{b.status}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (<p className="text-gray-400 text-sm italic py-10 text-center">No history yet.</p>)}
-                        </div>
-                    </div>
+                            ))}
+                         </div>
+                    </section>
                 </div>
             )}
 
@@ -878,85 +860,92 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
             )}
 
             {activeTab === 'history' && (
-                <div className="space-y-12 animate-fade-in pb-20">
+                <div className="space-y-16 animate-fade-in pb-20">
                     <div className="text-center max-w-2xl mx-auto">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-2 font-script">Your Beauty Journey</h2>
-                        <p className="text-sm text-gray-500 italic">"Every session is a new chapter in your story."</p>
+                        <h2 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Artistry Archive</h2>
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="h-px w-8 bg-brand-green"></div>
+                            <p className="text-xs font-black text-brand-green uppercase tracking-[0.4em]">Your Beauty Journey</p>
+                            <div className="h-px w-8 bg-brand-green"></div>
+                        </div>
                     </div>
 
-                    <div className="space-y-16">
-                        {/* UPCOMING / ACTIVE SECTION */}
+                    <div className="space-y-24">
+                        {/* CURRENT PROJECTS */}
                         <section>
-                            <div className="flex items-center gap-4 mb-8">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">Next Chapters</h3>
-                                <div className="flex-grow h-px bg-gradient-to-r from-gray-100 to-transparent"></div>
+                            <div className="flex items-center gap-6 mb-10">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em] whitespace-nowrap">Current Sanctuary Slots</h3>
+                                <div className="flex-grow h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
                             </div>
                             
                             {upcomingBookings.length > 0 ? (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-8">
                                     {upcomingBookings.map(b => {
                                         const linkedInvoice = myInvoices.find(inv => inv.bookingId === b.id || inv.clientEmail === b.email); 
                                         const isQuote = b.status === 'quote_sent';
                                         
                                         return (
-                                            <div key={b.id} className="bg-white rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden hover:shadow-2xl transition-all group flex flex-col sm:flex-row">
-                                                {/* Left: Date Block */}
-                                                <div className="w-full sm:w-32 bg-gray-900 text-white flex flex-col items-center justify-center p-6 text-center shrink-0">
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'short'})}</span>
-                                                    <span className="text-4xl font-black">{new Date(b.bookingDate).getDate()}</span>
-                                                    <span className="text-[10px] font-bold text-brand-green uppercase mt-1">{new Date(b.bookingDate).getFullYear()}</span>
+                                            <div key={b.id} className="bg-white rounded-[3.5rem] border border-gray-100 shadow-2xl overflow-hidden hover:shadow-brand-green/10 transition-all group flex flex-col lg:flex-row relative">
+                                                {/* Left: Date Block (Vertical Desktop, Horizontal Mobile) */}
+                                                <div className="w-full lg:w-48 bg-gray-900 text-white flex flex-row lg:flex-col items-center justify-center p-8 text-center shrink-0 border-r border-white/5">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-500 mb-1 leading-none">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'short'})}</span>
+                                                        <span className="text-6xl font-black leading-none">{new Date(b.bookingDate).getDate()}</span>
+                                                        <span className="text-[10px] font-black text-brand-green uppercase mt-2 tracking-widest">{new Date(b.bookingDate).getFullYear()}</span>
+                                                    </div>
                                                 </div>
 
-                                                {/* Center: Details */}
-                                                <div className="flex-grow p-8 flex flex-col justify-between">
-                                                    <div>
-                                                        <div className="flex justify-between items-start mb-4">
-                                                            <div className="flex gap-2 items-center">
-                                                                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
-                                                                    b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                                    b.status === 'quote_sent' ? 'bg-blue-100 text-blue-700 animate-pulse' :
-                                                                    'bg-yellow-100 text-yellow-700'
-                                                                }`}>
-                                                                    {b.status.replace('_', ' ')}
+                                                {/* Details */}
+                                                <div className="flex-grow p-10 flex flex-col">
+                                                    <div className="flex justify-between items-start mb-6">
+                                                        <div className="flex flex-wrap gap-3 items-center">
+                                                            <span className={`px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm border ${
+                                                                b.status === 'confirmed' ? 'bg-green-600 text-white border-green-500' :
+                                                                b.status === 'quote_sent' ? 'bg-blue-600 text-white border-blue-500 animate-pulse' :
+                                                                'bg-yellow-400 text-white border-yellow-300'
+                                                            }`}>
+                                                                {b.status.replace('_', ' ')}
+                                                            </span>
+                                                            {b.confirmationMethod && (
+                                                                <span className="bg-gray-100 text-gray-400 px-4 py-2 rounded-full text-[8px] font-black uppercase tracking-[0.2em] border border-gray-200">
+                                                                    Verified {b.confirmationMethod}
                                                                 </span>
-                                                                {b.confirmationMethod && (
-                                                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                                                                        {b.confirmationMethod === 'online' ? 'Confirmed Online' : 'Salon Payment'}
-                                                                    </span>
-                                                                )}
-                                                            </div>
+                                                            )}
                                                         </div>
-                                                        <p className="text-gray-800 text-sm leading-relaxed font-medium mb-6 line-clamp-3 italic">"{b.message}"</p>
+                                                        <div className="hidden sm:block text-right">
+                                                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-1">Session Value</p>
+                                                            <p className="text-2xl font-black text-gray-900">R {b.totalCost || '---'}</p>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 mb-8 relative">
+                                                        <div className="text-3xl absolute -top-4 -left-4 filter drop-shadow-lg">✨</div>
+                                                        <p className="text-gray-700 text-base leading-relaxed font-medium italic">"{b.message}"</p>
                                                         
-                                                        {/* Reference Images Mini Gallery */}
                                                         {b.referenceImages && b.referenceImages.length > 0 && (
-                                                            <div className="flex gap-2 overflow-x-auto pb-4 no-scrollbar mb-4">
-                                                                {b.referenceImages.map((img, i) => (
-                                                                    <a key={i} href={img} target="_blank" rel="noreferrer" className="w-12 h-12 rounded-xl overflow-hidden border border-gray-100 shrink-0 hover:scale-110 transition-transform">
-                                                                        <img src={img} className="w-full h-full object-cover" alt="Ref" />
-                                                                    </a>
-                                                                ))}
+                                                            <div className="mt-8">
+                                                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest mb-4">Uploaded Inspiration</p>
+                                                                <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+                                                                    {b.referenceImages.map((img, i) => (
+                                                                        <a key={i} href={img} target="_blank" rel="noreferrer" className="w-24 h-24 rounded-[1.5rem] overflow-hidden border-4 border-white shadow-xl shrink-0 hover:scale-110 transition-transform duration-500 hover:rotate-2">
+                                                                            <img src={img} className="w-full h-full object-cover" alt="Ref" />
+                                                                        </a>
+                                                                    ))}
+                                                                </div>
                                                             </div>
                                                         )}
                                                     </div>
 
-                                                    <div className="pt-6 border-t border-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
-                                                        <div className="text-center sm:text-left">
-                                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">Est. Investment</p>
-                                                            <p className="text-xl font-black text-gray-900">R {b.totalCost || 'TBD'}</p>
-                                                        </div>
-                                                        
-                                                        <div className="flex gap-2 w-full sm:w-auto">
-                                                            {isQuote && (
-                                                                <button 
-                                                                    onClick={() => setConfirmationModal({ isOpen: true, booking: b, invoice: linkedInvoice || null })} 
-                                                                    className="flex-1 sm:flex-none bg-brand-green text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-green/20 hover:scale-105 transition-all"
-                                                                >
-                                                                    Confirm Slot
-                                                                </button>
-                                                            )}
-                                                            <button onClick={() => handleCancelBooking(b)} className="flex-1 sm:flex-none bg-gray-100 text-gray-400 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Cancel</button>
-                                                        </div>
+                                                    <div className="mt-auto flex flex-col sm:flex-row gap-4">
+                                                        {isQuote && (
+                                                            <button 
+                                                                onClick={() => setConfirmationModal({ isOpen: true, booking: b, invoice: linkedInvoice || null })} 
+                                                                className="flex-1 bg-brand-green text-white py-4 rounded-3xl text-xs font-black uppercase tracking-[0.2em] shadow-2xl shadow-brand-green/20 hover:-translate-y-1 transition-all active:scale-95"
+                                                            >
+                                                                Confirm Now
+                                                            </button>
+                                                        )}
+                                                        <button onClick={() => handleCancelBooking(b)} className="px-10 py-4 bg-gray-100 text-gray-400 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100">Request Cancel</button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -964,134 +953,167 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     })}
                                 </div>
                             ) : (
-                                <div className="bg-white rounded-[2rem] border border-dashed border-gray-200 p-16 text-center">
-                                    <p className="text-gray-400 italic">No active bookings. Ready for your next treatment?</p>
-                                    <button onClick={() => setActiveTab('book')} className="mt-6 text-xs font-black text-brand-green uppercase tracking-widest hover:underline decoration-2 underline-offset-8">Book a Session &rarr;</button>
+                                <div className="bg-white rounded-[4rem] border-4 border-dashed border-gray-100 p-24 text-center">
+                                    <p className="text-gray-300 text-lg italic font-medium">Your schedule is waiting for new art.</p>
+                                    <button onClick={() => setActiveTab('book')} className="mt-8 inline-block bg-brand-green text-white px-12 py-4 rounded-3xl font-black uppercase tracking-[0.3em] text-xs shadow-xl shadow-brand-green/20 hover:scale-110 transition-all">Begin Request</button>
                                 </div>
                             )}
                         </section>
 
-                        {/* COMPLETED / PAST SECTION */}
+                        {/* MASTERPIECE ARCHIVE */}
                         <section>
-                            <div className="flex items-center gap-4 mb-8">
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-[0.3em]">The Archive</h3>
-                                <div className="flex-grow h-px bg-gradient-to-r from-gray-100 to-transparent"></div>
+                            <div className="flex items-center gap-6 mb-12">
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.5em] whitespace-nowrap">Your Masterpiece Archive</h3>
+                                <div className="flex-grow h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
                             </div>
 
                             {pastBookings.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {pastBookings.map(b => (
-                                        <div key={b.id} className="bg-white rounded-3xl border border-gray-100 p-4 sm:p-6 shadow-sm hover:shadow-md transition-all flex flex-wrap sm:flex-nowrap items-center gap-6">
-                                            <div className="bg-gray-50 rounded-2xl p-4 text-center shrink-0 w-full sm:w-auto">
-                                                <p className="text-[10px] font-black text-gray-400 uppercase leading-none mb-1">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'short'})}</p>
-                                                <p className="text-2xl font-black text-gray-800">{new Date(b.bookingDate).getDate()}</p>
+                                        <div key={b.id} className="bg-white rounded-[2.5rem] border border-gray-100 p-8 shadow-lg hover:shadow-2xl transition-all group flex items-start gap-8">
+                                            <div className="bg-[#4e342e] rounded-3xl p-5 text-center shrink-0 text-white shadow-xl shadow-[#4e342e]/10">
+                                                <p className="text-[10px] font-black uppercase tracking-tighter leading-none mb-1 opacity-60">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'short'})}</p>
+                                                <p className="text-3xl font-black leading-none">{new Date(b.bookingDate).getDate()}</p>
                                             </div>
 
-                                            <div className="flex-grow min-w-0">
-                                                <div className="flex items-center gap-3 mb-1">
-                                                    <h4 className="font-bold text-gray-900 truncate text-sm">Session Complete</h4>
-                                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{b.status}</span>
+                                            <div className="flex-grow min-w-0 flex flex-col justify-center">
+                                                <div className="flex items-center justify-between mb-2">
+                                                    <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${b.status === 'completed' ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>{b.status}</span>
+                                                    <p className="text-sm font-black text-gray-900">R {b.totalCost || '0'}</p>
                                                 </div>
-                                                <p className="text-xs text-gray-500 truncate italic">"{b.message}"</p>
-                                            </div>
-
-                                            <div className="shrink-0 w-full sm:w-auto flex justify-between items-center sm:block text-right">
-                                                <div className="mb-0 sm:mb-2">
-                                                    <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Total Paid</p>
-                                                    <p className="text-lg font-black text-gray-800">R {b.totalCost || '0'}</p>
-                                                </div>
+                                                <h4 className="font-bold text-gray-800 truncate text-sm mb-1">{b.status === 'completed' ? 'Session Manifested' : 'Session Cancelled'}</h4>
+                                                <p className="text-[11px] text-gray-400 line-clamp-1 italic">"{b.message}"</p>
+                                                
                                                 {b.status === 'completed' && (
-                                                    <button onClick={() => setActiveTab('aftercare')} className="text-[10px] font-black text-brand-green uppercase tracking-widest border-b-2 border-brand-green/20 hover:border-brand-green transition-all">View Care Guide</button>
+                                                    <div className="mt-6 flex gap-3">
+                                                        <button onClick={() => setActiveTab('aftercare')} className="text-[9px] font-black text-brand-green uppercase tracking-widest border-b-2 border-brand-green/20 hover:border-brand-green transition-all pb-1">Care Protocol</button>
+                                                        <button onClick={() => setActiveTab('loyalty')} className="text-[9px] font-black text-brand-pink uppercase tracking-widest border-b-2 border-brand-pink/20 hover:border-brand-pink transition-all pb-1">Rewards</button>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-gray-400 text-sm py-10 italic">Your journey is just beginning.</p>
+                                <p className="text-center text-gray-300 text-sm py-20 italic">No historical records found.</p>
                             )}
                         </section>
-                    </div>
-
-                    {/* Support Block */}
-                    <div className="bg-gray-900 rounded-[3rem] p-10 sm:p-16 text-center text-white relative overflow-hidden shadow-2xl">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/10 blur-[80px] rounded-full"></div>
-                        <h3 className="text-3xl font-bold mb-4">Any questions about your history?</h3>
-                        <p className="text-gray-400 max-w-xl mx-auto mb-10 text-sm leading-relaxed">If you have questions about past work, need help with a deposit, or want to discuss a new beauty project, we're here.</p>
-                        <a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 bg-brand-green text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-brand-green/20">
-                            <WhatsAppIcon className="w-5 h-5"/>
-                            Speak to Salon
-                        </a>
                     </div>
                 </div>
             )}
 
             {activeTab === 'loyalty' && (
-                <div className="space-y-8 animate-fade-in">
+                <div className="space-y-12 animate-fade-in pb-20">
                     <div className="text-center max-w-xl mx-auto">
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2 font-script">Member Rewards</h3>
-                        <p className="text-sm text-gray-500 italic">"Collect stickers to unlock exclusive salon perks."</p>
+                        <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Sanctuary Rewards</h3>
+                        <p className="text-xs font-black text-brand-pink uppercase tracking-[0.4em]">Collective Gratitude</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {activePrograms.length > 0 ? activePrograms.map(prog => {
                             const currentCount = currentUser?.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? currentUser?.stickers : 0) || 0;
                             const isComplete = currentCount >= prog.stickersRequired;
 
                             return (
-                                <div key={prog.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform">
-                                    <div className="absolute top-0 right-0 p-4">
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg shadow-inner ${isComplete ? 'bg-brand-green text-white animate-bounce' : 'bg-gray-50 text-gray-300'}`}>
-                                            {isComplete ? '🎁' : '⚓'}
-                                        </div>
-                                    </div>
+                                <div key={prog.id} className="bg-gradient-to-br from-white to-gray-50 rounded-[3.5rem] p-10 border border-gray-100 shadow-2xl relative overflow-hidden group hover:-translate-y-2 transition-transform duration-500">
+                                    {/* PREMIUM CARD OVERLAY */}
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/5 blur-3xl rounded-full"></div>
                                     
-                                    <div className="relative z-10">
-                                        <h4 className="text-lg font-bold text-gray-900 mb-1">{prog.name}</h4>
-                                        <p className="text-[8px] text-gray-400 uppercase font-bold tracking-[0.2em] mb-6">Active Card</p>
+                                    <div className="relative z-10 flex flex-col h-full">
+                                        <div className="flex justify-between items-start mb-8">
+                                            <div className="bg-white w-16 h-16 rounded-[1.5rem] shadow-xl flex items-center justify-center text-3xl border border-gray-50 group-hover:scale-110 transition-transform duration-500">
+                                                {prog.iconUrl ? <img src={prog.iconUrl} className="w-10 h-10 object-contain" /> : (isComplete ? '🎁' : '⚓')}
+                                            </div>
+                                            <div className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest shadow-sm ${isComplete ? 'bg-brand-green text-white animate-pulse' : 'bg-gray-900 text-white'}`}>
+                                                {isComplete ? 'REWARD READY' : 'COLLECTING'}
+                                            </div>
+                                        </div>
                                         
-                                        <div className="grid grid-cols-5 gap-2 mb-6">
+                                        <div className="mb-10">
+                                            <h4 className="text-2xl font-black text-gray-900 tracking-tight mb-1">{prog.name}</h4>
+                                            <p className="text-[10px] text-brand-green font-black uppercase tracking-[0.3em]">Sanctuary Stamp Card</p>
+                                        </div>
+                                        
+                                        <div className="grid grid-cols-5 gap-3 mb-10">
                                             {Array.from({ length: prog.stickersRequired }).map((_, i) => (
-                                                <div key={i} className={`aspect-square rounded-full border-2 flex items-center justify-center transition-all duration-700 ${i < currentCount ? 'bg-brand-green border-brand-green shadow-md shadow-brand-green/20' : 'bg-gray-50 border-gray-100'}`}>
+                                                <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-1000 relative ${i < currentCount ? 'bg-brand-green border-brand-green shadow-xl shadow-brand-green/20 scale-105' : 'bg-white border-gray-100 group-hover:border-gray-200'}`}>
                                                     {i < currentCount ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={4} stroke="currentColor" className="w-4 h-4 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                                                     ) : (
-                                                        <span className="text-[8px] text-gray-200 font-bold">{i + 1}</span>
+                                                        <span className="text-[10px] text-gray-200 font-black">{i + 1}</span>
                                                     )}
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
-                                            <div>
-                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Reward</p>
-                                                <p className={`text-xs font-bold leading-tight ${isComplete ? 'text-brand-green' : 'text-gray-900'}`}>{prog.rewardDescription}</p>
+                                        <div className="mt-auto pt-8 border-t border-gray-100 space-y-4">
+                                            <div className="flex justify-between items-end">
+                                                <div className="max-w-[150px]">
+                                                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Benefit</p>
+                                                    <p className={`text-sm font-bold leading-tight tracking-tight ${isComplete ? 'text-brand-green' : 'text-gray-700'}`}>{prog.rewardDescription}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Stamps</p>
+                                                    <p className="text-xl font-black text-gray-900">{currentCount}<span className="text-gray-300 text-xs mx-1">/</span>{prog.stickersRequired}</p>
+                                                </div>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Progress</p>
-                                                <p className="text-xs font-bold text-gray-900">{currentCount} / {prog.stickersRequired}</p>
-                                            </div>
+                                            {isComplete && (
+                                                <button className="w-full bg-brand-green text-white py-4 rounded-3xl font-black uppercase tracking-widest text-[10px] shadow-2xl shadow-brand-green/20 hover:scale-105 transition-all">Redeem Reward Now</button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
                             );
-                        }) : (<div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-gray-300"><p className="text-gray-400 italic">No loyalty programs active.</p></div>)}
+                        }) : (<div className="col-span-full py-32 text-center bg-white rounded-[4rem] border-4 border-dashed border-gray-100"><p className="text-gray-300 italic text-lg font-medium">No loyalty programs active at this time.</p></div>)}
+                    </div>
+                    
+                    <div className="bg-gray-900 rounded-[3rem] p-12 text-center text-white relative overflow-hidden">
+                        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,rgba(255,20,147,0.1),transparent)]"></div>
+                        <h4 className="text-3xl font-black mb-4 uppercase tracking-tighter">Diamond Sanctuary Perks</h4>
+                        <p className="text-gray-400 max-w-2xl mx-auto mb-10 text-sm leading-relaxed">Reach 10 sessions lifetime to unlock the Diamond status. Exclusive session rates, complimentary aftercare kits, and early access to all major flash drops.</p>
+                        <button className="bg-white text-black px-10 py-4 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-brand-green hover:text-white transition-all">Learn More</button>
                     </div>
                 </div>
             )}
 
             {activeTab === 'aftercare' && (
-                <div className="animate-fade-in max-w-4xl mx-auto space-y-12">
-                    <div className="text-center"><h3 className="text-3xl font-bold text-gray-900 mb-2 font-script">{settings?.aftercare?.title || 'Care Guide'}</h3><p className="text-sm text-gray-500 italic">"{settings?.aftercare?.intro || 'Proper care ensures long-lasting results.'}"</p></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="animate-fade-in max-w-5xl mx-auto space-y-16 pb-20">
+                    <div className="text-center max-w-2xl mx-auto">
+                        <h2 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Healing Protocol</h2>
+                        <p className="text-xs font-black text-brand-green uppercase tracking-[0.4em]">Ensuring the Longevity of Art</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                         {(settings?.aftercare?.sections || []).map((section: any, idx: number) => (
-                            <div key={idx} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                                <div className="flex items-center gap-4 mb-6"><div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${idx % 2 === 0 ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>{section.icon || '🛡️'}</div><h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">{section.title}</h4></div>
-                                <ul className="space-y-4 text-sm text-gray-600">{(section.items || []).map((item: string, iIdx: number) => (<li key={iIdx} className="flex gap-3"><span className={`font-bold ${idx % 2 === 0 ? 'text-blue-500' : 'text-red-500'}`}>{String(iIdx + 1).padStart(2, '0')}.</span><span>{item}</span></li>))}</ul>
+                            <div key={idx} className="bg-white p-12 rounded-[3.5rem] border border-gray-100 shadow-2xl relative overflow-hidden group hover:shadow-brand-green/10 transition-all">
+                                <div className="absolute top-0 right-0 p-8 text-6xl opacity-5 group-hover:scale-110 transition-transform duration-1000">{section.icon || '🛡️'}</div>
+                                <div className="flex items-center gap-6 mb-10">
+                                    <div className={`w-14 h-14 rounded-[1.5rem] flex items-center justify-center text-2xl shadow-xl ${idx % 2 === 0 ? 'bg-blue-600 text-white' : 'bg-brand-pink text-white'}`}>{section.icon || '🛡️'}</div>
+                                    <h4 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{section.title}</h4>
+                                </div>
+                                <ul className="space-y-6">
+                                    {(section.items || []).map((item: string, iIdx: number) => (
+                                        <li key={iIdx} className="flex gap-6 items-start group/item">
+                                            <span className={`font-black text-lg shrink-0 ${idx % 2 === 0 ? 'text-blue-600' : 'text-brand-pink'}`}>{String(iIdx + 1).padStart(2, '0')}</span>
+                                            <span className="text-sm text-gray-600 font-medium leading-relaxed group-hover/item:text-gray-900 transition-colors">{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         ))}
                     </div>
-                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice issues or have concerns about your treatment:</p><a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><WhatsAppIcon className="w-5 h-5"/>Speak to Salon</a></div>
+
+                    <div className="bg-gradient-to-br from-brand-green/10 to-transparent border border-brand-green/20 p-12 rounded-[3.5rem] flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left relative overflow-hidden shadow-xl">
+                        <div className="absolute top-[-20px] left-[-20px] text-9xl opacity-5 pointer-events-none">🌿</div>
+                        <div className="relative z-10">
+                            <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-2">Sanctuary Support</h4>
+                            <p className="text-gray-600 text-sm max-w-md font-medium leading-relaxed italic">If you notice unexpected changes or have concerns about the healing process, please contact the studio immediately.</p>
+                        </div>
+                        <a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="relative z-10 inline-flex items-center gap-4 bg-brand-green text-white px-12 py-5 rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-brand-green/30 hover:-translate-y-1 transition-all active:scale-95">
+                            <WhatsAppIcon className="w-6 h-6"/>
+                            Consult Artist
+                        </a>
+                    </div>
                 </div>
             )}
 
