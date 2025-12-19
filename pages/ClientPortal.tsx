@@ -475,11 +475,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       return 'New Collector';
   };
 
-  const isProfileComplete = useMemo(() => {
-    if (!currentUser) return false;
-    return !!(currentUser.name && currentUser.phone && currentUser.email && currentUser.age && currentUser.address);
-  }, [currentUser]);
-
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center text-brand-light p-4 bg-brand-dark">
@@ -536,49 +531,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
         </div>
       </div>
     );
-  }
-
-  if (isLoggedIn && !isProfileComplete) {
-      return (
-          <div className="min-h-screen bg-brand-dark flex flex-col justify-center items-center p-4">
-              <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in border border-brand-light/10">
-                  <div className="bg-brand-pink p-8 text-brand-light text-center">
-                      <h2 className="font-script text-4xl font-bold mb-1">Bos Identity</h2>
-                      <div className="w-12 h-0.5 bg-brand-light/30 mx-auto mt-2"></div>
-                      <p className="text-brand-light/60 text-sm mt-4 italic font-medium">Please finalize your details to access the portal sanctuary.</p>
-                  </div>
-                  <form onSubmit={handleProfileSubmit} className="p-8 sm:p-10 space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                          <div>
-                              <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
-                              <input type="text" required value={profileFormData.name} onChange={e => setProfileFormData({...profileFormData, name: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
-                          </div>
-                          <div>
-                              <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Tell / Mobile</label>
-                              <input type="tel" required value={profileFormData.phone} onChange={e => setProfileFormData({...profileFormData, phone: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
-                          </div>
-                          <div className="sm:col-span-1">
-                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
-                                <input type="email" readOnly value={profileFormData.email} className="w-full bg-gray-100 border border-brand-light/5 rounded-xl p-3 text-sm text-brand-light/40 cursor-not-allowed outline-none" />
-                          </div>
-                          <div className="sm:col-span-1">
-                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Age</label>
-                                <input type="number" required min={1} value={profileFormData.age || ''} onChange={e => setProfileFormData({...profileFormData, age: parseInt(e.target.value)})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
-                          </div>
-                          <div className="sm:col-span-2">
-                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Physical Address</label>
-                                <textarea rows={2} required value={profileFormData.address} onChange={e => setProfileFormData({...profileFormData, address: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" placeholder="123 Street, City, Code" />
-                          </div>
-                      </div>
-                      <div className="pt-4">
-                          <button type="submit" disabled={isProfileSaving} className="w-full bg-brand-light text-brand-dark py-4 rounded-2xl font-bold text-sm shadow-xl hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase">
-                              {isProfileSaving ? 'Saving...' : 'Enter Sanctuary'}
-                          </button>
-                      </div>
-                  </form>
-              </div>
-          </div>
-      );
   }
 
   return (
@@ -775,7 +727,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* FIX: Use activePrograms.length check instead of non-existent hasLoyaltySettings */}
                         {activePrograms.length > 0 ? activePrograms.map(prog => {
                             const currentCount = currentUser?.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? currentUser?.stickers : 0) || 0;
                             const isComplete = currentCount >= prog.stickersRequired;
