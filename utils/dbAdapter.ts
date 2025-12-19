@@ -221,6 +221,7 @@ export const dbSubscribeToCollection = (collection: CollectionName, callback: Li
          } else if (payload.eventType === 'DELETE') {
              localCache = localCache.filter(item => item.id === payload.old.id);
          }
+         // Force a new array reference to trigger React re-render
          callback([...localCache]);
       })
       .subscribe();
@@ -243,9 +244,8 @@ export const dbSubscribeToDoc = (collection: CollectionName, docId: string, call
         });
         fetch();
         const channel = client.channel(`public:${collection}:${docId}`)
-            .on('postgres_changes', { event: '*', schema: 'public', table: collection, filter: `id=eq.${docId}` }, (payload) => {
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: collection, filter: `id=eq.${docId}` }, (payload) => {
                 if (payload.new) callback(payload.new);
-                else fetch();
             })
             .subscribe();
         return () => { client.removeChannel(channel); };

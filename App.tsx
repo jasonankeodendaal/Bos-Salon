@@ -147,6 +147,8 @@ export interface Client {
   stickers?: number; // Deprecated: used for legacy single program
   loyaltyProgress?: Record<string, number>; // Map of programId -> stickers count
   rewardsRedeemed?: number; // Total rewards redeemed
+  age?: number;      // New field
+  address?: string;  // New field
 }
 
 // --- MAIN APP COMPONENT ---
@@ -228,6 +230,33 @@ const App: React.FC = () => {
         designPoints: [
             "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
             "Inspiration: Upload photos of designs you love."
+        ]
+    },
+    // NEW: Aftercare guide configuration
+    aftercare: {
+        title: 'Aftercare Guide',
+        intro: 'Proper aftercare is essential to maintain the longevity and health of your beauty treatments.',
+        sections: [
+            {
+                title: 'Nail Care (First 48 Hours)',
+                icon: '💅',
+                items: [
+                    'Avoid extremely hot water or steam for the first 24 hours.',
+                    'Use cuticle oil twice daily to keep the skin hydrated.',
+                    'Wear gloves when using cleaning products or gardening.',
+                    'Do not use your nails as tools to open cans or boxes.'
+                ]
+            },
+            {
+                title: 'Nail "Don\'ts"',
+                icon: '🚫',
+                items: [
+                    'Never pick or peel off your gel or acrylic enhancements.',
+                    'Avoid using harsh chemicals like acetone near your nails.',
+                    'Don\'t bite your nails or surrounding skin.',
+                    'Limit exposure to direct sunlight for prolonged periods.'
+                ]
+            }
         ]
     }
   });
@@ -512,6 +541,7 @@ const App: React.FC = () => {
             onAddBooking={handleAddBooking}
             onUpdateBooking={handleUpdateBooking}
             onUpdateInvoice={handleUpdateInvoice}
+            onUpdateClient={handleUpdateClient}
             settings={settings}
             onAddClient={handleAddClient}
             authenticatedUser={user}

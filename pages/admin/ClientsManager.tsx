@@ -8,26 +8,16 @@ import TrashIcon from '../../components/icons/TrashIcon';
 const IconClients = ({ className = 'w-6 h-6' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
 const MailIcon = ({ className = 'w-5 h-5' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
 
-interface ClientProfile {
-  id?: string;
-  name: string;
-  email: string;
-  phone?: string;
+interface ClientProfile extends Client {
   totalSpend: number;
   visitCount: number;
   lastVisit: string;
   bookings: Booking[];
   invoices: Invoice[];
   preferredPayment: string;
-  password?: string;
-  stickers?: number;
-  loyaltyProgress?: Record<string, number>;
-  rewardsRedeemed?: number;
 }
 
-// ... (InvoicePreviewModal remains unchanged) ...
 const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> = ({ invoice, onClose }) => {
-    // ... (Existing implementation) ...
     return (
         <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm no-print" onClick={onClose}>
             <div className="printable-content bg-white rounded-xl shadow-2xl w-full max-w-3xl overflow-hidden max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
@@ -125,7 +115,6 @@ const ClientsManager: React.FC<{
       { id: 'legacy', name: 'Default Loyalty', stickersRequired: 10, rewardDescription: '50% Off', active: true }
   ];
 
-  // ... (useMemo for clients logic unchanged) ...
   const clients = useMemo(() => {
     const clientMap: Record<string, ClientProfile> = {};
 
@@ -134,20 +123,14 @@ const ClientsManager: React.FC<{
         dbClients.forEach(c => {
             const email = c.email.trim().toLowerCase();
             clientMap[email] = {
-                id: c.id,
-                name: c.name,
+                ...c,
                 email: email,
-                phone: c.phone,
                 totalSpend: 0,
                 visitCount: 0,
                 lastVisit: '',
                 bookings: [],
                 invoices: [],
                 preferredPayment: 'Unknown',
-                password: c.password,
-                stickers: c.stickers || 0,
-                loyaltyProgress: c.loyaltyProgress || {},
-                rewardsRedeemed: c.rewardsRedeemed || 0
             };
         });
     }
@@ -159,19 +142,20 @@ const ClientsManager: React.FC<{
 
       if (!clientMap[email]) {
         clientMap[email] = {
+          id: 'temp-' + email,
           name: booking.name,
           email: email,
           phone: booking.whatsappNumber,
+          password: 'N/A', 
+          stickers: 0,
+          loyaltyProgress: {},
+          rewardsRedeemed: 0,
           totalSpend: 0,
           visitCount: 0,
           lastVisit: booking.bookingDate,
           bookings: [],
           invoices: [],
-          preferredPayment: 'Unknown',
-          password: 'N/A', 
-          stickers: 0,
-          loyaltyProgress: {},
-          rewardsRedeemed: 0
+          preferredPayment: 'Unknown'
         };
       }
 
@@ -197,6 +181,7 @@ const ClientsManager: React.FC<{
 
         if (!clientMap[email]) {
              clientMap[email] = {
+                id: 'temp-inv-' + email,
                 name: inv.clientName,
                 email: email,
                 phone: inv.clientPhone,
@@ -282,8 +267,6 @@ const ClientsManager: React.FC<{
           if (existingDbClient && existingDbClient.id) {
               await onUpdateClient({ ...existingDbClient, password: pin });
           } else {
-              // Creating a new client record from booking history
-              // Generate ID locally so we don't have to wait for refresh to know it exists
               const newId = crypto.randomUUID(); 
               const newClientData = {
                   id: newId,
@@ -298,7 +281,6 @@ const ClientsManager: React.FC<{
           }
           
           setActivatedClients(prev => ({ ...prev, [emailKey]: pin }));
-          // Optimistic update of local state
           setSelectedClient(prev => prev ? ({ ...prev, password: pin }) : null);
           alert(`Account activated! PIN: ${pin}`);
       } catch (error) {
@@ -352,7 +334,6 @@ const ClientsManager: React.FC<{
               name: selectedClient.name, 
               email: selectedClient.email, 
               loyaltyProgress: newProgress,
-              // Keep legacy field synced if it's the main/legacy program
               stickers: programId === 'legacy' ? newCount : selectedClient.stickers 
           });
           
@@ -479,7 +460,6 @@ const ClientsManager: React.FC<{
                                     {client.name.charAt(0)}
                                 </div>
                                 <div className="text-right">
-                                    {/* Show checkmark if active */}
                                     {client.password && client.password !== 'N/A' && (
                                         <span className="block text-[8px] text-green-600 font-bold mb-1">
                                             ✔
@@ -510,7 +490,13 @@ const ClientsManager: React.FC<{
                             <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-600">
                                 <span className="flex items-center gap-1"><MailIcon className="w-3 h-3"/> {selectedClient.email}</span>
                                 {selectedClient.phone && <span className="flex items-center gap-1"><WhatsAppIcon className="w-3 h-3 text-green-500"/> {selectedClient.phone}</span>}
+                                {selectedClient.age && <span className="flex items-center gap-1"><span className="text-[10px]">🎂</span> Age: {selectedClient.age}</span>}
                             </div>
+                            {selectedClient.address && (
+                                <p className="text-xs text-gray-500 mt-2 italic flex items-start gap-1">
+                                    <span className="text-[10px] mt-0.5">📍</span> {selectedClient.address}
+                                </p>
+                            )}
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                             <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-brand-green text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm">

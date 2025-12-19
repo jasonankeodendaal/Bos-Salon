@@ -89,6 +89,7 @@ export interface AdminPageProps {
   hero?: any;
   about?: any;
   contact?: any;
+  aftercare?: any;
   emailServiceId: string;
   emailTemplateId: string;
   emailPublicKey: string;

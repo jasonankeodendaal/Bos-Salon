@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Client, Booking, Invoice, SpecialItem, LoyaltyProgram } from '../App';
 import { dbUploadFile, dbLoginWithGoogle, dbLogout } from '../utils/dbAdapter';
 
@@ -14,6 +14,7 @@ interface ClientPortalProps {
   onAddBooking: (booking: Omit<Booking, 'id' | 'status' | 'bookingType'>) => Promise<void>;
   onUpdateBooking: (booking: Booking) => Promise<void>;
   onUpdateInvoice: (invoice: Invoice) => Promise<void>;
+  onUpdateClient: (client: Client) => Promise<void>;
   onAddClient: (client: Omit<Client, 'id'>) => Promise<void>;
   settings?: any;
   authenticatedUser?: any; 
@@ -85,23 +86,30 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
     );
 }
 
+interface ProcessedClientProfile extends Client {
+    totalSpend: number;
+    visitCount: number;
+    lastVisit: string;
+}
+
 const ClientPortal: React.FC<ClientPortalProps> = ({ 
   logoUrl, 
   companyName, 
   onNavigate, 
-  clients,
+  clients: dbClients,
   bookings,
   invoices,
   specials,
   onAddBooking,
   onUpdateBooking,
   onUpdateInvoice,
+  onUpdateClient,
   onAddClient,
   settings,
   authenticatedUser
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState<Client | null>(null);
+  const [currentUser, setCurrentUser] = useState<ProcessedClientProfile | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'history' | 'loyalty' | 'aftercare' | 'financials'>('overview');
   const [isProcessingLogin, setIsProcessingLogin] = useState(false);
   
@@ -119,6 +127,16 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const [signUpPin, setSignUpPin] = useState('');
   const [signUpConfirmPin, setSignUpConfirmPin] = useState('');
 
+  // Profile Form State
+  const [profileFormData, setProfileFormData] = useState({
+      name: '',
+      phone: '',
+      email: '',
+      age: 0,
+      address: ''
+  });
+  const [isProfileSaving, setIsProfileSaving] = useState(false);
+
   // View State
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -130,12 +148,116 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const [isBookingLoading, setIsBookingLoading] = useState(false);
   const [selectedSpecial, setSelectedSpecial] = useState<SpecialItem | null>(null);
 
+  // --- PROCESSED CLIENTS (Aggregated Data) ---
+  const processedClients = useMemo(() => {
+    const clientMap: Record<string, ProcessedClientProfile> = {};
+
+    // 1. Load DB Clients
+    if (dbClients) {
+        dbClients.forEach(c => {
+            const email = c.email.trim().toLowerCase();
+            clientMap[email] = {
+                ...c,
+                email: email,
+                totalSpend: 0,
+                visitCount: 0,
+                lastVisit: '',
+            };
+        });
+    }
+
+    // 2. Process Bookings
+    bookings.forEach(booking => {
+      const email = booking.email.trim().toLowerCase();
+      if (!email) return;
+
+      if (!clientMap[email]) {
+        clientMap[email] = {
+          id: 'temp-' + email,
+          name: booking.name,
+          email: email,
+          phone: booking.whatsappNumber,
+          password: 'N/A', 
+          stickers: 0,
+          loyaltyProgress: {},
+          rewardsRedeemed: 0,
+          totalSpend: 0,
+          visitCount: 0,
+          lastVisit: booking.bookingDate,
+        };
+      }
+
+      const client = clientMap[email];
+      if (!client.phone && booking.whatsappNumber) client.phone = booking.whatsappNumber;
+      if (!client.lastVisit) client.lastVisit = booking.bookingDate;
+      
+      if (booking.status === 'completed') {
+        client.totalSpend += (booking.totalCost || 0); 
+        client.visitCount += 1;
+      }
+
+      if (new Date(booking.bookingDate) > new Date(client.lastVisit)) {
+        client.lastVisit = booking.bookingDate;
+      }
+    });
+    
+    // 3. Process Invoices
+    invoices.forEach(inv => {
+        const email = inv.clientEmail.trim().toLowerCase();
+        if (!email) return;
+
+        if (!clientMap[email]) {
+             clientMap[email] = {
+                id: 'temp-inv-' + email,
+                name: inv.clientName,
+                email: email,
+                phone: inv.clientPhone,
+                password: 'N/A',
+                stickers: 0,
+                loyaltyProgress: {},
+                rewardsRedeemed: 0,
+                totalSpend: 0,
+                visitCount: 0,
+                lastVisit: '',
+            };
+        }
+        
+        if(clientMap[email]) {
+            if (inv.status === 'paid') {
+                clientMap[email].totalSpend += inv.total;
+            }
+        }
+    });
+
+    return Object.values(clientMap);
+  }, [bookings, invoices, dbClients]);
+
+  // --- REAL-TIME SYNC: Watch processedClients for changes to logged-in user ---
+  useEffect(() => {
+      if (isLoggedIn && currentUser) {
+          const updatedUser = processedClients.find(c => c.email.toLowerCase() === currentUser.email.toLowerCase());
+          if (updatedUser) {
+              setCurrentUser(updatedUser);
+              // Pre-fill profile form data if profile is not complete
+              if (!updatedUser.age || !updatedUser.address) {
+                setProfileFormData({
+                    name: updatedUser.name || '',
+                    phone: updatedUser.phone || '',
+                    email: updatedUser.email || '',
+                    age: updatedUser.age || 0,
+                    address: updatedUser.address || ''
+                });
+              }
+          }
+      }
+  }, [processedClients, isLoggedIn]);
+
   // --- GOOGLE LOGIN LOGIC ---
   useEffect(() => {
       const linkUserToClient = async () => {
           if (authenticatedUser && authenticatedUser.email) {
               const email = authenticatedUser.email.toLowerCase();
-              const existingClient = clients.find(c => c.email.toLowerCase() === email);
+              const existingClient = processedClients.find(c => c.email.toLowerCase() === email);
 
               if (existingClient) {
                   setCurrentUser(existingClient);
@@ -153,12 +275,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                       };
                       await onAddClient(newClientData);
                       
-                      setCurrentUser({
-                          ...newClientData,
-                          id: 'temp-id', 
-                          loyaltyProgress: {},
-                          rewardsRedeemed: 0
-                      });
+                      // After adding, the next processedClients update will catch it
                       setIsLoggedIn(true);
                   } catch (error) {
                       console.error("Error creating client record:", error);
@@ -170,7 +287,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       };
 
       linkUserToClient();
-  }, [authenticatedUser, clients]); 
+  }, [authenticatedUser, processedClients]); 
 
   const handleGoogleLogin = async () => {
       try {
@@ -188,7 +305,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       setTimeout(() => {
           const email = manualEmail.trim().toLowerCase();
           const pin = manualPin.trim();
-          const foundClient = clients.find(c => c.email.toLowerCase() === email);
+          const foundClient = processedClients.find(c => c.email.toLowerCase() === email);
           if (foundClient && foundClient.password === pin) {
               setCurrentUser(foundClient);
               setIsLoggedIn(true);
@@ -206,7 +323,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           return;
       }
       const emailLower = signUpEmail.trim().toLowerCase();
-      if (clients.find(c => c.email.toLowerCase() === emailLower)) {
+      if (processedClients.find(c => c.email.toLowerCase() === emailLower)) {
           alert("Email already registered.");
           return;
       }
@@ -222,13 +339,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
               stickers: 0
           };
           await onAddClient(newClient);
-          const tempUser = { 
-              ...newClient, 
-              id: 'temp-' + Date.now(), 
-              loyaltyProgress: {}, 
-              rewardsRedeemed: 0 
-          };
-          setCurrentUser(tempUser);
           setIsLoggedIn(true);
       } catch (error) {
           console.error(error);
@@ -249,6 +359,28 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
 
   const handleBack = () => {
     onNavigate('home');
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!currentUser) return;
+      setIsProfileSaving(true);
+      try {
+          await onUpdateClient({
+              ...currentUser,
+              name: profileFormData.name,
+              phone: profileFormData.phone,
+              email: profileFormData.email,
+              age: Number(profileFormData.age),
+              address: profileFormData.address
+          });
+          // State will update via real-time sync in useEffect
+      } catch (error) {
+          console.error(error);
+          alert("Failed to save profile.");
+      } finally {
+          setIsProfileSaving(false);
+      }
   };
 
   // --- YOCO PAYMENT LOGIC ---
@@ -304,7 +436,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       }
   };
 
-  // FIX: Added missing handleSpecialSelect function used in the booking form.
   const handleSpecialSelect = (special: SpecialItem) => {
     setSelectedSpecial(prev => prev?.id === special.id ? null : special);
   };
@@ -345,10 +476,26 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const myInvoices = currentUser ? invoices.filter(inv => inv.clientEmail.toLowerCase() === currentUser.email.toLowerCase() && (inv.status !== 'draft' && inv.status !== 'void')) : [];
   const myBookings = currentUser ? bookings.filter(b => b.email.toLowerCase() === currentUser.email.toLowerCase()) : [];
   const upcomingBookings = myBookings.filter(b => (b.status === 'confirmed' || b.status === 'pending' || b.status === 'quote_sent' || b.status === 'rescheduled') && new Date(b.bookingDate) >= new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
-  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
+  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
   const totalSpend = myInvoices.filter(i => i.status === 'paid').reduce((acc, curr) => acc + curr.total, 0);
   const outstanding = myInvoices.filter(i => i.status === 'sent' && i.type === 'invoice').reduce((acc, curr) => acc + curr.total, 0);
+  
+  // Robust Loyalty Logic
   const activePrograms: LoyaltyProgram[] = (settings?.loyaltyPrograms || []).filter((p: LoyaltyProgram) => p.active);
+  const hasLoyaltySettings = activePrograms.length > 0;
+
+  // Status Logic
+  const getClientStatus = (visitCount: number) => {
+      if (visitCount >= 5) return 'VIP Collector';
+      if (visitCount >= 2) return 'Returning Collector';
+      return 'New Collector';
+  };
+
+  // CHECK PROFILE COMPLETENESS
+  const isProfileComplete = useMemo(() => {
+    if (!currentUser) return false;
+    return !!(currentUser.name && currentUser.phone && currentUser.email && currentUser.age && currentUser.address);
+  }, [currentUser]);
 
   if (!isLoggedIn) {
     return (
@@ -357,7 +504,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
         <div className="absolute top-8 left-8">
             <button 
                 onClick={handleBack}
-                className="flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-brand-green transition-colors"
+                className="flex items-center gap-2 text-sm font-bold text-brand-light/50 hover:text-brand-green transition-colors"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -386,6 +533,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                         <form onSubmit={handleSignUp} className="space-y-4">
                             <input type="text" required value={signUpName} onChange={e => setSignUpName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-brand-light outline-none focus:ring-2 focus:ring-brand-green transition-all" placeholder="Full Name" />
                             <input type="email" required value={signUpEmail} onChange={e => setSignUpEmail(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-brand-light outline-none focus:ring-2 focus:ring-brand-green transition-all" placeholder="Email Address" />
+                            <input type="tel" required value={signUpPhone} onChange={e => setSignUpPhone(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-brand-light outline-none focus:ring-2 focus:ring-brand-green transition-all" placeholder="Phone Number" />
                             <div className="grid grid-cols-2 gap-2">
                                 <input type="password" required value={signUpPin} onChange={e => setSignUpPin(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-brand-light text-center tracking-widest" placeholder="PIN" maxLength={6} />
                                 <input type="password" required value={signUpConfirmPin} onChange={e => setSignUpConfirmPin(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-brand-light text-center tracking-widest" placeholder="Confirm" maxLength={6} />
@@ -414,6 +562,50 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
         </div>
       </div>
     );
+  }
+
+  // --- INTERSTITIAL PROFILE COMPLETION (Refined for Soft Pink & Brown) ---
+  if (isLoggedIn && !isProfileComplete) {
+      return (
+          <div className="min-h-screen bg-brand-dark flex flex-col justify-center items-center p-4">
+              <div className="w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl overflow-hidden animate-fade-in border border-brand-light/10">
+                  <div className="bg-brand-pink p-8 text-brand-light text-center">
+                      <h2 className="font-script text-4xl font-bold mb-1">Bos Identity</h2>
+                      <div className="w-12 h-0.5 bg-brand-light/30 mx-auto mt-2"></div>
+                      <p className="text-brand-light/60 text-sm mt-4 italic font-medium">Please finalize your details to access the portal sanctuary.</p>
+                  </div>
+                  <form onSubmit={handleProfileSubmit} className="p-8 sm:p-10 space-y-6">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                          <div>
+                              <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Full Name</label>
+                              <input type="text" required value={profileFormData.name} onChange={e => setProfileFormData({...profileFormData, name: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
+                          </div>
+                          <div>
+                              <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Tell / Mobile</label>
+                              <input type="tel" required value={profileFormData.phone} onChange={e => setProfileFormData({...profileFormData, phone: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
+                          </div>
+                          <div className="sm:col-span-1">
+                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
+                                <input type="email" readOnly value={profileFormData.email} className="w-full bg-gray-100 border border-brand-light/5 rounded-xl p-3 text-sm text-brand-light/40 cursor-not-allowed outline-none" />
+                          </div>
+                          <div className="sm:col-span-1">
+                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Age</label>
+                                <input type="number" required min={1} value={profileFormData.age || ''} onChange={e => setProfileFormData({...profileFormData, age: parseInt(e.target.value)})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" />
+                          </div>
+                          <div className="sm:col-span-2">
+                                <label className="block text-[10px] font-bold text-brand-light/50 uppercase tracking-widest mb-1.5 ml-1">Physical Address</label>
+                                <textarea rows={2} required value={profileFormData.address} onChange={e => setProfileFormData({...profileFormData, address: e.target.value})} className="w-full bg-brand-dark border border-brand-light/10 rounded-xl p-3 text-sm text-brand-light focus:ring-2 focus:ring-brand-pink outline-none transition-all" placeholder="123 Street, City, Code" />
+                          </div>
+                      </div>
+                      <div className="pt-4">
+                          <button type="submit" disabled={isProfileSaving} className="w-full bg-brand-light text-brand-dark py-4 rounded-2xl font-bold text-sm shadow-xl hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase">
+                              {isProfileSaving ? 'Saving...' : 'Enter Sanctuary'}
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      );
   }
 
   return (
@@ -479,11 +671,11 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     </div>
                                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Tattoos</p>
-                                        <p className="text-xl font-bold">{myBookings.filter(b => b.status === 'completed').length}</p>
+                                        <p className="text-xl font-bold">{currentUser?.visitCount || 0}</p>
                                     </div>
                                     <div className="hidden sm:block bg-brand-green/10 border border-brand-green/20 p-4 rounded-2xl">
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-brand-green mb-1">Status</p>
-                                        <p className="text-xl font-bold">VIP Collector</p>
+                                        <p className="text-xl font-bold">{getClientStatus(currentUser?.visitCount || 0)}</p>
                                     </div>
                                 </div>
                             </div>
@@ -674,11 +866,11 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 <div className="space-y-12 animate-fade-in">
                     <div className="text-center max-w-xl mx-auto">
                         <h3 className="text-3xl font-bold text-gray-900 mb-2">Member Rewards</h3>
-                        <p className="text-sm text-gray-500">Collect stickers on your digital cards to unlock exclusive studio perks.</p>
+                        <p className="text-sm text-gray-500">Collect stickers on your digital cards to unlock exclusive studio perks. Updates are synced in real-time as the artist adds stickers.</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {activePrograms.length > 0 ? activePrograms.map(prog => {
+                        {hasLoyaltySettings ? activePrograms.map(prog => {
                             const currentCount = currentUser?.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? currentUser?.stickers : 0) || 0;
                             const isComplete = currentCount >= prog.stickersRequired;
 
@@ -722,7 +914,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                             );
                         }) : (
                             <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-gray-300">
-                                <p className="text-gray-400 italic">No loyalty programs active.</p>
+                                <p className="text-gray-400 italic">No loyalty programs currently active in settings.</p>
                             </div>
                         )}
                     </div>
@@ -732,65 +924,34 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
             {activeTab === 'aftercare' && (
                 <div className="animate-fade-in max-w-4xl mx-auto space-y-12">
                     <div className="text-center">
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2">Tattoo Aftercare</h3>
-                        <p className="text-sm text-gray-500 italic">"Good art is 50% artist, 50% aftercare."</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-2">{settings?.aftercare?.title || 'Care Guide'}</h3>
+                        <p className="text-sm text-gray-500 italic">"{settings?.aftercare?.intro || 'Proper care ensures long-lasting results.'}"</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 text-xl">🛡️</div>
-                                <h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">First 24 Hours</h4>
+                        {(settings?.aftercare?.sections || []).map((section: any, idx: number) => (
+                            <div key={idx} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${idx % 2 === 0 ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
+                                        {section.icon || '🛡️'}
+                                    </div>
+                                    <h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">{section.title}</h4>
+                                </div>
+                                <ul className="space-y-4 text-sm text-gray-600">
+                                    {(section.items || []).map((item: string, iIdx: number) => (
+                                        <li key={iIdx} className="flex gap-3">
+                                            <span className={`font-bold ${idx % 2 === 0 ? 'text-blue-500' : 'text-red-500'}`}>{String(iIdx + 1).padStart(2, '0')}.</span>
+                                            <span>{item}</span>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                            <ul className="space-y-4 text-sm text-gray-600">
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-500">01.</span>
-                                    <span>Keep your bandage on for as long as instructed (usually 2-4 hours).</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-500">02.</span>
-                                    <span>Wash gently with lukewarm water and fragrance-free liquid soap.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-500">03.</span>
-                                    <span>Pat dry with a clean paper towel. Do NOT rub.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="font-bold text-blue-500">04.</span>
-                                    <span>Apply a very thin layer of recommended aftercare balm.</span>
-                                </li>
-                            </ul>
-                        </div>
-
-                        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                            <div className="flex items-center gap-4 mb-6">
-                                <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 text-xl">⚠️</div>
-                                <h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">The "Don'ts"</h4>
-                            </div>
-                            <ul className="space-y-4 text-sm text-gray-600">
-                                <li className="flex gap-3">
-                                    <span className="text-red-500">✘</span>
-                                    <span>Do NOT pick or scratch your tattoo. Scabbing is normal.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="text-red-500">✘</span>
-                                    <span>Do NOT submerge in water (pools, oceans, baths) for 2-3 weeks.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="text-red-500">✘</span>
-                                    <span>Do NOT expose to direct sunlight during the healing process.</span>
-                                </li>
-                                <li className="flex gap-3">
-                                    <span className="text-red-500">✘</span>
-                                    <span>Do NOT use Vaseline or heavy petroleum-based products.</span>
-                                </li>
-                            </ul>
-                        </div>
+                        ))}
                     </div>
 
                     <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center">
                         <p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p>
-                        <p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your healing:</p>
+                        <p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p>
                         <a 
                             href={`https://wa.me/${settings?.whatsAppNumber}`}
                             target="_blank"

@@ -21,6 +21,7 @@ const TABS = [
   { id: 'hero', label: 'Home Page (Hero)' },
   { id: 'about', label: 'About Page' },
   { id: 'showroom', label: 'Showroom & Specials' },
+  { id: 'aftercare', label: 'Aftercare Guide' },
   { id: 'contact', label: 'Footer & Booking Info' },
   { id: 'financials', label: 'Financial Config' },
   { id: 'loyalty', label: 'Loyalty Programs' },
@@ -115,6 +116,11 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     emailPublicKey: props.emailPublicKey || '',
     apkUrl: props.apkUrl || '',
     isMaintenanceMode: props.isMaintenanceMode || false,
+
+    // NEW: Aftercare Guides
+    aftercareTitle: props.aftercare?.title || 'Aftercare Guide',
+    aftercareIntro: props.aftercare?.intro || 'Proper care ensures long-lasting results.',
+    aftercareSections: props.aftercare?.sections || []
   });
 
   // Sync state with props when database content loads
@@ -129,8 +135,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
         heroBgUrl: props.heroBgUrl || prev.heroBgUrl,
         aboutTitle: props.about?.title || prev.aboutTitle,
-        aboutText1: prev.aboutText1, // Keep local state unless initial load
-        aboutText2: prev.aboutText2,
+        aboutText1: props.aboutText1, // Keep local state unless initial load
+        aboutText2: props.aboutText2,
         aboutUsImageUrl: props.aboutUsImageUrl || prev.aboutUsImageUrl,
         showroomTitle: props.showroomTitle || prev.showroomTitle,
         showroomDescription: props.showroomDescription || prev.showroomDescription,
@@ -160,6 +166,9 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         yocoEnabled: props.payments?.yocoEnabled || prev.yocoEnabled,
         yocoPublicKey: props.payments?.yocoPublicKey || prev.yocoPublicKey,
         yocoSecretKey: props.payments?.yocoSecretKey || prev.yocoSecretKey,
+        aftercareTitle: props.aftercare?.title || prev.aftercareTitle,
+        aftercareIntro: props.aftercare?.intro || prev.aftercareIntro,
+        aftercareSections: props.aftercare?.sections || prev.aftercareSections
     }));
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
@@ -322,6 +331,11 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             yocoPublicKey: settings.yocoPublicKey,
             yocoSecretKey: settings.yocoSecretKey,
         },
+        aftercare: {
+            title: settings.aftercareTitle,
+            intro: settings.aftercareIntro,
+            sections: settings.aftercareSections
+        },
         loyaltyPrograms: loyaltyPrograms,
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
@@ -356,6 +370,53 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         ...prev,
         [listName]: (prev[listName] as string[]).filter((_, i) => i !== index)
     }));
+  };
+
+  // --- Aftercare section logic ---
+  const addAftercareSection = () => {
+    setSettings(prev => ({
+        ...prev,
+        aftercareSections: [...prev.aftercareSections, { title: 'New Category', icon: '✨', items: ['Care tip...'] }]
+    }));
+  };
+
+  const removeAftercareSection = (index: number) => {
+    setSettings(prev => ({
+        ...prev,
+        aftercareSections: prev.aftercareSections.filter((_, i) => i !== index)
+    }));
+  };
+
+  const updateAftercareSection = (index: number, field: string, value: any) => {
+    setSettings(prev => {
+        const newSections = [...prev.aftercareSections];
+        newSections[index] = { ...newSections[index], [field]: value };
+        return { ...prev, aftercareSections: newSections };
+    });
+  };
+
+  const addAftercareItem = (sectionIndex: number) => {
+    setSettings(prev => {
+        const newSections = [...prev.aftercareSections];
+        newSections[sectionIndex].items = [...newSections[sectionIndex].items, 'New care tip...'];
+        return { ...prev, aftercareSections: newSections };
+    });
+  };
+
+  const removeAftercareItem = (sectionIndex: number, itemIndex: number) => {
+    setSettings(prev => {
+        const newSections = [...prev.aftercareSections];
+        newSections[sectionIndex].items = newSections[sectionIndex].items.filter((_, i) => i !== itemIndex);
+        return { ...prev, aftercareSections: newSections };
+    });
+  };
+
+  const updateAftercareItem = (sectionIndex: number, itemIndex: number, value: string) => {
+    setSettings(prev => {
+        const newSections = [...prev.aftercareSections];
+        newSections[sectionIndex].items[itemIndex] = value;
+        return { ...prev, aftercareSections: newSections };
+    });
   };
 
   const inputClass = "w-full bg-white border border-admin-dark-border rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-admin-dark-text focus:ring-2 focus:ring-admin-dark-primary outline-none transition";
@@ -519,6 +580,67 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                   </div>
                </div>
              </div>
+          )}
+
+          {/* Aftercare Tab */}
+          {activeTab === 'aftercare' && (
+            <div className={sectionClass}>
+               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Aftercare Guide Builder</h3>
+               <div className="grid grid-cols-1 gap-4 mb-8">
+                  <div>
+                     <label className={labelClass}>Guide Title</label>
+                     <input name="aftercareTitle" value={settings.aftercareTitle} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Introduction Text</label>
+                     <textarea name="aftercareIntro" rows={2} value={settings.aftercareIntro} onChange={handleChange} className={inputClass} />
+                  </div>
+               </div>
+
+               <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-admin-dark-text">Guide Sections</h4>
+                    <button onClick={addAftercareSection} className="flex items-center gap-1 text-xs font-bold text-admin-dark-primary bg-white border border-admin-dark-border px-3 py-1 rounded-lg hover:bg-gray-50">
+                        <PlusIcon className="w-3 h-3" /> Add Section
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    {settings.aftercareSections.map((section: any, sIdx: number) => (
+                        <div key={sIdx} className="bg-white border border-admin-dark-border rounded-xl p-4 sm:p-6 shadow-sm">
+                            <div className="flex justify-between gap-4 mb-4">
+                                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Title</label>
+                                        <input value={section.title} onChange={e => updateAftercareSection(sIdx, 'title', e.target.value)} className={inputClass} />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-bold text-gray-400 uppercase mb-1 block">Emoji Icon</label>
+                                        <input value={section.icon} onChange={e => updateAftercareSection(sIdx, 'icon', e.target.value)} className={`${inputClass} text-center`} />
+                                    </div>
+                                </div>
+                                <button onClick={() => removeAftercareSection(sIdx)} className="text-red-400 hover:text-red-600 self-start p-2">
+                                    <TrashIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-2 mt-4 border-t pt-4">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Bullet Points</label>
+                                {section.items.map((item: string, iIdx: number) => (
+                                    <div key={iIdx} className="flex gap-2">
+                                        <input value={item} onChange={e => updateAftercareItem(sIdx, iIdx, e.target.value)} className={inputClass} />
+                                        <button onClick={() => removeAftercareItem(sIdx, iIdx)} className="text-red-300 hover:text-red-500 px-2">✕</button>
+                                    </div>
+                                ))}
+                                <button onClick={() => addAftercareItem(sIdx)} className="text-[10px] font-bold text-admin-dark-primary flex items-center gap-1 mt-2 hover:underline">
+                                    <PlusIcon className="w-3 h-3" /> Add Point
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                  </div>
+               </div>
+            </div>
           )}
 
           {/* Contact Tab */}
@@ -1041,7 +1163,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                            </div>
                            <div>
                               <h5 className="font-bold text-gray-900 mb-2">Maintenance Mode</h5>
-                              <p className="text-sm text-gray-600">Need to update your prices or re-shoot your portfolio? Flip the Maintenance switch. A "Digital Curtain" drops over the public site, showing a beautiful "Closed for Renovations" page while you work.</p>
+                              <p className="text-sm text-gray-600">Need to update your prices or re-shoot your portfolio? Flip the Maintenance switch. A "Digital Curtain" drops over the public site, showing a beautiful "Closed for Renovations" page while you work on the admin panel.</p>
                            </div>
                         </div>
                      </section>
