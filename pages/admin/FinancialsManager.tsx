@@ -38,10 +38,13 @@ const StatCard: React.FC<{
 interface IncomeRowProps {
     booking: Booking;
     onUpdate: (b: Booking) => Promise<void>;
+    terminalEnabled?: boolean;
 }
 
-const IncomeRow: React.FC<IncomeRowProps> = ({ booking, onUpdate }) => {
+const IncomeRow: React.FC<IncomeRowProps> = ({ booking, onUpdate, terminalEnabled }) => {
     const [isEditing, setIsEditing] = useState(false);
+    const [isPushingToTerminal, setIsPushingToTerminal] = useState(false);
+    const [amountTendered, setAmountTendered] = useState<number>(0);
     const [data, setData] = useState({
         totalCost: booking.totalCost || 0,
         amountPaid: booking.amountPaid || 0,
@@ -59,8 +62,30 @@ const IncomeRow: React.FC<IncomeRowProps> = ({ booking, onUpdate }) => {
         setIsEditing(false);
     };
 
+    const handleChargeTerminal = async () => {
+        if (!data.totalCost) return alert("Enter amount first!");
+        
+        setIsPushingToTerminal(true);
+        // SIMULATION: In production, this calls a Supabase Edge Function which calls Yoco Terminal API
+        setTimeout(async () => {
+            if(window.confirm("SIMULATION: Machine Charged. Card Tapped? (Confirm Approval)")) {
+                await onUpdate({
+                    ...booking,
+                    totalCost: data.totalCost,
+                    amountPaid: data.totalCost,
+                    paymentMethod: 'card',
+                    status: 'completed'
+                });
+                setData({ ...data, amountPaid: data.totalCost, paymentMethod: 'card', status: 'completed' });
+                alert("Terminal Approved. Booking updated.");
+            }
+            setIsPushingToTerminal(false);
+        }, 2000);
+    };
+
     const isPaid = data.amountPaid >= data.totalCost && data.totalCost > 0;
     const isPartial = data.amountPaid > 0 && data.amountPaid < data.totalCost;
+    const changeDue = Math.max(0, amountTendered - data.amountPaid);
 
     const inputClass = "bg-gray-50 border border-gray-300 rounded px-1 py-0.5 text-gray-900 text-xs w-16 focus:ring-1 focus:ring-blue-500 outline-none";
     const selectClass = "bg-gray-50 border border-gray-300 rounded px-1 py-0.5 text-gray-900 text-xs focus:ring-1 focus:ring-blue-500 outline-none";
@@ -98,13 +123,45 @@ const IncomeRow: React.FC<IncomeRowProps> = ({ booking, onUpdate }) => {
             </td>
             <td className="px-2 py-2">
                 {isEditing ? (
-                    <input 
-                        type="number" 
-                        value={data.amountPaid} 
-                        onChange={e => setData({...data, amountPaid: parseFloat(e.target.value)})} 
-                        className={inputClass}
-                        step="0.01"
-                    />
+                    <div className="flex flex-col gap-1">
+                        <input 
+                            type="number" 
+                            value={data.amountPaid} 
+                            onChange={e => setData({...data, amountPaid: parseFloat(e.target.value)})} 
+                            className={inputClass}
+                            step="0.01"
+                            placeholder="Paid"
+                        />
+                        {data.paymentMethod === 'cash' && (
+                            <div className="flex flex-col gap-1 mt-1 p-1 bg-blue-50 rounded border border-blue-100">
+                                <label className="text-[8px] font-bold text-blue-600 uppercase">Tendered</label>
+                                <input 
+                                    type="number" 
+                                    value={amountTendered || ''} 
+                                    onChange={e => setAmountTendered(parseFloat(e.target.value) || 0)} 
+                                    className={`${inputClass} border-blue-200`}
+                                    placeholder="R"
+                                />
+                                {amountTendered > 0 && (
+                                    <div className="text-[9px] font-bold text-green-600">
+                                        Change: R{changeDue.toFixed(2)}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {data.paymentMethod === 'card' && terminalEnabled && (
+                            <button 
+                                type="button"
+                                onClick={handleChargeTerminal}
+                                disabled={isPushingToTerminal}
+                                className="mt-1 bg-yellow-500 text-white text-[9px] font-bold py-1 rounded shadow-sm hover:bg-yellow-600 transition-colors uppercase flex items-center justify-center gap-1"
+                            >
+                                {isPushingToTerminal ? (
+                                    <span className="w-2 h-2 border border-white border-t-transparent rounded-full animate-spin"></span>
+                                ) : "📟 Charge Machine"}
+                            </button>
+                        )}
+                    </div>
                 ) : (
                     <div className="flex flex-col">
                         <span className={`font-mono font-bold ${isPaid ? 'text-green-600' : isPartial ? 'text-orange-500' : 'text-red-500'}`}>
@@ -162,6 +219,10 @@ interface FinancialsManagerProps {
     taxEnabled: boolean;
     vatPercentage: number;
     startTour: (key: any) => void;
+    // New: Payment Settings
+    payments?: {
+        terminalEnabled?: boolean;
+    }
 }
 
 const FinancialsManager: React.FC<FinancialsManagerProps> = (props) => {
@@ -347,7 +408,12 @@ const FinancialsManager: React.FC<FinancialsManagerProps> = (props) => {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {monthlyBookings.map(booking => (
-                                        <IncomeRow key={booking.id} booking={booking} onUpdate={props.onUpdateBooking} />
+                                        <IncomeRow 
+                                            key={booking.id} 
+                                            booking={booking} 
+                                            onUpdate={props.onUpdateBooking} 
+                                            terminalEnabled={props.payments?.terminalEnabled}
+                                        />
                                     ))}
                                     {monthlyBookings.length === 0 && (
                                         <tr>

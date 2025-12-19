@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = ({ text, label, height = "h-auto" }) => {
@@ -36,7 +37,7 @@ const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = (
 
 const ExternalLink: React.FC<{ href: string; children: React.ReactNode }> = ({ href, children }) => (
     <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-400 underline font-bold decoration-blue-500/30 underline-offset-4 inline-flex items-center gap-1 transition-all">
-        {children} <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+        {children} <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
     </a>
 );
 
@@ -64,7 +65,7 @@ const StepWrapper: React.FC<{ number: string; title: string; subtitle?: string; 
 );
 
 const SetupManager: React.FC = () => {
-  const [activeStep, setActiveStep] = useState<number>(3); // Set to 3 by default to help user find SQL
+  const [activeStep, setActiveStep] = useState<number>(3); 
 
   const sql_structure = `
 -- 1. EXTENSIONS
@@ -222,22 +223,7 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
--- Drop existing policies if they exist to prevent errors on rerun
-drop policy if exists "Admin Expenses" on public.expenses;
-drop policy if exists "Admin Inventory" on public.inventory;
-drop policy if exists "Public Read Portfolio" on public.portfolio;
-drop policy if exists "Public Read Specials" on public.specials;
-drop policy if exists "Public Read Showroom" on public.showroom;
-drop policy if exists "Public Read Settings" on public.settings;
-drop policy if exists "Admin Write Portfolio" on public.portfolio;
-drop policy if exists "Admin Write Specials" on public.specials;
-drop policy if exists "Admin Write Showroom" on public.showroom;
-drop policy if exists "Admin Write Settings" on public.settings;
-drop policy if exists "App Access Bookings" on public.bookings;
-drop policy if exists "App Access Invoices" on public.invoices;
-drop policy if exists "App Access Clients" on public.clients;
-
--- Create Policies
+-- Policies
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
@@ -255,7 +241,6 @@ create policy "App Access Clients" on public.clients for all using (true);
 
   const sql_realtime = `
 -- REALTIME SUBSCRIPTION CONFIG
--- We drop and recreate to ensure a clean state for the chosen tables.
 DROP PUBLICATION IF EXISTS supabase_realtime;
 CREATE PUBLICATION supabase_realtime FOR TABLE 
     public.portfolio, 
@@ -269,14 +254,6 @@ CREATE PUBLICATION supabase_realtime FOR TABLE
     public.clients;
 `.trim();
 
-  const sql_patch = `
--- USE THIS IF YOU SEE "COLUMN NOT FOUND" ERRORS
--- This adds the missing columns to the settings table without deleting your data.
-
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS aftercare jsonb;
-ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS payments jsonb;
-`.trim();
-
   const env_template = `
 NEXT_PUBLIC_SUPABASE_URL=your_project_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
@@ -284,7 +261,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
   return (
     <div className="relative min-h-screen font-sans bg-gray-50 pb-24">
-      {/* Background Shapes */}
       <div className="fixed inset-0 pointer-events-none opacity-10 overflow-hidden">
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500 rounded-full blur-[120px]"></div>
           <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-pink-500 rounded-full blur-[120px]"></div>
@@ -293,110 +269,65 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
           <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">Deployment Guide</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">The complete blueprint for moving from localhost to a professional, live tattoo studio platform.</p>
-          <div className="flex justify-center gap-4 pt-4">
-              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Supabase Cloud</span>
-              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Vercel Edge</span>
-          </div>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Blueprint for your professional Tattoo Studio platform.</p>
         </header>
 
         <div className="space-y-4">
-            {/* STEP 1: GITHUB */}
-            <StepWrapper 
-                number="1" 
-                title="Repository Hosting" 
-                subtitle="GitHub"
-                isActive={activeStep === 1}
-                onHeaderClick={() => setActiveStep(1)}
-            >
-                <p>To deploy your site, you first need to host your code in a professional repository.</p>
-                <ol className="list-decimal pl-5 space-y-3">
-                    <li>Create a new repository on <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</li>
-                    <li>Initialize your local project folder and push it to this new repo.</li>
-                </ol>
+            <StepWrapper number="1" title="Repository Hosting" subtitle="GitHub" isActive={activeStep === 1} onHeaderClick={() => setActiveStep(1)}>
+                <p>Initialize your project and push to <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</p>
             </StepWrapper>
 
-            {/* STEP 2: SUPABASE PROJECT */}
-            <StepWrapper 
-                number="2" 
-                title="Backend Engine" 
-                subtitle="Supabase Setup"
-                isActive={activeStep === 2}
-                onHeaderClick={() => setActiveStep(2)}
-            >
-                <p>Your database and authentication are powered by Supabase.</p>
-                <ol className="list-decimal pl-5 space-y-3">
-                    <li>Sign in to <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and click <strong>"New Project"</strong>.</li>
-                    <li>Wait for the database to provision.</li>
-                    <li>Go to <strong>Project Settings &rarr; API</strong> to get your Keys.</li>
-                </ol>
+            <StepWrapper number="2" title="Backend Engine" subtitle="Supabase Setup" isActive={activeStep === 2} onHeaderClick={() => setActiveStep(2)}>
+                <p>Create a project on <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and get your Keys.</p>
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
                     <CopyBlock text={env_template} label="Env Template" />
                 </div>
             </StepWrapper>
 
-            {/* STEP 3: SQL SCRIPTS */}
-            <StepWrapper 
-                number="3" 
-                title="Database Architecture" 
-                subtitle="SQL Scripts"
-                isActive={activeStep === 3}
-                onHeaderClick={() => setActiveStep(3)}
-            >
-                <p>Run these scripts in your **Supabase SQL Editor** to build the database.</p>
+            <StepWrapper number="3" title="Database Architecture" subtitle="SQL Scripts" isActive={activeStep === 3} onHeaderClick={() => setActiveStep(3)}>
+                <p>Run these in your Supabase SQL Editor.</p>
                 <div className="space-y-8">
                     <section>
-                        <h4 className="font-bold text-red-600 mb-2">Phase D: Schema Patch (RUN THIS IF ERROR)</h4>
-                        <p className="text-sm mb-4">If you see an error about a missing "aftercare" column, run this script to fix it instantly without deleting data.</p>
-                        <CopyBlock text={sql_patch} height="h-24" label="Patch Script" />
-                    </section>
-
-                    <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure</h4>
-                        <p className="text-sm mb-4">Creates your tables (Portfolio, Bookings, Clients, Settings, etc).</p>
                         <CopyBlock text={sql_structure} height="h-48" label="Structure Script" />
                     </section>
-
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase B: Permissions (RLS)</h4>
-                        <p className="text-sm mb-4">Secures your data so only you can manage it.</p>
                         <CopyBlock text={sql_permissions} height="h-32" label="Security Script" />
                     </section>
-
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase C: Realtime Sync</h4>
-                        <p className="text-sm mb-4">Enables instant dashboard updates for new bookings.</p>
                         <CopyBlock text={sql_realtime} height="h-32" label="Realtime Script" />
                     </section>
                 </div>
             </StepWrapper>
 
-            {/* STEP 4: STORAGE */}
-            <StepWrapper 
-                number="4" 
-                title="Media Storage" 
-                subtitle="Buckets"
-                isActive={activeStep === 4}
-                onHeaderClick={() => setActiveStep(4)}
-            >
-                <p>Create the following **Public** buckets in Supabase Storage:</p>
+            <StepWrapper number="4" title="Media Storage" subtitle="Buckets" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
+                <p>Create these **Public** buckets in Supabase Storage:</p>
                 <ul className="list-disc pl-5 font-mono text-xs space-y-1">
-                    <li>portfolio</li>
-                    <li>specials</li>
-                    <li>showroom</li>
-                    <li>settings</li>
-                    <li>booking-references</li>
+                    <li>portfolio, specials, showroom, settings, booking-references</li>
                 </ul>
             </StepWrapper>
 
-            {/* STEP 5: VERCEL */}
-            <StepWrapper 
-                number="5" 
-                title="Production Launch" 
-                subtitle="Vercel Deployment"
-                isActive={activeStep === 5}
-                onHeaderClick={() => setActiveStep(5)}
-            >
+            {/* NEW STEP FOR YOCO TERMINAL */}
+            <StepWrapper number="5" title="Physical Terminal Integration" subtitle="Yoco Hardware" isActive={activeStep === 5} onHeaderClick={() => setActiveStep(5)}>
+                <div className="space-y-4">
+                    <p className="font-bold text-gray-900">How to link your Yoco Machine:</p>
+                    <ol className="list-decimal pl-5 space-y-3">
+                        <li>Ensure you have a **Yoco Neo** or **Yoco Khumo** connected to Wi-Fi.</li>
+                        <li>Log in to your <ExternalLink href="https://portal.yoco.com">Yoco Portal</ExternalLink>.</li>
+                        <li>Navigate to **Settings &rarr; API Keys**. Generate a Secret Key.</li>
+                        <li>Find your **Terminal ID** on your machine (Settings &rarr; Device Info) or in the Portal under Devices.</li>
+                        <li>Go to the **Settings** tab in this Admin Panel &rarr; **Yoco Machine** sub-tab.</li>
+                        <li>Enter your ID and Key, then toggle **Enable**.</li>
+                    </ol>
+                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 text-xs text-yellow-800">
+                        <strong>Security Note:</strong> For real-world transactions, ensure your site is served over HTTPS. The "Push to Terminal" feature uses Yoco's cloud relay to wake up your machine instantly.
+                    </div>
+                </div>
+            </StepWrapper>
+
+            <StepWrapper number="6" title="Production Launch" subtitle="Vercel Deployment" isActive={activeStep === 6} onHeaderClick={() => setActiveStep(6)}>
                 <p>Deploy to Vercel and add your environment variables.</p>
                 <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl">
                     <h3 className="text-2xl font-bold mb-2">Almost Live! 🚀</h3>

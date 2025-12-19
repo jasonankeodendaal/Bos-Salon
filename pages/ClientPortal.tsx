@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Client, Booking, Invoice, SpecialItem, LoyaltyProgram, BookingOption } from '../App';
 import { dbUploadFile, dbLoginWithGoogle, dbLogout } from '../utils/dbAdapter';
-// Import WhatsAppIcon component which was used but not imported.
 import WhatsAppIcon from '../components/icons/WhatsAppIcon';
 
 interface ClientPortalProps {
@@ -132,6 +131,9 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   // View State
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
   const [processingId, setProcessingId] = useState<string | null>(null);
+
+  // Confirmation Modal
+  const [confirmationModal, setConfirmationModal] = useState<{ isOpen: boolean, booking: Booking | null, invoice: Invoice | null }>({ isOpen: false, booking: null, invoice: null });
 
   // Booking Form State
   const [bookingDate, setBookingDate] = useState('');
@@ -338,6 +340,36 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
     onNavigate('home');
   };
 
+  const handleConfirmInSalon = async (booking: Booking, invoice: Invoice | null) => {
+      if (!window.confirm("Confirm this booking for In-Salon payment? This will finalize your slot and payment will be due at the appointment.")) return;
+      
+      setProcessingId(booking.id);
+      try {
+          // 1. Update Booking Status
+          await onUpdateBooking({ 
+              ...booking, 
+              status: 'confirmed', 
+              confirmationMethod: 'in-salon' 
+          });
+
+          // 2. Update Related Invoice Status if exists
+          if (invoice) {
+              await onUpdateInvoice({ 
+                  ...invoice, 
+                  status: 'accepted' 
+              });
+          }
+
+          alert("Confirmed! We'll see you at the studio for your appointment.");
+          setConfirmationModal({ isOpen: false, booking: null, invoice: null });
+      } catch (err) {
+          console.error("Confirmation failed", err);
+          alert("Something went wrong. Please try again.");
+      } finally {
+          setProcessingId(null);
+      }
+  };
+
   const handlePayNow = (invoice: Invoice) => {
       const yocoKey = settings?.payments?.yocoPublicKey;
       if (!yocoKey) {
@@ -364,10 +396,16 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                       if (invoice.type === 'quote' || invoice.bookingId) {
                           const relatedBooking = bookings.find(b => b.id === invoice.bookingId);
                           if (relatedBooking) {
-                              await onUpdateBooking({ ...relatedBooking, status: 'confirmed', amountPaid: invoice.total });
+                              await onUpdateBooking({ 
+                                  ...relatedBooking, 
+                                  status: 'confirmed', 
+                                  amountPaid: invoice.total,
+                                  confirmationMethod: 'online'
+                              });
                           }
                       }
                       alert("Payment Successful!");
+                      setConfirmationModal({ isOpen: false, booking: null, invoice: null });
                   } catch (err) {
                       console.error("Verification failed", err);
                   } finally {
@@ -394,13 +432,11 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
     );
   };
 
-  // Helper to get clean WhatsApp link
   const getWhatsAppLink = (number?: string) => {
       if (!number) return '#';
       return `https://wa.me/${number.replace(/[^0-9]/g, '')}`;
   };
 
-  // FIX: Explicitly typing 'files' as 'File[]' ensures 'URL.createObjectURL(file)' receives the correct 'Blob' type
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
         const files: File[] = Array.from(e.target.files);
@@ -409,7 +445,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
             return;
         }
         setBookingImages(files);
-        // Clean up old previews
         bookingImagePreviews.forEach(url => URL.revokeObjectURL(url));
         const previews = files.map(file => URL.createObjectURL(file));
         setBookingImagePreviews(previews);
@@ -463,7 +498,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const myInvoices = currentUser ? invoices.filter(inv => inv.clientEmail.toLowerCase() === currentUser.email.toLowerCase() && (inv.status !== 'draft' && inv.status !== 'void')) : [];
   const myBookings = currentUser ? bookings.filter(b => b.email.toLowerCase() === currentUser.email.toLowerCase()) : [];
   const upcomingBookings = myBookings.filter(b => (b.status === 'confirmed' || b.status === 'pending' || b.status === 'quote_sent' || b.status === 'rescheduled') && new Date(b.bookingDate) >= new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
-  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
+  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
   const totalSpend = myInvoices.filter(i => i.status === 'paid').reduce((acc, curr) => acc + curr.total, 0);
   const outstanding = myInvoices.filter(i => i.status === 'sent' && i.type === 'invoice').reduce((acc, curr) => acc + curr.total, 0);
   
@@ -540,6 +575,57 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-20">
         {viewInvoice && <InvoicePreviewModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
+        
+        {/* PAYMENT OPTIONS MODAL */}
+        {confirmationModal.isOpen && (
+            <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+                <div className="bg-white rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
+                    <div className="bg-brand-green p-6 text-white text-center">
+                        <h3 className="text-2xl font-bold">Approve & Confirm</h3>
+                        <p className="text-white/80 text-xs uppercase font-black tracking-widest mt-1">Select your payment path</p>
+                    </div>
+                    <div className="p-8 space-y-6">
+                        <div className="text-center mb-8">
+                            <p className="text-gray-500 text-sm">How would you like to confirm your booking for <span className="font-bold text-gray-900">{new Date(confirmationModal.booking?.bookingDate || '').toLocaleDateString()}</span>?</p>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {/* Online Path */}
+                            <button 
+                                onClick={() => handlePayNow(confirmationModal.invoice! || { id: 'temp', total: confirmationModal.booking?.totalCost || 0 } as any)}
+                                className="flex flex-col items-center gap-4 p-6 rounded-3xl border-2 border-brand-green bg-brand-green/5 hover:bg-brand-green/10 transition-all text-center group"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-brand-green flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">Pay Online</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 uppercase font-black tracking-tighter">Instant Approval</p>
+                                </div>
+                            </button>
+
+                            {/* In-Salon Path */}
+                            <button 
+                                onClick={() => handleConfirmInSalon(confirmationModal.booking!, confirmationModal.invoice)}
+                                className="flex flex-col items-center gap-4 p-6 rounded-3xl border-2 border-gray-100 hover:border-brand-green/30 bg-gray-50 hover:bg-white transition-all text-center group"
+                            >
+                                <div className="w-12 h-12 rounded-2xl bg-gray-200 flex items-center justify-center text-gray-500 group-hover:bg-brand-green group-hover:text-white transition-all shadow-sm group-hover:scale-110">
+                                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                                </div>
+                                <div>
+                                    <h4 className="font-bold text-gray-900">In-Salon</h4>
+                                    <p className="text-[10px] text-gray-500 mt-1 uppercase font-black tracking-tighter">Pay at Studio</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                    <div className="p-4 bg-gray-50 border-t flex justify-center">
+                        <button onClick={() => setConfirmationModal({ isOpen: false, booking: null, invoice: null })} className="text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <header className="bg-white shadow-sm border-b px-4 py-4 sticky top-0 z-50 no-print">
             <div className="max-w-6xl mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -595,7 +681,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                         <p className="text-xl font-bold">R {totalSpend.toFixed(0)}</p>
                                     </div>
                                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Tattoos</p>
+                                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Total Sessions</p>
                                         <p className="text-xl font-bold">{currentUser?.visitCount || 0}</p>
                                     </div>
                                     <div className="hidden sm:block bg-brand-green/10 border border-brand-green/20 p-4 rounded-2xl">
@@ -615,7 +701,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     <div className="space-y-4">
                                         <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100">
                                             <p className="font-bold text-2xl text-blue-900">{new Date(upcomingBookings[0].bookingDate).toLocaleDateString(undefined, {month:'short', day:'numeric'})}</p>
-                                            <p className="text-xs text-blue-600 font-bold uppercase tracking-widest mt-1">Confirmed</p>
+                                            <p className={`text-[10px] font-bold uppercase tracking-widest mt-1 ${upcomingBookings[0].status === 'confirmed' ? 'text-green-600' : 'text-blue-600'}`}>{upcomingBookings[0].status.replace('_', ' ')}</p>
                                         </div>
                                         <p className="text-sm text-gray-600 line-clamp-2 italic">"{upcomingBookings[0].message}"</p>
                                     </div>
@@ -642,7 +728,20 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     {myInvoices.filter(i => i.status === 'sent' || i.status === 'accepted').map(inv => (
                                         <div key={inv.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center group hover:bg-white hover:shadow-lg transition-all">
                                             <div><p className="font-bold text-sm text-gray-900">{inv.number}</p><p className="text-xs text-gray-500">R {inv.total.toFixed(2)}</p></div>
-                                            <div className="flex gap-2"><button onClick={() => setViewInvoice(inv)} className="bg-white px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 hover:bg-gray-50">View</button>{inv.status === 'sent' && (<button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95">Pay Now</button>)}</div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setViewInvoice(inv)} className="bg-white px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 hover:bg-gray-50">View</button>
+                                                {inv.status === 'sent' && (
+                                                    <button 
+                                                        onClick={() => {
+                                                            const booking = bookings.find(b => b.id === inv.bookingId);
+                                                            setConfirmationModal({ isOpen: true, booking: booking || null, invoice: inv });
+                                                        }} 
+                                                        className="bg-brand-green text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95"
+                                                    >
+                                                        Confirm & Pay
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -659,7 +758,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                         <div key={b.id} className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 text-xs shrink-0">{new Date(b.bookingDate).getDate()}</div>
                                             <div className="flex-grow"><p className="font-bold text-sm text-gray-900">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'long', year:'numeric'})}</p><p className="text-xs text-gray-500 truncate">{b.message}</p></div>
-                                            <span className={`px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{b.status}</span>
+                                            <span className={`px-2 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>{b.status}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -712,7 +811,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                         className={`flex items-start gap-3 p-3 rounded-2xl border transition-all cursor-pointer ${selectedOptions.includes(opt.label) ? 'bg-brand-green/5 border-brand-green' : 'bg-gray-50 border-gray-100 hover:bg-white'}`}
                                     >
                                         <div className={`mt-0.5 w-4 h-4 shrink-0 rounded flex items-center justify-center border-2 transition-colors ${selectedOptions.includes(opt.label) ? 'bg-brand-green border-brand-green' : 'border-gray-300'}`}>
-                                            {selectedOptions.includes(opt.label) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>}
+                                            {selectedOptions.includes(opt.label) && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>}
                                         </div>
                                         <div>
                                             <p className={`text-xs font-bold leading-tight ${selectedOptions.includes(opt.label) ? 'text-brand-green' : 'text-gray-900'}`}>{opt.label}</p>
@@ -752,7 +851,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                         />
                                         <label htmlFor="file-upload-portal" className="cursor-pointer block">
                                             <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mx-auto mb-2 shadow-sm text-gray-400 group-hover:text-brand-green transition-colors">
-                                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                             </div>
                                             <span className="text-xs font-bold text-gray-400 group-hover:text-brand-green uppercase tracking-widest">Select Photos</span>
                                         </label>
@@ -797,7 +896,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                             {upcomingBookings.length > 0 ? (
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                                     {upcomingBookings.map(b => {
-                                        const linkedInvoice = myInvoices.find(inv => inv.bookingId === b.id || inv.clientEmail === b.email); // Fallback logic
+                                        const linkedInvoice = myInvoices.find(inv => inv.bookingId === b.id || inv.clientEmail === b.email); 
                                         const isQuote = b.status === 'quote_sent';
                                         
                                         return (
@@ -813,13 +912,20 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                                 <div className="flex-grow p-8 flex flex-col justify-between">
                                                     <div>
                                                         <div className="flex justify-between items-start mb-4">
-                                                            <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
-                                                                b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                                b.status === 'quote_sent' ? 'bg-blue-100 text-blue-700 animate-pulse' :
-                                                                'bg-yellow-100 text-yellow-700'
-                                                            }`}>
-                                                                {b.status.replace('_', ' ')}
-                                                            </span>
+                                                            <div className="flex gap-2 items-center">
+                                                                <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-[0.1em] shadow-sm ${
+                                                                    b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                                                    b.status === 'quote_sent' ? 'bg-blue-100 text-blue-700 animate-pulse' :
+                                                                    'bg-yellow-100 text-yellow-700'
+                                                                }`}>
+                                                                    {b.status.replace('_', ' ')}
+                                                                </span>
+                                                                {b.confirmationMethod && (
+                                                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
+                                                                        {b.confirmationMethod === 'online' ? 'Confirmed Online' : 'Salon Payment'}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <p className="text-gray-800 text-sm leading-relaxed font-medium mb-6 line-clamp-3 italic">"{b.message}"</p>
                                                         
@@ -843,7 +949,12 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                                         
                                                         <div className="flex gap-2 w-full sm:w-auto">
                                                             {isQuote && (
-                                                                <button onClick={() => handlePayNow(linkedInvoice || {id: 'temp', total: b.totalCost || 0} as any)} className="flex-1 sm:flex-none bg-brand-green text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-green/20 hover:scale-105 transition-all">Accept & Pay</button>
+                                                                <button 
+                                                                    onClick={() => setConfirmationModal({ isOpen: true, booking: b, invoice: linkedInvoice || null })} 
+                                                                    className="flex-1 sm:flex-none bg-brand-green text-white px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand-green/20 hover:scale-105 transition-all"
+                                                                >
+                                                                    Confirm Slot
+                                                                </button>
                                                             )}
                                                             <button onClick={() => handleCancelBooking(b)} className="flex-1 sm:flex-none bg-gray-100 text-gray-400 px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-500 transition-all">Cancel</button>
                                                         </div>
@@ -908,7 +1019,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/10 blur-[80px] rounded-full"></div>
                         <h3 className="text-3xl font-bold mb-4">Any questions about your history?</h3>
                         <p className="text-gray-400 max-w-xl mx-auto mb-10 text-sm leading-relaxed">If you have questions about past work, need help with a deposit, or want to discuss a continuation project, we're here.</p>
-                        <a href={getWhatsAppLink(settings?.whatsAppNumber)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 bg-brand-green text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-brand-green/20">
+                        <a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 bg-brand-green text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-brand-green/20">
                             <WhatsAppIcon className="w-5 h-5"/>
                             Speak to Salon
                         </a>
@@ -981,12 +1092,18 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                             </div>
                         ))}
                     </div>
-                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p><a href={getWhatsAppLink(settings?.whatsAppNumber)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><WhatsAppIcon className="w-5 h-5"/>Speak to Salon</a></div>
+                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p><a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><WhatsAppIcon className="w-5 h-5"/>Speak to Salon</a></div>
                 </div>
             )}
 
             {activeTab === 'financials' && (
-                <div className="space-y-6 animate-fade-in"><div className="grid grid-cols-2 gap-4"><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Lifetime Investment</p><p className="text-4xl font-bold text-gray-900">R {totalSpend.toFixed(0)}</p></div><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Outstanding Balance</p><p className={`text-4xl font-bold ${outstanding > 0 ? 'text-red-500' : 'text-green-500'}`}>R {outstanding.toFixed(0)}</p></div></div><div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden"><table className="w-full text-sm text-left"><thead className="bg-gray-50 text-gray-400 font-bold text-[10px] uppercase tracking-widest"><tr><th className="px-6 py-4">Date</th><th className="px-6 py-4">Number</th><th className="px-6 py-4 text-right">Amount</th><th className="px-6 py-4 text-right">Status</th></tr></thead><tbody className="divide-y divide-gray-100">{myInvoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50 transition-colors"><td className="px-6 py-4 text-gray-500 text-xs">{new Date(inv.dateIssued).toLocaleDateString()}</td><td className="px-6 py-4 font-bold text-gray-900">{inv.number}</td><td className="px-6 py-4 text-right font-bold text-gray-900">R{inv.total.toFixed(2)}</td><td className="px-6 py-4 text-right flex justify-end gap-3 items-center"><span className={`text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>{inv.status === 'sent' && (<button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-md active:scale-95">PAY</button>)}</td></tr>))}</tbody></table></div></div>
+                <div className="space-y-6 animate-fade-in"><div className="grid grid-cols-2 gap-4"><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Lifetime Investment</p><p className="text-4xl font-bold text-gray-900">R {totalSpend.toFixed(0)}</p></div><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Outstanding Balance</p><p className={`text-4xl font-bold ${outstanding > 0 ? 'text-red-500' : 'text-green-500'}`}>R {outstanding.toFixed(0)}</p></div></div><div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden"><table className="w-full text-sm text-left"><thead className="bg-gray-50 text-gray-400 font-bold text-[10px] uppercase tracking-widest"><tr><th className="px-6 py-4">Date</th><th className="px-6 py-4">Number</th><th className="px-6 py-4 text-right">Amount</th><th className="px-6 py-4 text-right">Status</th></tr></thead><tbody className="divide-y divide-gray-100">{myInvoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50 transition-colors"><td className="px-6 py-4 text-gray-500 text-xs">{new Date(inv.dateIssued).toLocaleDateString()}</td><td className="px-6 py-4 font-bold text-gray-900">{inv.number}</td><td className="px-6 py-4 text-right font-bold text-gray-900">R{inv.total.toFixed(2)}</td><td className="px-6 py-4 text-right flex justify-end gap-3 items-center"><span className={`text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>{inv.status === 'sent' && (<button 
+                                                        onClick={() => {
+                                                            const booking = bookings.find(b => b.id === inv.bookingId);
+                                                            setConfirmationModal({ isOpen: true, booking: booking || null, invoice: inv });
+                                                        }} 
+                                                        className="bg-brand-green text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-md active:scale-95"
+                                                    >PAY</button>)}</td></tr>))}</tbody></table></div></div>
             )}
         </main>
     </div>

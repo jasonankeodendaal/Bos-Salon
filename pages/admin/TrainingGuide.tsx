@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 
-export type TourKey = 'dashboard' | 'art' | 'financials' | 'settings' | 'clients' | 'invoices' | 'inventory' | 'specials' | 'pwa' | 'yoco';
+export type TourKey = 'dashboard' | 'art' | 'financials' | 'settings' | 'clients' | 'invoices' | 'inventory' | 'specials' | 'pwa' | 'yoco' | 'yoco-terminal';
 
 interface TrainingGuideProps {
     activeTour: TourKey | null;
@@ -72,12 +72,6 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                 </section>
 
                 <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">The "Bos Identity" Rule</h4>
-                    <p className="mb-2"><strong>Clients:</strong> Must complete the Bos Identity form once registered to ensure the studio has valid records for bookings and liability.</p>
-                    <p className="mb-2"><strong>Admins:</strong> You do <u>not</u> need to fill out this form. As an administrator, you manage the entire company profile directly from the <strong>Settings</strong> tab.</p>
-                </section>
-
-                <section>
                     <h4 className="font-bold text-lg text-brand-green mb-2">How to Activate a Client</h4>
                     <div className="mt-2 bg-blue-50 p-3 rounded border border-blue-100">
                         <ol className="list-decimal pl-5 space-y-1">
@@ -87,11 +81,6 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                             <li>Click the <strong>WhatsApp Login</strong> button to send them their link and PIN instantly.</li>
                         </ol>
                     </div>
-                </section>
-
-                <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">Digital Loyalty</h4>
-                    <p>No more paper cards. Manually add a "Sticker" to their profile after each session. When they reach 10, a "Redeem" button appears in their portal.</p>
                 </section>
             </div>
         )
@@ -106,12 +95,6 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                         <li><strong>Quote (Q-xxxx):</strong> A proposal. Sending this does NOT confirm the booking financially. It just tells the client "This is what it will cost".</li>
                         <li><strong>Invoice (INV-xxxx):</strong> A demand for payment. You can convert a Quote to an Invoice with one click.</li>
                     </ul>
-                </section>
-
-                <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">Linking to Bookings</h4>
-                    <p>When you click <strong>"Build Quote"</strong> from the Dashboard, the system links that document to the specific booking.</p>
-                    <p className="mt-2"><strong>Client Interaction:</strong> If a client logs into their portal and clicks "Accept Quote", the system automatically finds the linked booking and updates its status to <strong>Confirmed</strong>.</p>
                 </section>
             </div>
         )
@@ -145,16 +128,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                     <p className="font-mono bg-gray-100 p-2 rounded text-center mb-2">
                         (Revenue from Completed Bookings) - (Logged Expenses) - (VAT) = <strong>Net Profit</strong>
                     </p>
-                    <p><strong>Important:</strong> A booking must be marked "Completed" to count as Revenue. A booking that is just "Paid" but "Confirmed" does not count as realized revenue for the month yet.</p>
-                </section>
-
-                <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">Expense Categories</h4>
-                    <ul className="list-disc pl-5 space-y-1">
-                        <li><strong>Stock:</strong> Buying bulk inventory (e.g., 50 bottles of polish).</li>
-                        <li><strong>Supplies:</strong> Daily consumables (e.g., paper towels, coffee).</li>
-                        <li><strong>Rent/Utilities:</strong> Fixed monthly costs.</li>
-                    </ul>
+                    <p><strong>Important:</strong> A booking must be marked "Completed" to count as Revenue.</p>
                 </section>
             </div>
         )
@@ -165,12 +139,12 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <section>
                     <h4 className="font-bold text-lg text-brand-green mb-2">Smart Dosing</h4>
-                    <p>We solved the "How much product did I use?" problem. Instead of guessing milliliters:</p>
+                    <p>Instead of guessing milliliters:</p>
                     <ol className="list-decimal pl-5 space-y-2 mt-2">
                         <li>Set up your items with a total quantity (e.g., 100ml bottle).</li>
                         <li>When you finish a booking, the log popup appears.</li>
                         <li>Click <strong>"+1 Service"</strong>.</li>
-                        <li>The system automatically calculates the average usage for that category (e.g., 0.5ml for Gel Polish) and deducts it.</li>
+                        <li>The system automatically deducts average usage.</li>
                     </ol>
                 </section>
             </div>
@@ -182,9 +156,8 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <p>This controls the "Seasonal Specials" section on the public site.</p>
                 <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Active Toggle:</strong> You can draft a special and keep it inactive until you are ready to launch.</li>
-                    <li><strong>Voucher Codes:</strong> These are display-only codes (like "SUMMER20") that clients can quote when messaging you on WhatsApp.</li>
-                    <li><strong>Price Types:</strong> "Fixed" is a set price. "Hourly" helps for complex treatments. "Percentage" creates a discount badge.</li>
+                    <li><strong>Active Toggle:</strong> Draft a special and keep it inactive until launch.</li>
+                    <li><strong>Price Types:</strong> "Fixed", "Hourly", or "Percentage" for discount badges.</li>
                 </ul>
             </div>
         )
@@ -195,39 +168,40 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <p>This is the CMS (Content Management System) for your entire website.</p>
                 <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Branding:</strong> Change your logo, company name, and contact details here. It updates everywhere instantly.</li>
-                    <li><strong>Banking:</strong> These details appear automatically on the bottom left of every Invoice/Quote PDF.</li>
-                    <li><strong>Maintenance Mode:</strong> Hides the website from the public (showing an "Under Construction" page) while you work on the admin panel.</li>
+                    <li><strong>Branding:</strong> Change your logo, company name, and contact details.</li>
+                    <li><strong>Maintenance Mode:</strong> Hides the website from the public while you work.</li>
                 </ul>
             </div>
         )
     },
     yoco: {
-        title: "Yoco Payments Integration",
+        title: "Yoco Payments (Online)",
         content: (
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">Why use Yoco?</h4>
-                    <p>Yoco allows your clients to pay for deposits and full invoices using their Debit or Credit card directly in the Client Portal. No more waiting for EFT clears or handling cash.</p>
-                </section>
-
+                    <h4 className="font-bold text-lg text-brand-green mb-2">Portal Payments</h4>
+                    <p>Allows clients to pay deposits via Debit/Credit card directly in their portal. Requires your Yoco Public and Secret keys.</p>
+                </ol>
+            </div>
+        )
+    },
+    'yoco-terminal': {
+        title: "Yoco Machine (Terminal) Integration",
+        content: (
+            <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <section>
-                    <h4 className="font-bold text-lg text-brand-green mb-2">Setup Instructions</h4>
-                    <ol className="list-decimal pl-5 space-y-4">
-                        <li>
-                            <strong>Get your Keys:</strong> Log in to your <a href="https://portal.yoco.com/" target="_blank" className="text-blue-500 underline">Yoco Portal</a>. Go to <strong>Sell Online &rarr; Payment Gateways &rarr; WooCommerce/API</strong>.
-                        </li>
-                        <li>
-                            <strong>Public Key:</strong> Copy your Live Public Key. It starts with <code>pk_live_</code>. Paste this into the "Public Key" field in Settings.
-                        </li>
-                        <li>
-                            <strong>Secret Key:</strong> Copy your Live Secret Key. It starts with <code>sk_live_</code>. Paste this into the "Secret Key" field. 
-                            <br/><span className="text-xs text-red-500 font-bold">Never share this key with anyone.</span>
-                        </li>
-                        <li>
-                            <strong>Enable Gateway:</strong> Flip the "Enable Yoco" switch to ON and Save All.
-                        </li>
-                    </ol>
+                    <h4 className="font-bold text-lg text-brand-green mb-2">Push to Machine</h4>
+                    <p>Instead of typing amounts into your machine manually, you can "push" the charge from your dashboard.</p>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+                        <h5 className="font-bold text-gray-900 mb-1">How to use:</h5>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>Go to <strong>Finance &rarr; Transactions</strong>.</li>
+                            <li>Click <strong>Edit</strong> on a booking.</li>
+                            <li>Select <strong>Card</strong> as the payment method.</li>
+                            <li>Click the <strong>📟 Charge Machine</strong> button.</li>
+                            <li>Your machine will beep and show the amount.</li>
+                        </ul>
+                    </div>
                 </section>
             </div>
         )
@@ -237,11 +211,6 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
         content: (
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <p>Your website is a Progressive Web App. It can be installed on phones just like a native app.</p>
-                <ul className="list-disc pl-5 space-y-2">
-                    <li><strong>Push Notifications:</strong> Requires user permission. Used for appointment reminders.</li>
-                    <li><strong>Periodic Sync:</strong> Allows the app to fetch new specials in the background once a day.</li>
-                    <li><strong>Offline Mode:</strong> Essential parts of the site (like contact info) work even without internet.</li>
-                </ul>
             </div>
         )
     }
@@ -264,7 +233,6 @@ const TrainingGuide: React.FC<TrainingGuideProps> = ({ activeTour, onClose }) =>
             <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={handleClose}></div>
             
             <div className={`relative bg-white w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col transform transition-all duration-300 ${isClosing ? 'scale-95 translate-y-4' : 'scale-100 translate-y-0'}`}>
-                {/* Header */}
                 <div className="bg-gradient-to-r from-brand-pink to-brand-green p-6 flex justify-between items-center shrink-0">
                     <div className="flex items-center gap-3 text-white">
                         <span className="text-3xl">💡</span>
@@ -272,13 +240,9 @@ const TrainingGuide: React.FC<TrainingGuideProps> = ({ activeTour, onClose }) =>
                     </div>
                     <button onClick={handleClose} className="text-white/80 hover:text-white text-3xl font-bold leading-none">&times;</button>
                 </div>
-
-                {/* Content */}
                 <div className="p-8 overflow-y-auto">
                     {data.content}
                 </div>
-
-                {/* Footer */}
                 <div className="p-6 border-t border-gray-100 bg-gray-50 text-right shrink-0">
                     <button onClick={handleClose} className="bg-brand-green text-white px-8 py-3 rounded-lg font-bold shadow-lg hover:opacity-90 transition-transform transform hover:-translate-y-0.5">
                         Got it!

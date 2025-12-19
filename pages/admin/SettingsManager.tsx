@@ -17,7 +17,7 @@ interface SettingsManagerProps {
 
 // Section Tabs
 const TABS = [
-  { id: 'general', label: 'General & Branding' },
+  { id: 'general', label: '🏢 Company Profile' },
   { id: 'hero', label: 'Home Page (Hero)' },
   { id: 'about', label: 'About Page' },
   { id: 'showroom', label: 'Showroom & Specials' },
@@ -27,6 +27,7 @@ const TABS = [
   { id: 'financials', label: 'Financial Config' },
   { id: 'loyalty', label: 'Loyalty Programs' },
   { id: 'payments', label: 'Yoco Payments' },
+  { id: 'terminal', label: 'Yoco Machine (Terminal)' },
   { id: 'integrations', label: 'Integrations & Adv' },
   { id: 'system-guide', label: '📖 System Overview' },
 ];
@@ -63,6 +64,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     companyName: props.companyName || 'Bos Salon',
     whatsAppNumber: props.whatsAppNumber || '',
     logoUrl: props.logoUrl || '',
+    businessHours: props.businessHours || '',
     
     // Hero Section
     heroTitle: props.hero?.title || 'Nail and beauty',
@@ -116,6 +118,11 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     yocoPublicKey: props.payments?.yocoPublicKey || '',
     yocoSecretKey: props.payments?.yocoSecretKey || '',
 
+    // Yoco Terminal (Physical Machine)
+    terminalEnabled: props.payments?.terminalEnabled || false,
+    terminalId: props.payments?.terminalId || '',
+    terminalSecretKey: props.payments?.terminalSecretKey || '',
+
     // Integrations
     emailServiceId: props.emailServiceId || '',
     emailTemplateId: props.emailTemplateId || '',
@@ -136,13 +143,12 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         companyName: props.companyName || prev.companyName,
         whatsAppNumber: props.whatsAppNumber || prev.whatsAppNumber,
         logoUrl: props.logoUrl || prev.logoUrl,
+        businessHours: props.businessHours || prev.businessHours,
         heroTitle: props.hero?.title || prev.heroTitle,
         heroSubtitle: props.hero?.subtitle || prev.heroSubtitle,
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
         heroBgUrl: props.heroBgUrl || prev.heroBgUrl,
         aboutTitle: props.about?.title || prev.aboutTitle,
-        aboutText1: props.aboutText1, // Keep local state unless initial load
-        aboutText2: props.aboutText2,
         aboutUsImageUrl: props.aboutUsImageUrl || prev.aboutUsImageUrl,
         showroomTitle: props.showroomTitle || prev.showroomTitle,
         showroomDescription: props.showroomDescription || prev.showroomDescription,
@@ -172,6 +178,9 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         yocoEnabled: props.payments?.yocoEnabled || prev.yocoEnabled,
         yocoPublicKey: props.payments?.yocoPublicKey || prev.yocoPublicKey,
         yocoSecretKey: props.payments?.yocoSecretKey || prev.yocoSecretKey,
+        terminalEnabled: props.payments?.terminalEnabled || prev.terminalEnabled,
+        terminalId: props.payments?.terminalId || prev.terminalId,
+        terminalSecretKey: props.payments?.terminalSecretKey || prev.terminalSecretKey,
         aftercareTitle: props.aftercare?.title || prev.aftercareTitle,
         aftercareIntro: props.aftercare?.intro || prev.aftercareIntro,
         aftercareSections: props.aftercare?.sections || prev.aftercareSections
@@ -315,6 +324,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         heroBgUrl: settings.heroBgUrl,
         aboutUsImageUrl: settings.aboutUsImageUrl,
         whatsAppNumber: settings.whatsAppNumber,
+        businessHours: settings.businessHours,
         address: settings.address,
         phone: settings.phone,
         email: settings.email,
@@ -356,6 +366,9 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             yocoEnabled: settings.yocoEnabled,
             yocoPublicKey: settings.yocoPublicKey,
             yocoSecretKey: settings.yocoSecretKey,
+            terminalEnabled: settings.terminalEnabled,
+            terminalId: settings.terminalId,
+            terminalSecretKey: settings.terminalSecretKey,
         },
         aftercare: {
             title: settings.aftercareTitle,
@@ -515,7 +528,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
           {/* General Tab */}
           {activeTab === 'general' && (
             <div className={sectionClass}>
-              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Branding & Core Info</h3>
+              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Company Profile & Branding</h3>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                    <label className={labelClass}>Company Name</label>
@@ -524,6 +537,10 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                 <div>
                    <label className={labelClass}>WhatsApp (e.g. 27795904162)</label>
                    <input name="whatsAppNumber" value={settings.whatsAppNumber} onChange={handleChange} className={inputClass} placeholder="No +" />
+                </div>
+                <div className="lg:col-span-2">
+                   <label className={labelClass}>Business Hours</label>
+                   <textarea name="businessHours" rows={3} value={settings.businessHours} onChange={handleChange} className={inputClass} placeholder="Mon-Fri: 09:00 - 17:00..." />
                 </div>
                 <div className="lg:col-span-2">
                    <label className={labelClass}>Logo</label>
@@ -959,7 +976,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
           {activeTab === 'payments' && (
              <div className={sectionClass}>
                 <div className="flex justify-between items-center border-b border-admin-dark-border pb-2 mb-4">
-                    <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">Yoco Payment Gateway</h3>
+                    <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">Yoco Payment Gateway (Online)</h3>
                     <button onClick={() => props.startTour('yoco')} className="flex items-center gap-1 sm:gap-2 bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors">
                         ℹ️ Setup Guide
                     </button>
@@ -996,6 +1013,59 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                             <p className="text-[10px] text-gray-400 mt-1">Required for server-side payment verification and charge finalization.</p>
                         </div>
                     </div>
+                </div>
+             </div>
+          )}
+
+          {/* Yoco Terminal Tab */}
+          {activeTab === 'terminal' && (
+             <div className={sectionClass}>
+                <div className="flex justify-between items-center border-b border-admin-dark-border pb-2 mb-4">
+                    <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">Yoco Machine Integration (Terminal)</h3>
+                    <button onClick={() => props.startTour('yoco-terminal')} className="flex items-center gap-1 sm:gap-2 bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors">
+                        ℹ️ Hardware Guide
+                    </button>
+                </div>
+                
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-dark-border space-y-6">
+                    <div className="flex items-center gap-3 bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                        <input type="checkbox" id="terminalEnabled" name="terminalEnabled" checked={settings.terminalEnabled} onChange={handleChange} className="w-5 h-5 accent-admin-dark-primary rounded" />
+                        <label htmlFor="terminalEnabled" className="text-yellow-900 font-bold text-sm">Enable Physical Terminal "Push to Pay"</label>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className={labelClass}>Terminal ID</label>
+                            <input 
+                                name="terminalId" 
+                                value={settings.terminalId} 
+                                onChange={handleChange} 
+                                className={inputClass} 
+                                placeholder="e.g. 12345678"
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Found on your physical Yoco machine settings or the Yoco Portal.</p>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Terminal Secret API Key</label>
+                            <input 
+                                type="password" 
+                                name="terminalSecretKey" 
+                                value={settings.terminalSecretKey} 
+                                onChange={handleChange} 
+                                className={inputClass} 
+                                placeholder="sk_live_..."
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Found in Yoco Portal &rarr; Settings &rarr; API Keys.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">How it works</h4>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                        When you select "Card" in the Financials tab, a new "Send to Machine" button will appear. 
+                        Clicking it will automatically wake up your Yoco machine and display the correct amount for the client to tap.
+                    </p>
                 </div>
              </div>
           )}

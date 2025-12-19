@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SpecialItem } from '../App';
 import SpecialModal from './SpecialModal';
 import PowderSplashBackground from './PowderSplashBackground';
+import { BullSkullOutline } from './icons/SalonIcons';
 
 interface SpecialsCollageProps {
   specials: SpecialItem[];
@@ -122,7 +123,7 @@ const SpecialsCollage: React.FC<SpecialsCollageProps> = ({ specials, whatsAppNum
                               rel="noopener noreferrer"
                               className="w-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-800 px-2 py-1.5 rounded-full text-[10px] sm:text-xs font-semibold hover:bg-yellow-500 hover:text-white transition-colors flex items-center justify-center gap-1"
                           >
-                              <span>⭐</span>
+                              <BullSkullOutline className="w-3 h-3" />
                               Inquire
                           </a>
                       </div>

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { SpecialItem } from '../App';
 import FullScreenImageViewer from './FullScreenImageViewer';
+import { BullSkullOutline } from './icons/SalonIcons';
 
 interface SpecialModalProps {
   isOpen: boolean;
@@ -168,7 +169,7 @@ const SpecialModal: React.FC<SpecialModalProps> = ({ isOpen, onClose, item, crea
                 className="w-full bg-brand-green text-white px-4 py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-brand-light hover:text-white transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
                 aria-label={`Inquire about ${item.title} on WhatsApp`}
             >
-                <span role="img" aria-label="WhatsApp icon">⭐</span>
+                <BullSkullOutline className="w-5 h-5" />
                 Inquire on WhatsApp
             </a>
           </div>

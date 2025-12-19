@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { SpecialItem } from '../App';
 import SpecialModal from './SpecialModal';
+import { BullSkullOutline } from './icons/SalonIcons';
 
 interface SpecialsSectionProps {
   specials: SpecialItem[];
@@ -103,7 +104,7 @@ const SpecialsSection: React.FC<SpecialsSectionProps> = ({ specials, onNavigate,
                 <p className="text-[9px] sm:text-xs text-gray-500 line-clamp-2 mb-2 leading-tight flex-grow">{special.description}</p>
                 <div className="mt-auto pt-1 sm:pt-2 border-t border-gray-50 flex items-center justify-between">
                     <span className="text-[8px] sm:text-[10px] text-gray-400 font-semibold uppercase tracking-wider">Details</span>
-                    <span className="text-brand-green text-[10px] sm:text-base">→</span>
+                    <BullSkullOutline className="text-brand-green w-3 h-3" />
                 </div>
               </div>
             </div>

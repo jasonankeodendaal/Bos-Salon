@@ -18,8 +18,6 @@ interface QuoteInvoiceManagerProps {
   initialBooking?: Booking | null; // New prop for generating quotes from bookings
 }
 
-// ... (InvoiceDocument component remains exactly the same as previously, re-included for completeness of file structure if needed, but for minimal diff, assuming it stays if I don't modify it. However, the rule is to output FULL CONTENT of the file. So I will include the full file content.)
-
 const InvoiceDocument: React.FC<{ invoice: Partial<Invoice>, settings: any }> = ({ invoice, settings }) => {
     const isQuote = invoice.type === 'quote';
     return (
@@ -41,6 +39,7 @@ const InvoiceDocument: React.FC<{ invoice: Partial<Invoice>, settings: any }> = 
                 <div className="text-right w-1/2">
                     <h2 className="text-4xl font-light text-gray-300 uppercase tracking-widest mb-2">{isQuote ? 'Quote' : 'Invoice'}</h2>
                     <p className="text-lg font-bold text-gray-700">#{invoice.number || '0000'}</p>
+                    {invoice.subject && <p className="text-sm font-bold text-admin-dark-primary mt-2 uppercase tracking-wide">{invoice.subject}</p>}
                     <div className="mt-4 text-xs text-gray-500 space-y-1">
                         <div className="flex justify-end gap-4"><span>Date Issued:</span><span className="font-bold text-gray-700">{invoice.dateIssued}</span></div>
                         <div className="flex justify-end gap-4"><span>{isQuote ? 'Valid Until:' : 'Due Date:'}</span><span className="font-bold text-gray-700">{invoice.dateDue}</span></div>
@@ -93,7 +92,7 @@ const InvoiceDocument: React.FC<{ invoice: Partial<Invoice>, settings: any }> = 
                     ) : <p className="text-xs text-gray-400 italic">No bank details.</p>}
                     {invoice.notes && (
                         <div className="mt-4 pt-2 border-t border-gray-200">
-                            <h4 className="font-bold text-gray-800 mb-1 text-xs">Notes</h4>
+                            <h4 className="font-bold text-gray-800 mb-1 text-xs">Notes & Terms</h4>
                             <p className="text-xs text-gray-500 whitespace-pre-wrap leading-relaxed">{invoice.notes}</p>
                         </div>
                     )}
@@ -132,6 +131,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
   const [formData, setFormData] = useState<Partial<Invoice>>({
     type: 'quote',
     number: '',
+    subject: '',
     clientName: '',
     clientEmail: '',
     clientPhone: '',
@@ -155,6 +155,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
           setFormData({
               type: 'quote',
               number: number,
+              subject: `Tattoo Session: ${initialBooking.bookingDate}`,
               clientId: '', 
               bookingId: initialBooking.id, 
               clientName: initialBooking.name,
@@ -169,7 +170,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                   quantity: 1,
                   unitPrice: initialBooking.totalCost || 0
               }],
-              notes: 'Quote generated based on your booking request.',
+              notes: 'Quote generated based on your booking request.\n50% non-refundable deposit required to confirm your slot.',
               subtotal: initialBooking.totalCost || 0,
               taxAmount: 0, 
               total: initialBooking.totalCost || 0
@@ -233,6 +234,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
       setFormData({
           type,
           number: generateNumber(type),
+          subject: '',
           clientName: '',
           clientEmail: '',
           clientPhone: '',
@@ -240,7 +242,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
           dateDue: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
           status: 'draft',
           items: [{ id: crypto.randomUUID(), description: 'Service', quantity: 1, unitPrice: 0 }],
-          notes: type === 'quote' ? 'Valid for 7 days.' : 'Thank you.',
+          notes: type === 'quote' ? 'Valid for 7 days.\nA non-refundable deposit is required to confirm booking.' : 'Thank you for your support.',
           subtotal: 0,
           taxAmount: 0,
           total: 0
@@ -413,61 +415,76 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
               <div className="flex flex-1 overflow-hidden">
                   {/* Left Panel: Editor */}
                   <div className="w-full md:w-1/3 bg-white border-r border-gray-200 overflow-y-auto p-4 space-y-4 z-10 no-print">
-                      <h3 className="font-bold text-gray-900 border-b pb-1 mb-2 text-sm">Details</h3>
+                      <h3 className="font-bold text-gray-900 border-b pb-1 mb-2 text-sm">Document Core</h3>
                       <div className="space-y-3">
                            <div>
-                               <label className="block text-xs font-bold text-gray-500 mb-1">Number</label>
+                               <label className="block text-xs font-bold text-gray-500 mb-1">Doc Number</label>
                                <input value={formData.number} onChange={e => setFormData({...formData, number: e.target.value})} className={inputClass} required />
+                           </div>
+                           <div>
+                               <label className="block text-xs font-bold text-gray-500 mb-1">Subject / Description</label>
+                               <input value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} placeholder="e.g. Fine Line Project" className={inputClass} />
                            </div>
                            <div className="grid grid-cols-2 gap-2">
                                <div>
-                                   <label className="block text-xs font-bold text-gray-500 mb-1">Date</label>
+                                   <label className="block text-xs font-bold text-gray-500 mb-1">Issue Date</label>
                                    <input type="date" value={formData.dateIssued} onChange={e => setFormData({...formData, dateIssued: e.target.value})} className={inputClass} required />
                                </div>
                                <div>
-                                   <label className="block text-xs font-bold text-gray-500 mb-1">Due</label>
+                                   <label className="block text-xs font-bold text-gray-500 mb-1">Due Date</label>
                                    <input type="date" value={formData.dateDue} onChange={e => setFormData({...formData, dateDue: e.target.value})} className={inputClass} required />
                                </div>
                            </div>
                            <div>
                                <label className="block text-xs font-bold text-gray-500 mb-1">Status</label>
                                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value as any})} className={inputClass}>
-                                  <option value="draft">Draft</option>
-                                  <option value="sent">Sent</option>
+                                  <option value="draft">Draft (Admin Only)</option>
+                                  <option value="sent">Sent (Visible to Client)</option>
                                   <option value="paid">Paid</option>
-                                  <option value="accepted">Accepted</option>
+                                  <option value="accepted">Accepted (Quote)</option>
                               </select>
                            </div>
                       </div>
 
                       <div className="space-y-3 pt-3 border-t border-gray-100">
-                           <h4 className="font-bold text-gray-800 text-sm">Client</h4>
+                           <h4 className="font-bold text-gray-800 text-sm">Client Info</h4>
                            <select onChange={handleSelectClient} className="w-full bg-gray-50 border border-gray-300 rounded p-2 text-xs text-gray-900 mb-1">
-                               <option value="">Select Existing...</option>
+                               <option value="">Select Existing Client...</option>
                                {clients.map(c => <option key={c.email} value={c.email}>{c.name}</option>)}
                            </select>
-                           <input placeholder="Name" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className={inputClass} required />
-                           <input placeholder="Email" value={formData.clientEmail} onChange={e => setFormData({...formData, clientEmail: e.target.value})} className={inputClass} required />
-                           <input placeholder="Phone" value={formData.clientPhone} onChange={e => setFormData({...formData, clientPhone: e.target.value})} className={inputClass} />
+                           <input placeholder="Client Full Name" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className={inputClass} required />
+                           <input placeholder="Email Address" value={formData.clientEmail} onChange={e => setFormData({...formData, clientEmail: e.target.value})} className={inputClass} required />
+                           <input placeholder="Phone Number" value={formData.clientPhone} onChange={e => setFormData({...formData, clientPhone: e.target.value})} className={inputClass} />
                       </div>
 
                       <div className="space-y-3 pt-3 border-t border-gray-100">
-                          <h4 className="font-bold text-gray-800 text-sm">Items</h4>
+                          <h4 className="font-bold text-gray-800 text-sm">Line Items</h4>
                           <div className="space-y-2">
                               {formData.items?.map((item, index) => (
                                   <div key={item.id} className="bg-gray-50 p-2 rounded border border-gray-200">
-                                      <input placeholder="Desc" value={item.description} onChange={e => handleUpdateItem(index, 'description', e.target.value)} className={`${inputClass} mb-1`} />
+                                      <input placeholder="Description" value={item.description} onChange={e => handleUpdateItem(index, 'description', e.target.value)} className={`${inputClass} mb-1`} />
                                       <div className="flex gap-1">
                                           <input type="number" placeholder="Qty" value={item.quantity} onChange={e => handleUpdateItem(index, 'quantity', parseFloat(e.target.value))} className={`${inputClass} w-16 text-center`} min="1"/>
                                           <input type="number" placeholder="Price" value={item.unitPrice} onChange={e => handleUpdateItem(index, 'unitPrice', parseFloat(e.target.value))} className={`${inputClass} flex-1 text-right`} />
-                                          <button type="button" onClick={() => handleRemoveItem(index)} className="p-1 text-red-500 rounded"><TrashIcon className="w-4 h-4" /></button>
+                                          <button type="button" onClick={() => handleRemoveItem(index)} className="p-1 text-red-500 rounded hover:bg-red-50"><TrashIcon className="w-4 h-4" /></button>
                                       </div>
                                   </div>
                               ))}
                           </div>
-                          <button type="button" onClick={handleAddItem} className="w-full py-1.5 flex items-center justify-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded">
-                              <PlusIcon className="w-3 h-3" /> Add Item
+                          <button type="button" onClick={handleAddItem} className="w-full py-1.5 flex items-center justify-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 rounded hover:bg-blue-100 transition-colors">
+                              <PlusIcon className="w-3 h-3" /> Add Service/Item
                           </button>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-gray-100">
+                          <h4 className="font-bold text-gray-800 text-sm">Notes & Terms</h4>
+                          <textarea 
+                             rows={4} 
+                             value={formData.notes} 
+                             onChange={e => setFormData({...formData, notes: e.target.value})} 
+                             className={inputClass}
+                             placeholder="Add any specific instructions, healing notes, or deposit terms..."
+                          />
                       </div>
                   </div>
                   {/* Right Panel: Live Preview (Hidden on Mobile) */}
@@ -512,6 +529,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                                         <span className="text-[10px] font-bold">R{inv.total.toFixed(0)}</span>
                                     </div>
                                     <div className="text-[10px] font-bold text-gray-800 truncate">{inv.clientName}</div>
+                                    {inv.subject && <div className="text-[8px] text-admin-dark-primary uppercase font-bold truncate">{inv.subject}</div>}
                                     <div className="text-[9px] text-gray-500">{new Date(inv.dateIssued).toLocaleDateString()}</div>
                                     <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-100">
                                         <span className={`text-[8px] font-bold uppercase px-1 rounded ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : inv.status === 'draft' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
@@ -530,7 +548,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                                 <thead className="bg-gray-50 text-gray-500 uppercase text-[10px]">
                                     <tr>
                                         <th className="px-4 py-2">Number</th>
-                                        <th className="px-4 py-2">Client</th>
+                                        <th className="px-4 py-2">Client / Subject</th>
                                         <th className="px-4 py-2">Date</th>
                                         <th className="px-4 py-2 text-right">Total</th>
                                         <th className="px-4 py-2 text-center">Status</th>
@@ -541,7 +559,10 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                                     {invoiceGroup.map(inv => (
                                         <tr key={inv.id} className="hover:bg-blue-50/30 transition-colors group">
                                             <td className="px-4 py-2 font-mono text-xs font-bold text-admin-dark-primary">{inv.number}</td>
-                                            <td className="px-4 py-2 text-xs font-bold">{inv.clientName}</td>
+                                            <td className="px-4 py-2">
+                                                <div className="text-xs font-bold">{inv.clientName}</div>
+                                                {inv.subject && <div className="text-[9px] text-gray-400 uppercase">{inv.subject}</div>}
+                                            </td>
                                             <td className="px-4 py-2 text-xs text-gray-500">{new Date(inv.dateIssued).toLocaleDateString()}</td>
                                             <td className="px-4 py-2 text-right font-bold text-gray-800">R {inv.total.toFixed(2)}</td>
                                             <td className="px-4 py-2 text-center"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${inv.status === 'draft' ? 'bg-gray-100' : 'bg-transparent'}`}>{inv.status}</span></td>

@@ -75,6 +75,7 @@ export interface Booking {
   totalCost?: number;
   amountPaid?: number;
   paymentMethod?: 'cash' | 'card' | 'eft' | 'other';
+  confirmationMethod?: 'online' | 'in-salon'; // NEW: Track how client confirmed
   referenceImages?: string[];
   selectedOptions?: string[]; // New: store labels of pre-ticked options
 }
@@ -113,6 +114,7 @@ export interface Invoice {
   id: string;
   type: 'quote' | 'invoice';
   number: string; // e.g. Q-1001 or INV-2023-01
+  subject?: string; // New: editable subject line
   clientId?: string; // Optional link to existing booking/client
   bookingId?: string; // Link specific quote to a booking
   clientName: string;
@@ -185,6 +187,7 @@ const App: React.FC = () => {
     address: '123 Nature Way, Green Valley, 45678',
     phone: '+27 12 345 6789',
     email: 'bookings@bossalon.com',
+    businessHours: 'Mon - Fri: 09:00 - 18:00\nSat: 10:00 - 16:00\nSun: Closed',
     socialLinks: [],
     showroomTitle: 'Tattoo Flash Gallery',
     showroomDescription: "Browse our collection of custom designs and flash art.",
@@ -251,23 +254,23 @@ const App: React.FC = () => {
         intro: 'Proper aftercare is essential to maintain the longevity and health of your beauty treatments.',
         sections: [
             {
-                title: 'Nail Care (First 48 Hours)',
-                icon: '💅',
+                title: 'Tattoo Care (First 48 Hours)',
+                icon: '💉',
                 items: [
-                    'Avoid extremely hot water or steam for the first 24 hours.',
-                    'Use cuticle oil twice daily to keep the skin hydrated.',
-                    'Wear gloves when using cleaning products or gardening.',
-                    'Do not use your nails as tools to open cans or boxes.'
+                    'Leave the initial wrap on for the time specified by your artist.',
+                    'Gently wash with lukewarm water and fragrance-free soap.',
+                    'Pat dry with a clean paper towel; do not rub.',
+                    'Apply a very thin layer of recommended aftercare balm.'
                 ]
             },
             {
-                title: 'Nail "Don\'ts"',
+                title: 'Tattoo "Don\'ts"',
                 icon: '🚫',
                 items: [
-                    'Never pick or peel off your gel or acrylic enhancements.',
-                    'Avoid using harsh chemicals like acetone near your nails.',
-                    'Don\'t bite your nails or surrounding skin.',
-                    'Limit exposure to direct sunlight for prolonged periods.'
+                    'Never pick, scratch, or peel your new tattoo.',
+                    'Avoid soaking in pools, baths, or the ocean for 2 weeks.',
+                    'Keep out of direct sunlight during the healing phase.',
+                    'Do not wear tight clothing that rubs against the area.'
                 ]
             }
         ]
@@ -333,6 +336,7 @@ const App: React.FC = () => {
                  emailServiceId: fetchedSettings.emailServiceId || fetchedSettings.emailserviceid,
                  emailTemplateId: fetchedSettings.emailTemplateId || fetchedSettings.emailtemplateid,
                  emailPublicKey: fetchedSettings.emailPublicKey || fetchedSettings.emailpublickey,
+                 businessHours: fetchedSettings.businessHours || fetchedSettings.businesshours,
              };
              setSettings((prev: any) => ({ ...prev, ...normalizedSettings }));
           }
