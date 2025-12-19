@@ -28,7 +28,7 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                     <h3 className="font-bold text-gray-800">{invoice.type === 'quote' ? 'Quote' : 'Invoice'} #{invoice.number}</h3>
                     <div className="flex gap-2">
                         <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded transition-colors">Print</button>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+                        <button onClose={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
                     </div>
                 </div>
                 <div className="p-8 overflow-y-auto bg-white text-gray-800 text-sm font-sans">
@@ -112,9 +112,8 @@ const ClientsManager: React.FC<{
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientPassword, setNewClientPassword] = useState('');
 
-  const activePrograms = loyaltyPrograms.length > 0 ? loyaltyPrograms.filter(p => p.active) : [
-      { id: 'legacy', name: 'Default Loyalty', stickersRequired: 10, rewardDescription: '50% Off', active: true }
-  ];
+  // Filter for truly active programs set in the CMS. No fallback to "Legacy" if none exist.
+  const activePrograms = useMemo(() => loyaltyPrograms.filter(p => p.active), [loyaltyPrograms]);
 
   const clients = useMemo(() => {
     const clientMap: Record<string, ClientProfile> = {};
@@ -492,9 +491,11 @@ const ClientsManager: React.FC<{
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                             <div className="flex gap-2">
-                                <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-admin-dark-primary/20 hover:scale-105 transition-transform active:scale-95">
-                                    Loyalty
-                                </button>
+                                {activePrograms.length > 0 && (
+                                    <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-admin-dark-primary/20 hover:scale-105 transition-transform active:scale-95">
+                                        Loyalty
+                                    </button>
+                                )}
                                 <button onClick={() => { if(window.confirm('Delete this client profile?')) onDeleteClient?.(selectedClient.id); }} className="p-2.5 text-red-300 hover:text-red-500 transition-colors bg-red-50 rounded-xl hover:bg-red-100">
                                     <TrashIcon className="w-5 h-5" />
                                 </button>
