@@ -71,7 +71,7 @@ const SetupManager: React.FC = () => {
 -- 1. EXTENSIONS
 create extension if not exists "uuid-ossp";
 
--- 2. CREATE TABLES (STRICT STRUCTURE)
+-- 2. CREATE TABLES
 create table if not exists public.portfolio (
   id uuid primary key default uuid_generate_v4(),
   title text,
@@ -212,23 +212,14 @@ create table if not exists public.settings (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 3. SCHEMA REPAIR (Resolves "could not find bookings column" and other common mismatch errors)
+-- 3. SCHEMA REPAIR (Safely add missing columns to existing tables)
 DO $$ 
 BEGIN 
-  -- Fix Clients Table
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='loyaltyProgress') THEN
-    ALTER TABLE public.clients ADD COLUMN "loyaltyProgress" jsonb DEFAULT '{}'::jsonb;
-  END IF;
-  
-  -- Fix Settings Table
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='bookingOptions') THEN
     ALTER TABLE public.settings ADD COLUMN "bookingOptions" jsonb DEFAULT '[]'::jsonb;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='businessHours') THEN
     ALTER TABLE public.settings ADD COLUMN "businessHours" text;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='sanctuaryPerks') THEN
-    ALTER TABLE public.settings ADD COLUMN "sanctuaryPerks" jsonb DEFAULT '[]'::jsonb;
   END IF;
 END $$;
 `.trim();
@@ -245,7 +236,7 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
--- DROP EXISTING TO PREVENT CONFLICTS
+-- Drop existing policies if they exist to prevent 42710 errors
 drop policy if exists "Admin Expenses" on public.expenses;
 drop policy if exists "Admin Inventory" on public.inventory;
 drop policy if exists "Public Read Portfolio" on public.portfolio;
@@ -260,7 +251,7 @@ drop policy if exists "App Access Bookings" on public.bookings;
 drop policy if exists "App Access Invoices" on public.invoices;
 drop policy if exists "App Access Clients" on public.clients;
 
--- CREATE FRESH POLICIES
+-- Policies
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
@@ -305,28 +296,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
-          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm uppercase">Cloud Repair Hub</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Run these scripts in order to fix database errors and synchronize your studio.</p>
+          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">Deployment Guide</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Blueprint for your professional Bos Salon Nails and Beauty platform.</p>
         </header>
 
         <div className="space-y-4">
-            <StepWrapper number="1" title="Repository Sync" subtitle="GitHub" isActive={activeStep === 1} onHeaderClick={() => setActiveStep(1)}>
-                <p>Ensure your latest code is pushed to <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</p>
+            <StepWrapper number="1" title="Repository Hosting" subtitle="GitHub" isActive={activeStep === 1} onHeaderClick={() => setActiveStep(1)}>
+                <p>Initialize your project and push to <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</p>
             </StepWrapper>
 
-            <StepWrapper number="2" title="Environment Vars" subtitle="Keys" isActive={activeStep === 2} onHeaderClick={() => setActiveStep(2)}>
-                <p>Update your Vercel or local environment with these keys from Supabase.</p>
+            <StepWrapper number="2" title="Backend Engine" subtitle="Supabase Setup" isActive={activeStep === 2} onHeaderClick={() => setActiveStep(2)}>
+                <p>Create a project on <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and get your Keys.</p>
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
                     <CopyBlock text={env_template} label="Env Template" />
                 </div>
             </StepWrapper>
 
             <StepWrapper number="3" title="Database Architecture" subtitle="SQL Scripts" isActive={activeStep === 3} onHeaderClick={() => setActiveStep(3)}>
-                <p className="text-red-500 font-bold">CRITICAL: If you are seeing "column not found" errors, run Phase A immediately.</p>
+                <p>Run these in your Supabase SQL Editor to create or repair your database tables.</p>
                 <div className="space-y-8">
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Auto-Repair</h4>
-                        <p className="text-xs text-gray-500 mb-3 italic">* This script adds missing columns and fixes schema cache issues.</p>
+                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair</h4>
+                        <p className="text-xs text-gray-500 mb-3 italic">* This script will automatically add missing columns like 'bookingOptions' if your tables already exist.</p>
                         <CopyBlock text={sql_structure} height="h-64" label="Structure Script" />
                     </section>
                     <section>
@@ -340,17 +331,35 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 </div>
             </StepWrapper>
 
-            <StepWrapper number="4" title="Buckets" subtitle="Storage" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
-                <p>Create these **Public** buckets in Supabase Storage if they don't exist:</p>
+            <StepWrapper number="4" title="Media Storage" subtitle="Buckets" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
+                <p>Create these **Public** buckets in Supabase Storage:</p>
                 <ul className="list-disc pl-5 font-mono text-xs space-y-1">
                     <li>portfolio, specials, showroom, settings, booking-references</li>
                 </ul>
             </StepWrapper>
 
-            <StepWrapper number="6" title="Launch" subtitle="Final Step" isActive={activeStep === 6} onHeaderClick={() => setActiveStep(6)}>
+            <StepWrapper number="5" title="Physical Terminal Integration" subtitle="Yoco Hardware" isActive={activeStep === 5} onHeaderClick={() => setActiveStep(5)}>
+                <div className="space-y-4">
+                    <p className="font-bold text-gray-900">How to link your Yoco Machine:</p>
+                    <ol className="list-decimal pl-5 space-y-3">
+                        <li>Ensure you have a **Yoco Neo** or **Yoco Khumo** connected to Wi-Fi.</li>
+                        <li>Log in to your <ExternalLink href="https://portal.yoco.com">Yoco Portal</ExternalLink>.</li>
+                        <li>Navigate to **Settings &rarr; API Keys**. Generate a Secret Key.</li>
+                        <li>Find your **Terminal ID** on your machine (Settings &rarr; Device Info) or in the Portal under Devices.</li>
+                        <li>Go to the **Settings** tab in this Admin Panel &rarr; **Yoco Machine** sub-tab.</li>
+                        <li>Enter your ID and Key, then toggle **Enable**.</li>
+                    </ol>
+                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 text-xs text-yellow-800">
+                        <strong>Security Note:</strong> For real-world transactions, ensure your site is served over HTTPS. The "Push to Terminal" feature uses Yoco's cloud relay to wake up your machine instantly.
+                    </div>
+                </div>
+            </StepWrapper>
+
+            <StepWrapper number="6" title="Production Launch" subtitle="Vercel Deployment" isActive={activeStep === 6} onHeaderClick={() => setActiveStep(6)}>
+                <p>Deploy to Vercel and add your environment variables.</p>
                 <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl">
-                    <h3 className="text-2xl font-bold mb-2">System Synced! 🚀</h3>
-                    <p className="text-green-100 text-sm">After running the SQL Phase A, refresh your dashboard to clear the schema cache error.</p>
+                    <h3 className="text-2xl font-bold mb-2">Almost Live! 🚀</h3>
+                    <p className="text-green-100">Ensure all SQL phases are run before saving settings.</p>
                 </div>
             </StepWrapper>
         </div>
