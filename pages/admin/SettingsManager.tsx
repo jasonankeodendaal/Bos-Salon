@@ -367,7 +367,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const removeListItem = (listName: 'processSteps' | 'designPoints', index: number) => {
     setSettings(prev => ({
         ...prev,
-        [listName]: (prev[listName] as string[]).filter((_: any, i: number) => i !== index)
+        [listName]: (prev[listName] as string[]).filter((_: string, i: number) => i !== index)
     }));
   };
 
@@ -405,7 +405,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const removeAftercareItem = (sectionIndex: number, itemIndex: number) => {
     setSettings(prev => {
         const newSections = [...prev.aftercareSections];
-        newSections[sectionIndex].items = newSections[sectionIndex].items.filter((_: any, i: number) => i !== itemIndex);
+        newSections[sectionIndex].items = newSections[sectionIndex].items.filter((_: string, i: number) => i !== itemIndex);
         return { ...prev, aftercareSections: newSections };
     });
   };

@@ -253,29 +253,18 @@ create policy "App Access Clients" on public.clients for all using (true);
 
   const sql_realtime = `
 -- REALTIME SUBSCRIPTION CONFIG
-BEGIN;
-  -- Remove tables if they already exist in the publication to prevent errors
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.portfolio;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.specials;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.showroom;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.bookings;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.expenses;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.inventory;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.settings;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.invoices;
-  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.clients;
-
-  -- Add tables to the publication
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.portfolio;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.specials;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.showroom;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.bookings;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.expenses;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.inventory;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.settings;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.invoices;
-  ALTER PUBLICATION supabase_realtime ADD TABLE public.clients;
-COMMIT;
+-- We drop and recreate to ensure a clean state for the chosen tables.
+DROP PUBLICATION IF EXISTS supabase_realtime;
+CREATE PUBLICATION supabase_realtime FOR TABLE 
+    public.portfolio, 
+    public.specials, 
+    public.showroom, 
+    public.bookings, 
+    public.expenses, 
+    public.inventory, 
+    public.settings, 
+    public.invoices, 
+    public.clients;
 `.trim();
 
   const env_template = `
