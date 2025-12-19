@@ -951,7 +951,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                              </div>
                              <div className="flex justify-end gap-2 mt-2 border-t pt-2">
                                  <button onClick={() => handleToggleProgram(prog.id)} className="text-xs text-blue-500 hover:underline">{prog.active ? 'Disable' : 'Enable'}</button>
-                                 <button onClick={() => handleDeleteProgram(id)} className="text-xs text-red-500 hover:text-red-700 font-bold"><TrashIcon className="w-3 h-3" /></button>
+                                 {/* FIX: Corrected undefined 'id' to 'prog.id' */}
+                                 <button onClick={() => handleDeleteProgram(prog.id)} className="text-xs text-red-500 hover:text-red-700 font-bold"><TrashIcon className="w-3 h-3" /></button>
                              </div>
                          </div>
                      ))}

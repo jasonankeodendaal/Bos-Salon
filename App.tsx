@@ -622,6 +622,7 @@ const App: React.FC = () => {
           address={settings.address}
           phone={settings.phone}
           email={settings.email}
+          businessHours={settings.businessHours}
           socialLinks={settings.socialLinks}
           apkUrl={settings.apkUrl}
           onNavigate={navigate}

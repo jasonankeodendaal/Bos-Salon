@@ -110,6 +110,7 @@ create table if not exists public.bookings (
   name text,
   email text,
   "whatsappNumber" text,
+  "contactMethod" text,
   message text,
   "bookingDate" date,
   status text default 'pending',
@@ -117,7 +118,9 @@ create table if not exists public.bookings (
   "totalCost" numeric,
   "amountPaid" numeric default 0,
   "paymentMethod" text,
+  "confirmationMethod" text,
   "referenceImages" text[],
+  "selectedOptions" text[],
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
@@ -146,6 +149,7 @@ create table if not exists public.invoices (
   id uuid primary key default uuid_generate_v4(),
   type text, 
   number text,
+  subject text,
   "clientId" text,
   "bookingId" text,
   "clientName" text,
@@ -172,6 +176,8 @@ create table if not exists public.clients (
   stickers integer default 0,
   "loyaltyProgress" jsonb default '{}'::jsonb,
   "rewardsRedeemed" integer default 0,
+  age integer,
+  address text,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
@@ -202,6 +208,7 @@ create table if not exists public.settings (
   "emailPublicKey" text,
   "loyaltyProgram" jsonb,
   "loyaltyPrograms" jsonb,
+  "sanctuaryPerks" jsonb default '[]'::jsonb,
   "bookingOptions" jsonb default '[]'::jsonb,
   "businessHours" text,
   hero jsonb,
@@ -215,11 +222,40 @@ create table if not exists public.settings (
 -- 3. SCHEMA REPAIR (Safely add missing columns to existing tables)
 DO $$ 
 BEGIN 
+  -- Bookings fixes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='contactMethod') THEN
+    ALTER TABLE public.bookings ADD COLUMN "contactMethod" text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='confirmationMethod') THEN
+    ALTER TABLE public.bookings ADD COLUMN "confirmationMethod" text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='selectedOptions') THEN
+    ALTER TABLE public.bookings ADD COLUMN "selectedOptions" text[];
+  END IF;
+
+  -- Clients fixes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='age') THEN
+    ALTER TABLE public.clients ADD COLUMN "age" integer;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='address') THEN
+    ALTER TABLE public.clients ADD COLUMN "address" text;
+  END IF;
+
+  -- Settings fixes
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='bookingOptions') THEN
     ALTER TABLE public.settings ADD COLUMN "bookingOptions" jsonb DEFAULT '[]'::jsonb;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='sanctuaryPerks') THEN
+    ALTER TABLE public.settings ADD COLUMN "sanctuaryPerks" jsonb DEFAULT '[]'::jsonb;
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='businessHours') THEN
     ALTER TABLE public.settings ADD COLUMN "businessHours" text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='aftercare') THEN
+    ALTER TABLE public.settings ADD COLUMN "aftercare" jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='payments') THEN
+    ALTER TABLE public.settings ADD COLUMN "payments" jsonb;
   END IF;
 END $$;
 `.trim();
@@ -317,7 +353,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 <div className="space-y-8">
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair</h4>
-                        <p className="text-xs text-gray-500 mb-3 italic">* This script will automatically add missing columns like 'bookingOptions' if your tables already exist.</p>
+                        <p className="text-xs text-gray-500 mb-3 italic">* This script will automatically add missing columns if your tables already exist.</p>
                         <CopyBlock text={sql_structure} height="h-64" label="Structure Script" />
                     </section>
                     <section>
