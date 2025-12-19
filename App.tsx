@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { 
   dbOnAuthStateChange, 
@@ -189,8 +188,8 @@ const App: React.FC = () => {
     email: 'bookings@bossalon.com',
     businessHours: 'Mon - Fri: 09:00 - 18:00\nSat: 10:00 - 16:00\nSun: Closed',
     socialLinks: [],
-    showroomTitle: 'Tattoo Flash Gallery',
-    showroomDescription: "Browse our collection of custom designs and flash art.",
+    showroomTitle: 'Nail Art Gallery',
+    showroomDescription: "Browse our collection of bespoke designs and nail art.",
     bankName: 'FNB',
     accountNumber: '1234567890',
     branchCode: '250655',
@@ -205,9 +204,9 @@ const App: React.FC = () => {
     emailPublicKey: '',
     
     bookingOptions: [
-      { id: '1', label: 'Color Tattoo', description: 'Request multi-color ink for your design.' },
-      { id: '2', label: 'Fine Line', description: 'Ultra-thin, delicate needle work.' },
-      { id: '3', label: 'Cover Up', description: 'Existing tattoo needs to be hidden.' },
+      { id: '1', label: 'Gel Overlay', description: 'Strong, glossy finish for natural nails.' },
+      { id: '2', label: 'Acrylic Sculpture', description: 'Custom shaped enhancements.' },
+      { id: '3', label: 'Luxury Pedicure', description: 'Complete rejuvenation for your feet.' },
     ],
     
     // Legacy Loyalty (Single) - Kept for fallback
@@ -223,28 +222,28 @@ const App: React.FC = () => {
     
     // Default sub-objects for specific sections
     hero: {
-        title: 'Ink & Artistry',
+        title: 'Nails & Beauty',
         subtitle: 'Experience the art of nature',
         buttonText: 'Book an Appointment'
     },
     about: {
         title: 'Our Story',
-        text1: 'Bos Salon was born from a passion for permanent art and self-expression.',
-        text2: 'We specialize in custom tattoos, ensuring every piece tells a unique story.'
+        text1: 'Bos Salon was born from a passion for natural beauty and intricate art.',
+        text2: 'We specialize in bespoke nail art, ensuring every treatment tells a unique story.'
     },
     contact: {
-        intro: 'Ready for new ink? Fill out the form below.',
+        intro: 'Ready for a fresh look? Fill out the form below.',
         processTitle: 'Our Process',
-        processIntro: "We believe in personal care. Whether it's a simple tattoo or complex custom art, we ensure every detail is perfect.",
+        processIntro: "We believe in personal care. Whether it's a simple manicure or complex nail art, we ensure every detail is perfect.",
         processSteps: [
             "Request Appointment: Use this form to tell us what service you need.",
             "Consultation: We'll contact you to confirm details, colors, and specific requirements.",
             "Relax & Enjoy: Come in, relax in our studio, and let us work our magic."
         ],
         designTitle: 'Design Ideas?',
-        designIntro: "If you have a specific design in mind, let us know!",
+        designIntro: "If you have a specific nail design in mind, let us know!",
         designPoints: [
-            "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
+            "Service Type: Gel, Acrylic, or Natural Mani?",
             "Inspiration: Upload photos of designs you love."
         ]
     },
@@ -254,23 +253,23 @@ const App: React.FC = () => {
         intro: 'Proper aftercare is essential to maintain the longevity and health of your beauty treatments.',
         sections: [
             {
-                title: 'Tattoo Care (First 48 Hours)',
-                icon: '💉',
+                title: 'Nail Care (First 48 Hours)',
+                icon: '💅',
                 items: [
-                    'Leave the initial wrap on for the time specified by your artist.',
-                    'Gently wash with lukewarm water and fragrance-free soap.',
-                    'Pat dry with a clean paper towel; do not rub.',
-                    'Apply a very thin layer of recommended aftercare balm.'
+                    'Avoid using your nails as tools (e.g., opening cans).',
+                    'Gently wash with lukewarm water and mild soap.',
+                    'Apply cuticle oil daily to keep enhancements flexible.',
+                    'Wear gloves when using cleaning chemicals.'
                 ]
             },
             {
-                title: 'Tattoo "Don\'ts"',
+                title: 'Nail "Don\'ts"',
                 icon: '🚫',
                 items: [
-                    'Never pick, scratch, or peel your new tattoo.',
-                    'Avoid soaking in pools, baths, or the ocean for 2 weeks.',
-                    'Keep out of direct sunlight during the healing phase.',
-                    'Do not wear tight clothing that rubs against the area.'
+                    'Never pick, scratch, or peel your gel or acrylic.',
+                    'Avoid soaking in pools or hot tubs for 24 hours.',
+                    'Do not skip maintenance appointments.',
+                    'Avoid biting or chewing on the treatment area.'
                 ]
             }
         ]

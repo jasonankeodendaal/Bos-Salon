@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import { Client, Booking, Invoice, SpecialItem, LoyaltyProgram, BookingOption } from '../App';
 import { dbUploadFile, dbLoginWithGoogle, dbLogout } from '../utils/dbAdapter';
@@ -417,7 +416,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   };
 
   const handleCancelBooking = async (booking: Booking) => {
-      if(window.confirm("Request cancellation? This request will be sent to the artist.")) {
+      if(window.confirm("Request cancellation? This request will be sent to the salon.")) {
           await onUpdateBooking({ ...booking, status: 'cancelled' });
       }
   };
@@ -498,7 +497,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const myInvoices = currentUser ? invoices.filter(inv => inv.clientEmail.toLowerCase() === currentUser.email.toLowerCase() && (inv.status !== 'draft' && inv.status !== 'void')) : [];
   const myBookings = currentUser ? bookings.filter(b => b.email.toLowerCase() === currentUser.email.toLowerCase()) : [];
   const upcomingBookings = myBookings.filter(b => (b.status === 'confirmed' || b.status === 'pending' || b.status === 'quote_sent' || b.status === 'rescheduled') && new Date(b.bookingDate) >= new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
-  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime());
+  const pastBookings = myBookings.filter(b => b.status === 'completed' || b.status === 'cancelled' || new Date(b.bookingDate) < new Date()).sort((a,b) => new Date(a.bookingDate).getTime() - new Date(b.bookingDate).getTime());
   const totalSpend = myInvoices.filter(i => i.status === 'paid').reduce((acc, curr) => acc + curr.total, 0);
   const outstanding = myInvoices.filter(i => i.status === 'sent' && i.type === 'invoice').reduce((acc, curr) => acc + curr.total, 0);
   
@@ -529,7 +528,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           </div>
           <div className="bg-white border border-gray-200 rounded-3xl shadow-xl p-8 transition-all duration-300">
             <h1 className="text-2xl font-bold text-center mb-1 text-gray-900">Portal Login</h1>
-            <p className="text-center text-gray-500 text-sm mb-8">{isSignUpMode ? 'Create your account to start.' : 'Manage your tattoos and rewards.'}</p>
+            <p className="text-center text-gray-500 text-sm mb-8">{isSignUpMode ? 'Create your account to start.' : 'Manage your beauty journey and rewards.'}</p>
             {isProcessingLogin ? (
                 <div className="text-center py-8">
                     <div className="w-10 h-10 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin mx-auto mb-4"></div>
@@ -707,7 +706,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     </div>
                                 ) : (
                                     <div className="text-center py-8">
-                                        <p className="text-gray-400 text-sm italic">No upcoming ink.</p>
+                                        <p className="text-gray-400 text-sm italic">No upcoming sessions.</p>
                                         <button onClick={() => setActiveTab('book')} className="mt-4 text-xs font-bold text-brand-green hover:underline uppercase tracking-widest">Book Now &rarr;</button>
                                     </div>
                                 )}
@@ -825,7 +824,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                         {/* Request Form */}
                         <div className="lg:col-span-2 bg-white p-8 rounded-[2rem] border border-gray-100 shadow-2xl">
                             <h3 className="text-2xl font-bold text-gray-900 mb-2">Request Appointment</h3>
-                            <p className="text-gray-500 text-sm mb-8">Tell us about your next project.</p>
+                            <p className="text-gray-500 text-sm mb-8">Tell us about your next beauty treatment.</p>
                             
                             <form onSubmit={handleBookSubmit} className="space-y-6">
                                 <div>
@@ -833,13 +832,13 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     <input type="date" required min={new Date().toISOString().split('T')[0]} value={bookingDate} onChange={(e) => setBookingDate(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-brand-green outline-none" />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Design Idea / Message</label>
-                                    <textarea rows={4} required value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} placeholder="Describe the tattoo size, placement, and style..." className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-brand-green outline-none" />
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Service Details / Message</label>
+                                    <textarea rows={4} required value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} placeholder="Describe the treatment type, style, and any specific requests..." className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-brand-green outline-none" />
                                 </div>
                                 
                                 {/* REFERENCE IMAGES UPLOAD */}
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Upload Ideas (Optional, Max 5)</label>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Upload Inspiration (Optional, Max 5)</label>
                                     <div className="bg-gray-50 border border-dashed border-gray-200 rounded-2xl p-4 sm:p-6 text-center group hover:border-brand-green transition-colors">
                                         <input 
                                             type="file" 
@@ -881,7 +880,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
             {activeTab === 'history' && (
                 <div className="space-y-12 animate-fade-in pb-20">
                     <div className="text-center max-w-2xl mx-auto">
-                        <h2 className="text-4xl font-bold text-gray-900 mb-2 font-script">Your Tattoo Journey</h2>
+                        <h2 className="text-4xl font-bold text-gray-900 mb-2 font-script">Your Beauty Journey</h2>
                         <p className="text-sm text-gray-500 italic">"Every session is a new chapter in your story."</p>
                     </div>
 
@@ -966,7 +965,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                 </div>
                             ) : (
                                 <div className="bg-white rounded-[2rem] border border-dashed border-gray-200 p-16 text-center">
-                                    <p className="text-gray-400 italic">No active bookings. Ready for your next piece?</p>
+                                    <p className="text-gray-400 italic">No active bookings. Ready for your next treatment?</p>
                                     <button onClick={() => setActiveTab('book')} className="mt-6 text-xs font-black text-brand-green uppercase tracking-widest hover:underline decoration-2 underline-offset-8">Book a Session &rarr;</button>
                                 </div>
                             )}
@@ -1009,7 +1008,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-center text-gray-400 text-sm py-10 italic">Your collection is just beginning.</p>
+                                <p className="text-center text-gray-400 text-sm py-10 italic">Your journey is just beginning.</p>
                             )}
                         </section>
                     </div>
@@ -1018,7 +1017,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     <div className="bg-gray-900 rounded-[3rem] p-10 sm:p-16 text-center text-white relative overflow-hidden shadow-2xl">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-green/10 blur-[80px] rounded-full"></div>
                         <h3 className="text-3xl font-bold mb-4">Any questions about your history?</h3>
-                        <p className="text-gray-400 max-w-xl mx-auto mb-10 text-sm leading-relaxed">If you have questions about past work, need help with a deposit, or want to discuss a continuation project, we're here.</p>
+                        <p className="text-gray-400 max-w-xl mx-auto mb-10 text-sm leading-relaxed">If you have questions about past work, need help with a deposit, or want to discuss a new beauty project, we're here.</p>
                         <a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-3 bg-brand-green text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl shadow-brand-green/20">
                             <WhatsAppIcon className="w-5 h-5"/>
                             Speak to Salon
@@ -1031,7 +1030,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 <div className="space-y-8 animate-fade-in">
                     <div className="text-center max-w-xl mx-auto">
                         <h3 className="text-3xl font-bold text-gray-900 mb-2 font-script">Member Rewards</h3>
-                        <p className="text-sm text-gray-500 italic">"Collect stickers to unlock exclusive studio perks."</p>
+                        <p className="text-sm text-gray-500 italic">"Collect stickers to unlock exclusive salon perks."</p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1092,7 +1091,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                             </div>
                         ))}
                     </div>
-                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p><a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><WhatsAppIcon className="w-5 h-5"/>Speak to Salon</a></div>
+                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice issues or have concerns about your treatment:</p><a href={getWhatsAppLink(settings?.phone)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><WhatsAppIcon className="w-5 h-5"/>Speak to Salon</a></div>
                 </div>
             )}
 

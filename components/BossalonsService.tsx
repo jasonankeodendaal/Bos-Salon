@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const BossalonsService: React.FC = () => {
@@ -16,7 +15,7 @@ const BossalonsService: React.FC = () => {
           <div className="text-center md:text-left">
             <h2 className="font-display text-6xl md:text-7xl mb-6 text-brand-green">BOS SALON SERVICE</h2>
             <p className="text-gray-500 mb-6 leading-relaxed">
-              Experience premier tattoo artistry. Our studio specializes in custom designs, ensuring every piece is a unique masterpiece tailored to your story. From intricate fine lines to bold traditional work, we bring your vision to life.
+              Experience premier nail and beauty artistry. Our studio specializes in bespoke designs, ensuring every treatment is a unique masterpiece tailored to your style. From intricate nail art to restorative treatments, we bring your vision to life.
             </p>
             <button className="bg-brand-green text-white px-8 py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-colors shadow-lg">
               Book now

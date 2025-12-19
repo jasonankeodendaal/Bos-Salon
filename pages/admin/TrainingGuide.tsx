@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 export type TourKey = 'dashboard' | 'art' | 'financials' | 'settings' | 'clients' | 'invoices' | 'inventory' | 'specials' | 'pwa' | 'yoco' | 'yoco-terminal';
@@ -58,7 +57,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                         </li>
                         <li className="flex gap-2">
                             <span className="text-brand-green">🏰</span>
-                            <span><span><strong>The Sanctuary:</strong> This is the Client Portal. Clients can track their "Journey," view history, and check rewards here.</span></span>
+                            <span><span><strong>The Sanctuary:</strong> This is the Client Portal. Clients can track their "Beauty Journey," view history, and check rewards here.</span></span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-brand-green">📱</span>
@@ -111,7 +110,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                             <p className="mt-1 text-xs">These are your best nail and beauty works. They appear in the Hero section carousel.</p>
                         </div>
                         <div className="bg-gray-50 p-3 rounded">
-                            <strong>2. Showroom (Flash Wall)</strong>
+                            <strong>2. Showroom (Gallery Wall)</strong>
                             <p className="mt-1 text-xs">This is your catalog of designs. Organized by Genre. Clients browse this to pick specific styles.</p>
                         </div>
                     </div>
@@ -181,7 +180,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                 <section>
                     <h4 className="font-bold text-lg text-brand-green mb-2">Portal Payments</h4>
                     <p>Allows clients to pay deposits via Debit/Credit card directly in their portal. Requires your Yoco Public and Secret keys.</p>
-                </ol>
+                </section>
             </div>
         )
     },
