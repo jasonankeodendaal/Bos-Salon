@@ -110,7 +110,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<ProcessedClientProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'history' | 'loyalty' | 'aftercare' | 'financials'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'history' | 'loyalty' | 'aftercare' | 'financials' | 'profile'>('overview');
   const [isProcessingLogin, setIsProcessingLogin] = useState(false);
   
   // Login/Signup Toggle
@@ -152,7 +152,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const processedClients = useMemo(() => {
     const clientMap: Record<string, ProcessedClientProfile> = {};
 
-    // 1. Load DB Clients
     if (dbClients) {
         dbClients.forEach(c => {
             const email = c.email.trim().toLowerCase();
@@ -166,7 +165,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
         });
     }
 
-    // 2. Process Bookings
     bookings.forEach(booking => {
       const email = booking.email.trim().toLowerCase();
       if (!email) return;
@@ -201,7 +199,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       }
     });
     
-    // 3. Process Invoices
     invoices.forEach(inv => {
         const email = inv.clientEmail.trim().toLowerCase();
         if (!email) return;
@@ -232,27 +229,24 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
     return Object.values(clientMap);
   }, [bookings, invoices, dbClients]);
 
-  // --- REAL-TIME SYNC: Watch processedClients for changes to logged-in user ---
   useEffect(() => {
       if (isLoggedIn && currentUser) {
           const updatedUser = processedClients.find(c => c.email.toLowerCase() === currentUser.email.toLowerCase());
           if (updatedUser) {
               setCurrentUser(updatedUser);
-              // Pre-fill profile form data if profile is not complete
-              if (!updatedUser.age || !updatedUser.address) {
-                setProfileFormData({
-                    name: updatedUser.name || '',
-                    phone: updatedUser.phone || '',
-                    email: updatedUser.email || '',
-                    age: updatedUser.age || 0,
-                    address: updatedUser.address || ''
-                });
+              if (profileFormData.email !== updatedUser.email) {
+                  setProfileFormData({
+                      name: updatedUser.name || '',
+                      phone: updatedUser.phone || '',
+                      email: updatedUser.email || '',
+                      age: updatedUser.age || 0,
+                      address: updatedUser.address || ''
+                  });
               }
           }
       }
-  }, [processedClients, isLoggedIn]);
+  }, [processedClients, isLoggedIn, currentUser]);
 
-  // --- GOOGLE LOGIN LOGIC ---
   useEffect(() => {
       const linkUserToClient = async () => {
           if (authenticatedUser && authenticatedUser.email) {
@@ -274,8 +268,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                           stickers: 0
                       };
                       await onAddClient(newClientData);
-                      
-                      // After adding, the next processedClients update will catch it
                       setIsLoggedIn(true);
                   } catch (error) {
                       console.error("Error creating client record:", error);
@@ -374,7 +366,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
               age: Number(profileFormData.age),
               address: profileFormData.address
           });
-          // State will update via real-time sync in useEffect
+          alert("Identity updated successfully.");
       } catch (error) {
           console.error(error);
           alert("Failed to save profile.");
@@ -383,23 +375,17 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
       }
   };
 
-  // --- YOCO PAYMENT LOGIC ---
   const handlePayNow = (invoice: Invoice) => {
       const yocoKey = settings?.payments?.yocoPublicKey;
       if (!yocoKey) {
-          alert("Online payments are currently unavailable. Please contact the studio for banking details.");
+          alert("Online payments are currently unavailable.");
           return;
       }
-
       if (!(window as any).YocoSDK) {
-          alert("Payment system is still loading. Please refresh and try again.");
+          alert("Payment system is still loading.");
           return;
       }
-
-      const yoco = new (window as any).YocoSDK({
-          publicKey: yocoKey,
-      });
-
+      const yoco = new (window as any).YocoSDK({ publicKey: yocoKey });
       yoco.showPopup({
           amountInCents: Math.round(invoice.total * 100),
           currency: 'ZAR',
@@ -418,10 +404,9 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                               await onUpdateBooking({ ...relatedBooking, status: 'confirmed', amountPaid: invoice.total });
                           }
                       }
-                      alert("Payment Successful! Your record has been updated.");
+                      alert("Payment Successful!");
                   } catch (err) {
                       console.error("Verification failed", err);
-                      alert("Payment received, but failed to update status. Please contact support.");
                   } finally {
                       setProcessingId(null);
                   }
@@ -450,7 +435,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
               const uploadPromises = bookingImages.map(file => dbUploadFile(file, 'booking-references'));
               referenceImageUrls = await Promise.all(uploadPromises);
           }
-          const finalMessage = selectedSpecial ? `${bookingMessage}\n\n[System: Special Linked]` : bookingMessage;
+          const finalMessage = selectedSpecial ? `[SPECIAL: ${selectedSpecial.title}]\n${bookingMessage}` : bookingMessage;
           await onAddBooking({
               name: currentUser.name,
               email: currentUser.email,
@@ -480,18 +465,16 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const totalSpend = myInvoices.filter(i => i.status === 'paid').reduce((acc, curr) => acc + curr.total, 0);
   const outstanding = myInvoices.filter(i => i.status === 'sent' && i.type === 'invoice').reduce((acc, curr) => acc + curr.total, 0);
   
-  // Robust Loyalty Logic
   const activePrograms: LoyaltyProgram[] = (settings?.loyaltyPrograms || []).filter((p: LoyaltyProgram) => p.active);
-  const hasLoyaltySettings = activePrograms.length > 0;
+  const firstProgram = activePrograms[0];
+  const firstProgramCount = currentUser?.loyaltyProgress?.[firstProgram?.id] || (firstProgram?.id === 'legacy' ? currentUser?.stickers : 0) || 0;
 
-  // Status Logic
   const getClientStatus = (visitCount: number) => {
       if (visitCount >= 5) return 'VIP Collector';
       if (visitCount >= 2) return 'Returning Collector';
       return 'New Collector';
   };
 
-  // CHECK PROFILE COMPLETENESS
   const isProfileComplete = useMemo(() => {
     if (!currentUser) return false;
     return !!(currentUser.name && currentUser.phone && currentUser.email && currentUser.age && currentUser.address);
@@ -500,28 +483,19 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   if (!isLoggedIn) {
     return (
       <div className="min-h-screen flex flex-col justify-center items-center text-brand-light p-4 bg-brand-dark">
-        {/* Back Button */}
         <div className="absolute top-8 left-8">
-            <button 
-                onClick={handleBack}
-                className="flex items-center gap-2 text-sm font-bold text-brand-light/50 hover:text-brand-green transition-colors"
-            >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                </svg>
+            <button onClick={handleBack} className="flex items-center gap-2 text-sm font-bold text-brand-light/50 hover:text-brand-green transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" /></svg>
                 Back to Site
             </button>
         </div>
-
         <div className="w-full max-w-sm mx-auto">
           <div className="flex justify-center mb-8">
             <img src={logoUrl} alt={companyName} className="h-32 w-auto object-contain" />
           </div>
-
           <div className="bg-white border border-gray-200 rounded-3xl shadow-xl p-8 transition-all duration-300">
             <h1 className="text-2xl font-bold text-center mb-1 text-gray-900">Portal Login</h1>
             <p className="text-center text-gray-500 text-sm mb-8">{isSignUpMode ? 'Create your profile to start.' : 'Manage your tattoos and rewards.'}</p>
-            
             {isProcessingLogin ? (
                 <div className="text-center py-8">
                     <div className="w-10 h-10 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin mx-auto mb-4"></div>
@@ -564,7 +538,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
     );
   }
 
-  // --- INTERSTITIAL PROFILE COMPLETION (Refined for Soft Pink & Brown) ---
   if (isLoggedIn && !isProfileComplete) {
       return (
           <div className="min-h-screen bg-brand-dark flex flex-col justify-center items-center p-4">
@@ -611,8 +584,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 pb-20">
         {viewInvoice && <InvoicePreviewModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
-        
-        {/* Navbar */}
         <header className="bg-white shadow-sm border-b px-4 py-4 sticky top-0 z-50 no-print">
             <div className="max-w-6xl mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -624,12 +595,8 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-2xl">
-                        {['overview', 'book', 'history', 'loyalty', 'aftercare'].map(t => (
-                            <button 
-                                key={t} 
-                                onClick={() => setActiveTab(t as any)} 
-                                className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all capitalize ${activeTab === t ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
-                            >
+                        {['overview', 'book', 'history', 'loyalty', 'aftercare', 'profile'].map(t => (
+                            <button key={t} onClick={() => setActiveTab(t as any)} className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all capitalize ${activeTab === t ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
                                 {t}
                             </button>
                         ))}
@@ -637,17 +604,9 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     <button onClick={handleLogout} className="text-[10px] font-bold text-red-500 px-3 py-1.5 rounded-full bg-red-50 hover:bg-red-100 transition-colors uppercase tracking-widest border border-red-100">Logout</button>
                 </div>
             </div>
-            
-            {/* Mobile Tab Scroller */}
             <div className="sm:hidden flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
-                {['overview', 'book', 'history', 'loyalty', 'aftercare', 'financials'].map(t => (
-                    <button 
-                        key={t} 
-                        onClick={() => setActiveTab(t as any)} 
-                        className={`flex-shrink-0 px-4 py-2 text-[10px] font-bold rounded-lg border transition-all capitalize ${activeTab === t ? 'bg-brand-green text-white border-brand-green shadow-md shadow-brand-green/20' : 'bg-white text-gray-600 border-gray-200'}`}
-                    >
-                        {t}
-                    </button>
+                {['overview', 'book', 'history', 'loyalty', 'aftercare', 'financials', 'profile'].map(t => (
+                    <button key={t} onClick={() => setActiveTab(t as any)} className={`flex-shrink-0 px-4 py-2 text-[10px] font-bold rounded-lg border transition-all capitalize ${activeTab === t ? 'bg-brand-green text-white border-brand-green shadow-md shadow-brand-green/20' : 'bg-white text-gray-600 border-gray-200'}`}>{t}</button>
                 ))}
             </div>
         </header>
@@ -657,13 +616,23 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
             {activeTab === 'overview' && (
                 <div className="space-y-8 animate-fade-in">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Summary Card */}
                         <div className="md:col-span-2 bg-gradient-to-br from-gray-900 to-brand-light p-8 rounded-[2rem] text-white shadow-2xl relative overflow-hidden group">
                             <div className="absolute -top-20 -right-20 w-64 h-64 bg-brand-green/10 rounded-full blur-3xl group-hover:bg-brand-green/20 transition-all duration-700"></div>
                             <div className="relative z-10">
-                                <h2 className="text-3xl font-bold mb-1">Welcome back, {currentUser?.name.split(' ')[0]}!</h2>
+                                <div className="flex justify-between items-start mb-1">
+                                    <h2 className="text-3xl font-bold">Welcome back, {currentUser?.name.split(' ')[0]}!</h2>
+                                    {/* TINY LOYALTY OVERVIEW */}
+                                    {firstProgram && (
+                                        <div onClick={() => setActiveTab('loyalty')} className="bg-white/10 backdrop-blur-md border border-white/10 p-2 rounded-xl flex items-center gap-2 cursor-pointer hover:bg-white/20 transition-all scale-90 sm:scale-100 origin-right">
+                                            <div className="w-8 h-8 rounded-lg bg-brand-green/20 flex items-center justify-center text-sm">🎁</div>
+                                            <div className="hidden xs:block">
+                                                <p className="text-[8px] font-black uppercase text-brand-green leading-none">Rewards</p>
+                                                <p className="text-xs font-bold">{firstProgramCount}/{firstProgram.stickersRequired}</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                                 <p className="text-gray-400 text-sm mb-8">You have {upcomingBookings.length} upcoming appointments.</p>
-                                
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     <div className="bg-white/5 border border-white/10 p-4 rounded-2xl">
                                         <p className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-1">Lifetime Spend</p>
@@ -681,12 +650,10 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                             </div>
                         </div>
 
-                        {/* Quick Action / Next Slot */}
                         <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-xl flex flex-col justify-between">
                             <div>
                                 <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> 
-                                    Next Session
+                                    <span className="w-2 h-2 rounded-full bg-blue-500"></span> Next Session
                                 </h3>
                                 {upcomingBookings.length > 0 ? (
                                     <div className="space-y-4">
@@ -710,67 +677,73 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* Outstanding Documents */}
                         <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
                             <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                <span className="w-2 h-2 rounded-full bg-yellow-500"></span> 
-                                Documents & Invoices
+                                <span className="w-2 h-2 rounded-full bg-yellow-500"></span> Documents & Invoices
                             </h3>
                             {myInvoices.filter(i => i.status === 'sent' || i.status === 'accepted').length > 0 ? (
                                 <div className="space-y-3">
                                     {myInvoices.filter(i => i.status === 'sent' || i.status === 'accepted').map(inv => (
                                         <div key={inv.id} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 flex justify-between items-center group hover:bg-white hover:shadow-lg transition-all">
-                                            <div>
-                                                <p className="font-bold text-sm text-gray-900">{inv.number}</p>
-                                                <p className="text-xs text-gray-500">R {inv.total.toFixed(2)}</p>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button onClick={() => setViewInvoice(inv)} className="bg-white px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 hover:bg-gray-50">View</button>
-                                                {inv.status === 'sent' && (
-                                                    <button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95">Pay Now</button>
-                                                )}
-                                            </div>
+                                            <div><p className="font-bold text-sm text-gray-900">{inv.number}</p><p className="text-xs text-gray-500">R {inv.total.toFixed(2)}</p></div>
+                                            <div className="flex gap-2"><button onClick={() => setViewInvoice(inv)} className="bg-white px-4 py-2 rounded-xl text-[10px] font-bold border border-gray-200 hover:bg-gray-50">View</button>{inv.status === 'sent' && (<button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-2 rounded-xl text-[10px] font-bold shadow-md active:scale-95">Pay Now</button>)}</div>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                    <p className="text-gray-400 text-sm italic">All documents settled.</p>
-                                </div>
-                            )}
+                            ) : (<div className="text-center py-10 bg-gray-50 rounded-2xl border border-dashed border-gray-200"><p className="text-gray-400 text-sm italic">All documents settled.</p></div>)}
                         </div>
 
-                        {/* Recent History Preview */}
                         <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
                             <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-widest text-[10px]">
-                                <span className="w-2 h-2 rounded-full bg-gray-400"></span> 
-                                Recent Journey
+                                <span className="w-2 h-2 rounded-full bg-gray-400"></span> Recent Journey
                             </h3>
                             {pastBookings.length > 0 ? (
                                 <div className="space-y-4">
                                     {pastBookings.slice(0, 3).map(b => (
                                         <div key={b.id} className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 text-xs shrink-0">
-                                                {new Date(b.bookingDate).getDate()}
-                                            </div>
-                                            <div className="flex-grow">
-                                                <p className="font-bold text-sm text-gray-900">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'long', year:'numeric'})}</p>
-                                                <p className="text-xs text-gray-500 truncate">{b.message}</p>
-                                            </div>
+                                            <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center font-bold text-gray-400 text-xs shrink-0">{new Date(b.bookingDate).getDate()}</div>
+                                            <div className="flex-grow"><p className="font-bold text-sm text-gray-900">{new Date(b.bookingDate).toLocaleDateString(undefined, {month:'long', year:'numeric'})}</p><p className="text-xs text-gray-500 truncate">{b.message}</p></div>
                                             <span className={`px-2 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>{b.status}</span>
                                         </div>
                                     ))}
                                 </div>
-                            ) : (
-                                <p className="text-gray-400 text-sm italic py-10 text-center">No history yet.</p>
-                            )}
+                            ) : (<p className="text-gray-400 text-sm italic py-10 text-center">No history yet.</p>)}
                         </div>
                     </div>
                 </div>
             )}
 
             {activeTab === 'book' && (
-                <div className="animate-fade-in max-w-2xl mx-auto">
+                <div className="animate-fade-in max-w-2xl mx-auto space-y-6">
+                    {/* TINY SPECIALS CARDS ABOVE REQUEST */}
+                    {specials.filter(s => s.active).length > 0 && (
+                        <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-lg overflow-hidden">
+                             <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2 uppercase tracking-widest text-[10px]">
+                                <span className="w-2 h-2 rounded-full bg-brand-green"></span> Current Offers (Tap to select)
+                             </h4>
+                             <div className="flex gap-3 overflow-x-auto pb-4 no-scrollbar">
+                                {specials.filter(s => s.active).map(special => (
+                                    <div 
+                                        key={special.id} 
+                                        onClick={() => handleSpecialSelect(special)}
+                                        className={`flex-shrink-0 w-32 cursor-pointer group transition-all duration-300 ${selectedSpecial?.id === special.id ? 'scale-105 ring-2 ring-brand-green ring-offset-2 rounded-xl' : 'opacity-80 grayscale hover:grayscale-0 hover:opacity-100'}`}
+                                    >
+                                        <div className="relative h-20 rounded-xl overflow-hidden mb-2 shadow-md">
+                                            <img src={special.imageUrl} alt={special.title} className="w-full h-full object-cover" />
+                                            {selectedSpecial?.id === special.id && (
+                                                <div className="absolute inset-0 bg-brand-green/30 flex items-center justify-center">
+                                                    <span className="text-white text-lg">✓</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <p className="text-[10px] font-bold text-gray-800 line-clamp-1 leading-tight">{special.title}</p>
+                                        <p className="text-[8px] text-brand-green font-bold uppercase">R {special.priceValue || special.price}</p>
+                                    </div>
+                                ))}
+                             </div>
+                        </div>
+                    )}
+
                     <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-2xl">
                         <h3 className="text-2xl font-bold text-gray-900 mb-2">Request Appointment</h3>
                         <p className="text-gray-500 text-sm mb-8">Tell us about your next project.</p>
@@ -784,28 +757,9 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Design Idea / Message</label>
                                 <textarea rows={4} required value={bookingMessage} onChange={(e) => setBookingMessage(e.target.value)} placeholder="Describe the tattoo size, placement, and style..." className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 focus:ring-2 focus:ring-brand-green outline-none" />
                             </div>
-                            
-                            {specials.length > 0 && (
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Link a Special (Optional)</label>
-                                    <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                        {specials.filter(s => s.active).map(special => (
-                                            <button 
-                                                key={special.id}
-                                                type="button"
-                                                onClick={() => handleSpecialSelect(special)}
-                                                className={`flex-shrink-0 px-4 py-2 rounded-full text-[10px] font-bold border transition-all ${selectedSpecial?.id === special.id ? 'bg-brand-green text-white border-brand-green shadow-lg' : 'bg-white text-gray-500 border-gray-200'}`}
-                                            >
-                                                {special.title}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-
                             <div className="pt-6 border-t border-gray-50">
-                                <button type="submit" disabled={isBookingLoading} className="w-full bg-brand-green text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-brand-green/20 hover:scale-[1.02] transition-all active:scale-[0.98] disabled:opacity-50">
-                                    {isBookingLoading ? 'Sending Request...' : 'Send Booking Request'}
+                                <button type="submit" disabled={isBookingLoading} className="w-full bg-brand-green text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-brand-green/20 hover:scale-[1.02] transition-all active:scale-[0.98] disabled:opacity-50 uppercase tracking-widest">
+                                    {isBookingLoading ? 'Sending Request...' : 'Send Request'}
                                 </button>
                             </div>
                         </form>
@@ -813,199 +767,82 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 </div>
             )}
 
-            {activeTab === 'history' && (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-2xl text-gray-900">Your Tattoo Journey</h3>
-                        <span className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">{myBookings.length} Records</span>
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        {myBookings.sort((a,b) => new Date(b.bookingDate).getTime() - new Date(a.bookingDate).getTime()).map(b => (
-                            <div key={b.id} className="bg-white p-6 rounded-3xl border border-gray-100 shadow-lg flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:shadow-xl transition-all">
-                                <div className="flex items-center gap-4">
-                                    <div className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center font-bold text-xs ${new Date(b.bookingDate) >= new Date() ? 'bg-brand-green text-white' : 'bg-gray-100 text-gray-400'}`}>
-                                        <span className="text-[10px] opacity-60">{new Date(b.bookingDate).toLocaleString(undefined, {month:'short'})}</span>
-                                        <span className="text-lg leading-none">{new Date(b.bookingDate).getDate()}</span>
-                                    </div>
-                                    <div>
-                                        <p className="font-bold text-lg text-gray-900">{new Date(b.bookingDate).toLocaleDateString(undefined, {weekday:'long', year:'numeric'})}</p>
-                                        <p className="text-sm text-gray-500 line-clamp-1 italic">"{b.message}"</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-t-0 pt-4 md:pt-0 mt-2 md:mt-0">
-                                    <div className="flex flex-col items-end flex-grow md:flex-grow-0">
-                                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${
-                                            b.status === 'confirmed' ? 'bg-blue-100 text-blue-700' :
-                                            b.status === 'completed' ? 'bg-green-100 text-green-700' :
-                                            b.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                            'bg-gray-100 text-gray-500'
-                                        }`}>
-                                            {b.status.replace('_', ' ')}
-                                        </span>
-                                        {b.totalCost && <p className="text-xs font-bold text-gray-900 mt-1">R {b.totalCost}</p>}
-                                    </div>
-                                    {(b.status === 'pending' || b.status === 'confirmed') && (
-                                        <button onClick={() => handleCancelBooking(b)} className="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors" title="Cancel Request">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
-                        {myBookings.length === 0 && (
-                            <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-gray-300">
-                                <p className="text-gray-400 italic">No appointments found.</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-
             {activeTab === 'loyalty' && (
-                <div className="space-y-12 animate-fade-in">
+                <div className="space-y-8 animate-fade-in">
                     <div className="text-center max-w-xl mx-auto">
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2">Member Rewards</h3>
-                        <p className="text-sm text-gray-500">Collect stickers on your digital cards to unlock exclusive studio perks. Updates are synced in real-time as the artist adds stickers.</p>
+                        <h3 className="text-3xl font-bold text-gray-900 mb-2 font-script">Member Rewards</h3>
+                        <p className="text-sm text-gray-500 italic">"Collect stickers to unlock exclusive studio perks."</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {hasLoyaltySettings ? activePrograms.map(prog => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {/* FIX: Use activePrograms.length check instead of non-existent hasLoyaltySettings */}
+                        {activePrograms.length > 0 ? activePrograms.map(prog => {
                             const currentCount = currentUser?.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? currentUser?.stickers : 0) || 0;
                             const isComplete = currentCount >= prog.stickersRequired;
 
                             return (
-                                <div key={prog.id} className="bg-white rounded-[2.5rem] p-10 border border-gray-100 shadow-2xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-8">
-                                        <div className={`w-16 h-16 rounded-3xl flex items-center justify-center text-2xl shadow-inner ${isComplete ? 'bg-brand-green text-white animate-bounce' : 'bg-gray-50 text-gray-300'}`}>
+                                <div key={prog.id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-xl relative overflow-hidden group hover:-translate-y-1 transition-transform">
+                                    <div className="absolute top-0 right-0 p-4">
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-lg shadow-inner ${isComplete ? 'bg-brand-green text-white animate-bounce' : 'bg-gray-50 text-gray-300'}`}>
                                             {isComplete ? '🎁' : '⚓'}
                                         </div>
                                     </div>
                                     
                                     <div className="relative z-10">
-                                        <h4 className="text-2xl font-bold text-gray-900 mb-1">{prog.name}</h4>
-                                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-[0.2em] mb-8">Active Collector</p>
+                                        <h4 className="text-lg font-bold text-gray-900 mb-1">{prog.name}</h4>
+                                        <p className="text-[8px] text-gray-400 uppercase font-bold tracking-[0.2em] mb-6">Active Card</p>
                                         
-                                        {/* Stamp Grid */}
-                                        <div className="grid grid-cols-5 gap-4 mb-10">
+                                        <div className="grid grid-cols-5 gap-2 mb-6">
                                             {Array.from({ length: prog.stickersRequired }).map((_, i) => (
-                                                <div key={i} className={`aspect-square rounded-full border-2 flex items-center justify-center transition-all duration-700 ${i < currentCount ? 'bg-brand-green border-brand-green shadow-lg shadow-brand-green/30' : 'bg-gray-50 border-gray-200'}`}>
+                                                <div key={i} className={`aspect-square rounded-full border-2 flex items-center justify-center transition-all duration-700 ${i < currentCount ? 'bg-brand-green border-brand-green shadow-md shadow-brand-green/20' : 'bg-gray-50 border-gray-100'}`}>
                                                     {i < currentCount ? (
-                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-4 h-4 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-3 h-3 text-white"><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" /></svg>
                                                     ) : (
-                                                        <span className="text-[10px] text-gray-200 font-bold">{i + 1}</span>
+                                                        <span className="text-[8px] text-gray-200 font-bold">{i + 1}</span>
                                                     )}
                                                 </div>
                                             ))}
                                         </div>
 
-                                        <div className="pt-6 border-t border-gray-100 flex justify-between items-center">
+                                        <div className="pt-4 border-t border-gray-50 flex justify-between items-center">
                                             <div>
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Reward</p>
-                                                <p className={`font-bold ${isComplete ? 'text-brand-green text-lg' : 'text-gray-900'}`}>{prog.rewardDescription}</p>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Reward</p>
+                                                <p className={`text-xs font-bold leading-tight ${isComplete ? 'text-brand-green' : 'text-gray-900'}`}>{prog.rewardDescription}</p>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Progress</p>
-                                                <p className="font-bold text-gray-900">{currentCount} / {prog.stickersRequired}</p>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Progress</p>
+                                                <p className="text-xs font-bold text-gray-900">{currentCount} / {prog.stickersRequired}</p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             );
-                        }) : (
-                            <div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-gray-300">
-                                <p className="text-gray-400 italic">No loyalty programs currently active in settings.</p>
-                            </div>
-                        )}
+                        }) : (<div className="col-span-full py-20 text-center bg-white rounded-[2rem] border border-dashed border-gray-300"><p className="text-gray-400 italic">No loyalty programs active.</p></div>)}
                     </div>
                 </div>
             )}
 
             {activeTab === 'aftercare' && (
                 <div className="animate-fade-in max-w-4xl mx-auto space-y-12">
-                    <div className="text-center">
-                        <h3 className="text-3xl font-bold text-gray-900 mb-2">{settings?.aftercare?.title || 'Care Guide'}</h3>
-                        <p className="text-sm text-gray-500 italic">"{settings?.aftercare?.intro || 'Proper care ensures long-lasting results.'}"</p>
-                    </div>
-
+                    <div className="text-center"><h3 className="text-3xl font-bold text-gray-900 mb-2 font-script">{settings?.aftercare?.title || 'Care Guide'}</h3><p className="text-sm text-gray-500 italic">"{settings?.aftercare?.intro || 'Proper care ensures long-lasting results.'}"</p></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {(settings?.aftercare?.sections || []).map((section: any, idx: number) => (
                             <div key={idx} className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-xl">
-                                <div className="flex items-center gap-4 mb-6">
-                                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${idx % 2 === 0 ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
-                                        {section.icon || '🛡️'}
-                                    </div>
-                                    <h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">{section.title}</h4>
-                                </div>
-                                <ul className="space-y-4 text-sm text-gray-600">
-                                    {(section.items || []).map((item: string, iIdx: number) => (
-                                        <li key={iIdx} className="flex gap-3">
-                                            <span className={`font-bold ${idx % 2 === 0 ? 'text-blue-500' : 'text-red-500'}`}>{String(iIdx + 1).padStart(2, '0')}.</span>
-                                            <span>{item}</span>
-                                        </li>
-                                    ))}
-                                </ul>
+                                <div className="flex items-center gap-4 mb-6"><div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl ${idx % 2 === 0 ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>{section.icon || '🛡️'}</div><h4 className="text-lg font-bold text-gray-900 uppercase tracking-widest text-xs">{section.title}</h4></div>
+                                <ul className="space-y-4 text-sm text-gray-600">{(section.items || []).map((item: string, iIdx: number) => (<li key={iIdx} className="flex gap-3"><span className={`font-bold ${idx % 2 === 0 ? 'text-blue-500' : 'text-red-500'}`}>{String(iIdx + 1).padStart(2, '0')}.</span><span>{item}</span></li>))}</ul>
                             </div>
                         ))}
                     </div>
-
-                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center">
-                        <p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p>
-                        <p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p>
-                        <a 
-                            href={`https://wa.me/${settings?.whatsAppNumber}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"
-                        >
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 2c-5.523 0-10 4.477-10 10 0 1.764.457 3.42 1.258 4.86L2 22l5.311-1.393c1.44.8 3.096 1.258 4.86 1.258 5.523 0 10-4.477 10-10s-4.477-10-10-10zm0 18.062c-1.572 0-3.045-.425-4.322-1.162l-.31-.18-3.21.841.855-3.13-.197-.323c-.737-1.277-1.162-2.75-1.162-4.322 0-4.444 3.619-8.063 8.063-8.063s8.063 3.619 8.063 8.063-3.619 8.063-8.063 8.063z"/></svg>
-                            Message Studio
-                        </a>
-                    </div>
+                    <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p><a href={`https://wa.me/${settings?.whatsAppNumber}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 2c-5.523 0-10 4.477-10 10 0 1.764.457 3.42 1.258 4.86L2 22l5.311-1.393c1.44.8 3.096 1.258 4.86 1.258 5.523 0 10-4.477 10-10s-4.477-10-10-10zm0 18.062c-1.572 0-3.045-.425-4.322-1.162l-.31-.18-3.21.841.855-3.13-.197-.323c-.737-1.277-1.162-2.75-1.162-4.322 0-4.444 3.619-8.063 8.063-8.063s8.063 3.619 8.063 8.063-3.619 8.063-8.063 8.063z"/></svg>Message Studio</a></div>
                 </div>
             )}
 
+            {activeTab === 'profile' && (
+                <div className="animate-fade-in max-w-2xl mx-auto"><div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-2xl overflow-hidden relative"><div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><img src={logoUrl} className="w-48 h-48 object-contain grayscale" /></div><div className="relative z-10"><h3 className="text-3xl font-script text-brand-green mb-2">Bos Identity</h3><p className="text-gray-500 text-sm mb-8 italic">Review and update your personal details for our studio records.</p><form onSubmit={handleProfileSubmit} className="space-y-6"><div className="grid grid-cols-1 sm:grid-cols-2 gap-5"><div><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label><input type="text" required value={profileFormData.name} onChange={e => setProfileFormData({...profileFormData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tell / Mobile</label><input type="tel" required value={profileFormData.phone} onChange={e => setProfileFormData({...profileFormData, phone: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div className="sm:col-span-1"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label><input type="email" readOnly value={profileFormData.email} className="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed outline-none" /><p className="text-[9px] text-gray-300 mt-1 italic ml-1">Email cannot be changed.</p></div><div className="sm:col-span-1"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Age</label><input type="number" required min={1} value={profileFormData.age || ''} onChange={e => setProfileFormData({...profileFormData, age: parseInt(e.target.value)})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div className="sm:col-span-2"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Physical Address</label><textarea rows={3} required value={profileFormData.address} onChange={e => setProfileFormData({...profileFormData, address: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" placeholder="123 Street, City, Code" /></div></div><div className="pt-4"><button type="submit" disabled={isProfileSaving} className="w-full bg-brand-green text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-brand-green/20 hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase">{isProfileSaving ? 'Saving Changes...' : 'Update Identity'}</button></div></form></div></div></div>
+            )}
+
             {activeTab === 'financials' && (
-                <div className="space-y-6 animate-fade-in">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center">
-                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Lifetime Investment</p>
-                            <p className="text-4xl font-bold text-gray-900">R {totalSpend.toFixed(0)}</p>
-                        </div>
-                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center">
-                            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Outstanding Balance</p>
-                            <p className={`text-4xl font-bold ${outstanding > 0 ? 'text-red-500' : 'text-green-500'}`}>R {outstanding.toFixed(0)}</p>
-                        </div>
-                    </div>
-                    
-                    <div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden">
-                        <table className="w-full text-sm text-left">
-                            <thead className="bg-gray-50 text-gray-400 font-bold text-[10px] uppercase tracking-widest">
-                                <tr>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Number</th>
-                                    <th className="px-6 py-4 text-right">Amount</th>
-                                    <th className="px-6 py-4 text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {myInvoices.map(inv => (
-                                    <tr key={inv.id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4 text-gray-500 text-xs">{new Date(inv.dateIssued).toLocaleDateString()}</td>
-                                        <td className="px-6 py-4 font-bold text-gray-900">{inv.number}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-gray-900">R{inv.total.toFixed(2)}</td>
-                                        <td className="px-6 py-4 text-right flex justify-end gap-3 items-center">
-                                            <span className={`text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
-                                            {inv.status === 'sent' && (
-                                                <button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-md active:scale-95">PAY</button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <div className="space-y-6 animate-fade-in"><div className="grid grid-cols-2 gap-4"><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Lifetime Investment</p><p className="text-4xl font-bold text-gray-900">R {totalSpend.toFixed(0)}</p></div><div className="bg-white p-8 rounded-[2rem] shadow-xl border border-gray-100 text-center"><p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest mb-2">Outstanding Balance</p><p className={`text-4xl font-bold ${outstanding > 0 ? 'text-red-500' : 'text-green-500'}`}>R {outstanding.toFixed(0)}</p></div></div><div className="bg-white rounded-[2rem] shadow-2xl border border-gray-100 overflow-hidden"><table className="w-full text-sm text-left"><thead className="bg-gray-50 text-gray-400 font-bold text-[10px] uppercase tracking-widest"><tr><th className="px-6 py-4">Date</th><th className="px-6 py-4">Number</th><th className="px-6 py-4 text-right">Amount</th><th className="px-6 py-4 text-right">Status</th></tr></thead><tbody className="divide-y divide-gray-100">{myInvoices.map(inv => (<tr key={inv.id} className="hover:bg-gray-50 transition-colors"><td className="px-6 py-4 text-gray-500 text-xs">{new Date(inv.dateIssued).toLocaleDateString()}</td><td className="px-6 py-4 font-bold text-gray-900">{inv.number}</td><td className="px-6 py-4 text-right font-bold text-gray-900">R{inv.total.toFixed(2)}</td><td className="px-6 py-4 text-right flex justify-end gap-3 items-center"><span className={`text-[9px] font-bold px-3 py-1 rounded-full uppercase tracking-widest ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>{inv.status === 'sent' && (<button onClick={() => handlePayNow(inv)} className="bg-brand-green text-white px-4 py-1.5 rounded-xl text-[10px] font-bold shadow-md active:scale-95">PAY</button>)}</td></tr>))}</tbody></table></div></div>
             )}
         </main>
     </div>
