@@ -28,7 +28,8 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                     <h3 className="font-bold text-gray-800">{invoice.type === 'quote' ? 'Quote' : 'Invoice'} #{invoice.number}</h3>
                     <div className="flex gap-2">
                         <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded transition-colors">Print</button>
-                        <button onClose={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+                        {/* FIXED: changed onClose to onClick */}
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
                     </div>
                 </div>
                 <div className="p-8 overflow-y-auto bg-white text-gray-800 text-sm font-sans">
@@ -112,7 +113,7 @@ const ClientsManager: React.FC<{
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientPassword, setNewClientPassword] = useState('');
 
-  // Filter for truly active programs set in the CMS. No fallback to "Legacy" if none exist.
+  // Filter for truly active programs set in the CMS. Only show Loyalty features if these exist.
   const activePrograms = useMemo(() => loyaltyPrograms.filter(p => p.active), [loyaltyPrograms]);
 
   const clients = useMemo(() => {
@@ -491,6 +492,7 @@ const ClientsManager: React.FC<{
                         </div>
                         <div className="flex flex-col gap-2 items-end">
                             <div className="flex gap-2">
+                                {/* Only show Loyalty button if active programs exist in CMS */}
                                 {activePrograms.length > 0 && (
                                     <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-admin-dark-primary/20 hover:scale-105 transition-transform active:scale-95">
                                         Loyalty
@@ -641,12 +643,12 @@ const ClientsManager: React.FC<{
             )}
         </div>
 
-        {/* High-Fidelity Loyalty Upgrade */}
+        {/* High-Fidelity Upgraded Loyalty Modal (Digital Stamp Card) */}
         {isLoyaltyPopupOpen && selectedClient && currentProgram && (
             <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsLoyaltyPopupOpen(false)}>
                 <div className="bg-white rounded-[3rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up border border-gray-100" onClick={e => e.stopPropagation()}>
-                    {/* Header with soft brand styling */}
-                    <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20">
+                    {/* Soft Pink Card Header */}
+                    <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20 relative">
                         <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg mb-6 border border-[#f48fb1]/10 transform rotate-3">
                             {currentProgram.iconUrl ? (
                                 <img src={currentProgram.iconUrl} alt="Program Icon" className="w-14 h-14 object-contain" />
@@ -654,7 +656,7 @@ const ClientsManager: React.FC<{
                                 <span className="text-3xl">✨</span>
                             )}
                         </div>
-                        <div className="text-center w-full relative">
+                        <div className="text-center w-full">
                             <select 
                                 value={selectedLoyaltyProgramId} 
                                 onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)}
@@ -670,7 +672,7 @@ const ClientsManager: React.FC<{
                     </div>
 
                     <div className="p-10">
-                        {/* THE STAMP GRID */}
+                        {/* STAMP GRID VISUALIZER */}
                         <div className="grid grid-cols-5 gap-3 mb-10">
                             {Array.from({ length: currentProgram.stickersRequired }).map((_, i) => {
                                 const isFilled = i < currentProgramCount;
@@ -690,7 +692,6 @@ const ClientsManager: React.FC<{
                                         ) : (
                                             <span className="text-[10px] font-black text-gray-300">{i + 1}</span>
                                         )}
-                                        {/* Subtle overlay effect */}
                                         <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity"></div>
                                     </div>
                                 );
@@ -709,13 +710,13 @@ const ClientsManager: React.FC<{
                             </div>
                         </div>
                         
-                        {/* Action Area */}
+                        {/* Admin Action Area */}
                         {currentProgramCount >= currentProgram.stickersRequired ? (
                             <button 
                                 onClick={() => { if(window.confirm('Redeem reward? Stickers will reset.')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); }} 
-                                className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest animate-subtle-glow shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all"
+                                className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest animate-bounce shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all"
                             >
-                                Redeem Collection
+                                Redeem Perk
                             </button>
                         ) : (
                             <div className="flex gap-4">
