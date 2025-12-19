@@ -68,10 +68,16 @@ const SetupManager: React.FC = () => {
   const [activeStep, setActiveStep] = useState<number>(3); 
 
   const sql_structure = `
+-- ==========================================
+-- PHASE A: DATABASE INFRASTRUCTURE
+-- ==========================================
+
 -- 1. EXTENSIONS
 create extension if not exists "uuid-ossp";
 
--- 2. CREATE TABLES
+-- 2. MASTER TABLE CREATION
+-- We use IF NOT EXISTS to prevent errors if running multiple times.
+
 create table if not exists public.portfolio (
   id uuid primary key default uuid_generate_v4(),
   title text,
@@ -178,6 +184,14 @@ create table if not exists public.clients (
   "rewardsRedeemed" integer default 0,
   age integer,
   address text,
+  -- Safety columns for calculated fields sent from UI
+  "totalSpend" numeric default 0,
+  "visitCount" integer default 0,
+  "lastVisit" text,
+  "bookings" jsonb default '[]'::jsonb,
+  "invoices" jsonb default '[]'::jsonb,
+  "preferredPayment" text,
+  "tier" text,
   created_at timestamp with time zone default timezone('utc'::text, now())
 );
 
@@ -219,10 +233,13 @@ create table if not exists public.settings (
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 
--- 3. SCHEMA REPAIR (Safely add missing columns to existing tables)
+-- ==========================================
+-- 3. SCHEMA REPAIR (Safely add missing columns)
+-- Run this if you see "Could not find column" errors.
+-- ==========================================
 DO $$ 
 BEGIN 
-  -- Bookings fixes
+  -- Bookings Table Fixes
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='contactMethod') THEN
     ALTER TABLE public.bookings ADD COLUMN "contactMethod" text;
   END IF;
@@ -233,17 +250,41 @@ BEGIN
     ALTER TABLE public.bookings ADD COLUMN "selectedOptions" text[];
   END IF;
 
-  -- Clients fixes
+  -- Clients Table Fixes (Critical for the "bookings column missing" error)
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='age') THEN
     ALTER TABLE public.clients ADD COLUMN "age" integer;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='address') THEN
     ALTER TABLE public.clients ADD COLUMN "address" text;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='totalSpend') THEN
+    ALTER TABLE public.clients ADD COLUMN "totalSpend" numeric default 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='visitCount') THEN
+    ALTER TABLE public.clients ADD COLUMN "visitCount" integer default 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='lastVisit') THEN
+    ALTER TABLE public.clients ADD COLUMN "lastVisit" text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='bookings') THEN
+    ALTER TABLE public.clients ADD COLUMN "bookings" jsonb default '[]'::jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='invoices') THEN
+    ALTER TABLE public.clients ADD COLUMN "invoices" jsonb default '[]'::jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='preferredPayment') THEN
+    ALTER TABLE public.clients ADD COLUMN "preferredPayment" text;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='tier') THEN
+    ALTER TABLE public.clients ADD COLUMN "tier" text;
+  END IF;
 
-  -- Settings fixes
+  -- Settings Table Fixes
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='bookingOptions') THEN
     ALTER TABLE public.settings ADD COLUMN "bookingOptions" jsonb DEFAULT '[]'::jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='loyaltyPrograms') THEN
+    ALTER TABLE public.settings ADD COLUMN "loyaltyPrograms" jsonb DEFAULT '[]'::jsonb;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='sanctuaryPerks') THEN
     ALTER TABLE public.settings ADD COLUMN "sanctuaryPerks" jsonb DEFAULT '[]'::jsonb;
@@ -257,11 +298,38 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='payments') THEN
     ALTER TABLE public.settings ADD COLUMN "payments" jsonb;
   END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='hero') THEN
+    ALTER TABLE public.settings ADD COLUMN "hero" jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='about') THEN
+    ALTER TABLE public.settings ADD COLUMN "about" jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='contact') THEN
+    ALTER TABLE public.settings ADD COLUMN "contact" jsonb;
+  END IF;
+
+  -- Specials Table Fixes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='priceType') THEN
+    ALTER TABLE public.specials ADD COLUMN "priceType" text DEFAULT 'fixed';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='priceValue') THEN
+    ALTER TABLE public.specials ADD COLUMN "priceValue" numeric;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='details') THEN
+    ALTER TABLE public.specials ADD COLUMN "details" text[];
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='voucherCode') THEN
+    ALTER TABLE public.specials ADD COLUMN "voucherCode" text;
+  END IF;
+
 END $$;
 `.trim();
 
   const sql_permissions = `
--- SECURITY POLICIES (Row Level Security)
+-- ==========================================
+-- PHASE B: SECURITY POLICIES (RLS)
+-- ==========================================
+
 alter table public.expenses enable row level security;
 alter table public.inventory enable row level security;
 alter table public.portfolio enable row level security;
@@ -272,7 +340,7 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
--- Drop existing policies if they exist to prevent 42710 errors
+-- Drop existing policies if they exist to prevent duplication errors
 drop policy if exists "Admin Expenses" on public.expenses;
 drop policy if exists "Admin Inventory" on public.inventory;
 drop policy if exists "Public Read Portfolio" on public.portfolio;
@@ -287,7 +355,7 @@ drop policy if exists "App Access Bookings" on public.bookings;
 drop policy if exists "App Access Invoices" on public.invoices;
 drop policy if exists "App Access Clients" on public.clients;
 
--- Policies
+-- Define Policies
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
@@ -304,7 +372,10 @@ create policy "App Access Clients" on public.clients for all using (true);
 `.trim();
 
   const sql_realtime = `
--- REALTIME SUBSCRIPTION CONFIG
+-- ==========================================
+-- PHASE C: REALTIME SUBSCRIPTION CONFIG
+-- ==========================================
+
 DROP PUBLICATION IF EXISTS supabase_realtime;
 CREATE PUBLICATION supabase_realtime FOR TABLE 
     public.portfolio, 
@@ -332,8 +403,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
-          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">Deployment Guide</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Blueprint for your professional Bos Salon Nails and Beauty platform.</p>
+          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">System Recovery</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Use these tools to repair or initialize your Studio database schema.</p>
         </header>
 
         <div className="space-y-4">
@@ -349,12 +420,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
             </StepWrapper>
 
             <StepWrapper number="3" title="Database Architecture" subtitle="SQL Scripts" isActive={activeStep === 3} onHeaderClick={() => setActiveStep(3)}>
-                <p>Run these in your Supabase SQL Editor to create or repair your database tables.</p>
+                <p>Run these in your Supabase SQL Editor. **Phase A** contains the schema repair logic to fix missing column errors.</p>
                 <div className="space-y-8">
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair</h4>
-                        <p className="text-xs text-gray-500 mb-3 italic">* This script will automatically add missing columns if your tables already exist.</p>
-                        <CopyBlock text={sql_structure} height="h-64" label="Structure Script" />
+                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair (Fixes Errors)</h4>
+                        <p className="text-xs text-gray-500 mb-3 italic">* This script adds missing columns (like 'bookings') to your tables automatically.</p>
+                        <CopyBlock text={sql_structure} height="h-96" label="Structure Script" />
                     </section>
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase B: Permissions (RLS)</h4>
@@ -368,7 +439,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
             </StepWrapper>
 
             <StepWrapper number="4" title="Media Storage" subtitle="Buckets" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
-                <p>Create these **Public** buckets in Supabase Storage:</p>
+                <p>Ensure these **Public** buckets exist in Supabase Storage:</p>
                 <ul className="list-disc pl-5 font-mono text-xs space-y-1">
                     <li>portfolio, specials, showroom, settings, booking-references</li>
                 </ul>
@@ -385,17 +456,14 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                         <li>Go to the **Settings** tab in this Admin Panel &rarr; **Yoco Machine** sub-tab.</li>
                         <li>Enter your ID and Key, then toggle **Enable**.</li>
                     </ol>
-                    <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 text-xs text-yellow-800">
-                        <strong>Security Note:</strong> For real-world transactions, ensure your site is served over HTTPS. The "Push to Terminal" feature uses Yoco's cloud relay to wake up your machine instantly.
-                    </div>
                 </div>
             </StepWrapper>
 
             <StepWrapper number="6" title="Production Launch" subtitle="Vercel Deployment" isActive={activeStep === 6} onHeaderClick={() => setActiveStep(6)}>
                 <p>Deploy to Vercel and add your environment variables.</p>
                 <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl">
-                    <h3 className="text-2xl font-bold mb-2">Almost Live! 🚀</h3>
-                    <p className="text-green-100">Ensure all SQL phases are run before saving settings.</p>
+                    <h3 className="text-2xl font-bold mb-2">System Ready! 🚀</h3>
+                    <p className="text-green-100">If you still see errors, refresh your Supabase Schema cache or restart the app.</p>
                 </div>
             </StepWrapper>
         </div>

@@ -236,11 +236,19 @@ const ClientsManager: React.FC<{
           const idToUpdate = selectedClient.id || clientInDb?.id;
           if (!idToUpdate) throw new Error("Client ID missing");
 
+          // SANITIZATION: Only send DB-valid fields to prevent "Column not found" errors
+          // We remove calculated properties like 'bookings', 'invoices', etc.
+          const { 
+              totalSpend, visitCount, lastVisit, bookings, invoices, preferredPayment, tier, 
+              ...dbSafeClient 
+          } = selectedClient;
+
           await onUpdateClient({ 
-              ...selectedClient, 
+              ...dbSafeClient, 
               id: idToUpdate, 
               notes: notesDraft 
-          });
+          } as Client);
+          
           setSelectedClient(prev => prev ? { ...prev, notes: notesDraft } : null);
           setIsEditingNotes(false);
           alert("Notes updated.");
@@ -332,10 +340,12 @@ const ClientsManager: React.FC<{
       const newProgress = { ...currentProgress, [programId]: newCount };
 
       try {
+          // SANITIZATION: Ensure we don't send calculated fields
+          const { totalSpend, visitCount, lastVisit, bookings, invoices, preferredPayment, tier, ...dbSafeClient } = selectedClient;
+
           await onUpdateClient({ 
+              ...dbSafeClient,
               id: idToUpdate, 
-              name: selectedClient.name, 
-              email: selectedClient.email, 
               loyaltyProgress: newProgress,
               stickers: programId === 'legacy' ? newCount : selectedClient.stickers 
           });
