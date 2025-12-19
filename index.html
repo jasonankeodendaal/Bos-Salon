@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -143,6 +144,46 @@
       }
     </script>
     <style>
+      /* --- GLOBAL PINK SCROLLBARS --- */
+      /* Inspired by the clean material sliders: subtle track, vibrant thumb */
+      
+      /* Webkit (Chrome, Safari, Edge) */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #fff0f5; /* brand-dark (soft lavender blush) */
+        border-radius: 100px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #ff1493; /* brand-green / bright pink */
+        border: 2px solid #fff0f5; /* creates a "floating" effect like the slider thumb */
+        border-radius: 100px;
+        transition: background 0.3s ease;
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: #f48fb1; /* brand-pink (softer pink accent) */
+      }
+
+      /* Firefox */
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: #ff1493 #fff0f5;
+      }
+
+      /* Specific utility for dense scrollable areas */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        border: 1px solid #fff0f5;
+      }
+
       /* Hide arrows in number input */
       /* Chrome, Safari, Edge, Opera */
       input::-webkit-outer-spin-button,
@@ -250,11 +291,11 @@
             background: transparent;
         }
         .design-list::-webkit-scrollbar-thumb {
-            background: #ccc;
+            background: #ff1493;
             border-radius: 10px;
         }
         .design-list::-webkit-scrollbar-thumb:hover {
-            background: #aaa;
+            background: #f48fb1;
         }
         .design-item {
           display: flex;

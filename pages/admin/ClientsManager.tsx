@@ -640,37 +640,100 @@ const ClientsManager: React.FC<{
             )}
         </div>
 
-        {/* Improved Loyalty Popup */}
+        {/* High-Fidelity Loyalty Upgrade */}
         {isLoyaltyPopupOpen && selectedClient && currentProgram && (
             <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsLoyaltyPopupOpen(false)}>
-                <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
-                    <div className="bg-admin-dark-primary p-8 text-white flex justify-between items-center">
-                        <div>
+                <div className="bg-white rounded-[3rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up border border-gray-100" onClick={e => e.stopPropagation()}>
+                    {/* Header with soft brand styling */}
+                    <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20">
+                        <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg mb-6 border border-[#f48fb1]/10 transform rotate-3">
+                            {currentProgram.iconUrl ? (
+                                <img src={currentProgram.iconUrl} alt="Program Icon" className="w-14 h-14 object-contain" />
+                            ) : (
+                                <span className="text-3xl">✨</span>
+                            )}
+                        </div>
+                        <div className="text-center w-full relative">
                             <select 
                                 value={selectedLoyaltyProgramId} 
                                 onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)}
-                                className="bg-transparent text-white font-black outline-none cursor-pointer text-xl appearance-none pr-6 border-b border-white/20 uppercase tracking-tight"
+                                className="bg-transparent text-[#4e342e] font-black text-xl outline-none cursor-pointer text-center appearance-none pr-4 border-b border-[#f48fb1]/30 uppercase tracking-tighter focus:border-[#ff1493] transition-colors"
                             >
-                                {activePrograms.map(p => <option key={p.id} value={p.id} className="text-black">{p.name}</option>)}
+                                {activePrograms.map(p => <option key={p.id} value={p.id} className="text-black font-sans">{p.name}</option>)}
                             </select>
-                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 mt-1">Loyalty Card</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f48fb1] mt-3">Studio Stamp Card</p>
                         </div>
-                        <button onClick={() => setIsLoyaltyPopupOpen(false)} className="text-3xl leading-none opacity-50 hover:opacity-100 transition-opacity">&times;</button>
+                        <button onClick={() => setIsLoyaltyPopupOpen(false)} className="absolute top-6 right-6 text-[#f48fb1] hover:text-[#ff1493] transition-colors">
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
                     </div>
-                    <div className="p-10 text-center">
-                        <div className="text-6xl font-black mb-2 text-gray-900 tracking-tighter">
-                            {currentProgramCount} <span className="text-2xl text-gray-300">/ {currentProgram.stickersRequired}</span>
+
+                    <div className="p-10">
+                        {/* THE STAMP GRID */}
+                        <div className="grid grid-cols-5 gap-3 mb-10">
+                            {Array.from({ length: currentProgram.stickersRequired }).map((_, i) => {
+                                const isFilled = i < currentProgramCount;
+                                return (
+                                    <div 
+                                        key={i} 
+                                        className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 relative group
+                                            ${isFilled 
+                                                ? 'bg-[#ff1493] border-[#ff1493] shadow-lg shadow-[#ff1493]/30 scale-105' 
+                                                : 'bg-gray-50 border-gray-100 grayscale'
+                                            }`}
+                                    >
+                                        {isFilled ? (
+                                            <svg className="w-6 h-6 text-white animate-fade-in" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        ) : (
+                                            <span className="text-[10px] font-black text-gray-300">{i + 1}</span>
+                                        )}
+                                        {/* Subtle overlay effect */}
+                                        <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity"></div>
+                                    </div>
+                                );
+                            })}
                         </div>
-                        <p className="text-sm font-bold text-admin-dark-primary uppercase tracking-widest mb-10">{currentProgram.rewardDescription}</p>
+
+                        {/* Status & Reward Information */}
+                        <div className="text-center space-y-2 mb-10">
+                            <div className="flex justify-between items-end border-b border-gray-50 pb-2 mb-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Target Benefit</p>
+                                <p className="text-sm font-black text-[#ff1493]">{currentProgram.rewardDescription}</p>
+                            </div>
+                            <div className="flex justify-between items-end">
+                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Progress</p>
+                                <p className="text-lg font-black text-[#4e342e]">{currentProgramCount} <span className="text-gray-300 font-medium">/ {currentProgram.stickersRequired}</span></p>
+                            </div>
+                        </div>
                         
+                        {/* Action Area */}
                         {currentProgramCount >= currentProgram.stickersRequired ? (
-                            <button onClick={() => { if(window.confirm('Confirm redemption?')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); setIsLoyaltyPopupOpen(false); }} className="w-full bg-yellow-400 text-black py-4 rounded-2xl font-black uppercase tracking-widest animate-bounce shadow-xl shadow-yellow-400/20">Redeem Perk</button>
+                            <button 
+                                onClick={() => { if(window.confirm('Redeem reward? Stickers will reset.')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); }} 
+                                className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest animate-subtle-glow shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all"
+                            >
+                                Redeem Collection
+                            </button>
                         ) : (
-                            <div className="flex justify-center gap-4">
-                                <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-gray-200 transition-colors shadow-sm">－</button>
-                                <button onClick={() => updateStickers(currentProgram.id, 1)} className="bg-admin-dark-primary text-white flex-1 rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest shadow-xl shadow-admin-dark-primary/20 hover:scale-[1.02] transition-transform active:scale-95">Add Sticker</button>
+                            <div className="flex gap-4">
+                                <button 
+                                    onClick={() => updateStickers(currentProgram.id, -1)} 
+                                    className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-red-50 hover:text-red-400 transition-all border border-transparent hover:border-red-100 shadow-inner"
+                                >
+                                    －
+                                </button>
+                                <button 
+                                    onClick={() => updateStickers(currentProgram.id, 1)} 
+                                    className="flex-1 bg-[#4e342e] text-white rounded-3xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-[#4e342e]/20 hover:bg-black active:scale-95 transition-all"
+                                >
+                                    Add Sticker
+                                </button>
                             </div>
                         )}
+                        
+                        <p className="text-center text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-8">Stamps reflect completed sessions</p>
                     </div>
                 </div>
             </div>
