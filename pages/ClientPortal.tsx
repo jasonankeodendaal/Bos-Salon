@@ -110,7 +110,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
 }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState<ProcessedClientProfile | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'history' | 'loyalty' | 'aftercare' | 'financials' | 'profile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'book' | 'history' | 'loyalty' | 'aftercare' | 'financials'>('overview');
   const [isProcessingLogin, setIsProcessingLogin] = useState(false);
   
   // Login/Signup Toggle
@@ -126,16 +126,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
   const [signUpPhone, setSignUpPhone] = useState('');
   const [signUpPin, setSignUpPin] = useState('');
   const [signUpConfirmPin, setSignUpConfirmPin] = useState('');
-
-  // Profile Form State
-  const [profileFormData, setProfileFormData] = useState({
-      name: '',
-      phone: '',
-      email: '',
-      age: 0,
-      address: ''
-  });
-  const [isProfileSaving, setIsProfileSaving] = useState(false);
 
   // View State
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
@@ -234,15 +224,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           const updatedUser = processedClients.find(c => c.email.toLowerCase() === currentUser.email.toLowerCase());
           if (updatedUser) {
               setCurrentUser(updatedUser);
-              if (profileFormData.email !== updatedUser.email) {
-                  setProfileFormData({
-                      name: updatedUser.name || '',
-                      phone: updatedUser.phone || '',
-                      email: updatedUser.email || '',
-                      age: updatedUser.age || 0,
-                      address: updatedUser.address || ''
-                  });
-              }
           }
       }
   }, [processedClients, isLoggedIn, currentUser]);
@@ -351,28 +332,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
 
   const handleBack = () => {
     onNavigate('home');
-  };
-
-  const handleProfileSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!currentUser) return;
-      setIsProfileSaving(true);
-      try {
-          await onUpdateClient({
-              ...currentUser,
-              name: profileFormData.name,
-              phone: profileFormData.phone,
-              email: profileFormData.email,
-              age: Number(profileFormData.age),
-              address: profileFormData.address
-          });
-          alert("Identity updated successfully.");
-      } catch (error) {
-          console.error(error);
-          alert("Failed to save profile.");
-      } finally {
-          setIsProfileSaving(false);
-      }
   };
 
   const handlePayNow = (invoice: Invoice) => {
@@ -490,7 +449,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
           </div>
           <div className="bg-white border border-gray-200 rounded-3xl shadow-xl p-8 transition-all duration-300">
             <h1 className="text-2xl font-bold text-center mb-1 text-gray-900">Portal Login</h1>
-            <p className="text-center text-gray-500 text-sm mb-8">{isSignUpMode ? 'Create your profile to start.' : 'Manage your tattoos and rewards.'}</p>
+            <p className="text-center text-gray-500 text-sm mb-8">{isSignUpMode ? 'Create your account to start.' : 'Manage your tattoos and rewards.'}</p>
             {isProcessingLogin ? (
                 <div className="text-center py-8">
                     <div className="w-10 h-10 border-4 border-brand-green/20 border-t-brand-green rounded-full animate-spin mx-auto mb-4"></div>
@@ -547,7 +506,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="hidden sm:flex gap-1 bg-gray-100 p-1 rounded-2xl">
-                        {['overview', 'book', 'history', 'loyalty', 'aftercare', 'profile'].map(t => (
+                        {['overview', 'book', 'history', 'loyalty', 'aftercare'].map(t => (
                             <button key={t} onClick={() => setActiveTab(t as any)} className={`px-4 py-1.5 text-xs font-bold rounded-xl transition-all capitalize ${activeTab === t ? 'bg-white text-brand-green shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>
                                 {t}
                             </button>
@@ -557,7 +516,7 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                 </div>
             </div>
             <div className="sm:hidden flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar">
-                {['overview', 'book', 'history', 'loyalty', 'aftercare', 'financials', 'profile'].map(t => (
+                {['overview', 'book', 'history', 'loyalty', 'aftercare', 'financials'].map(t => (
                     <button key={t} onClick={() => setActiveTab(t as any)} className={`flex-shrink-0 px-4 py-2 text-[10px] font-bold rounded-lg border transition-all capitalize ${activeTab === t ? 'bg-brand-green text-white border-brand-green shadow-md shadow-brand-green/20' : 'bg-white text-gray-600 border-gray-200'}`}>{t}</button>
                 ))}
             </div>
@@ -786,10 +745,6 @@ const ClientPortal: React.FC<ClientPortalProps> = ({
                     </div>
                     <div className="bg-brand-green/5 border border-brand-green/20 p-8 rounded-[2rem] text-center"><p className="text-sm font-bold text-brand-green uppercase tracking-[0.2em] mb-4">Need help?</p><p className="text-gray-700 mb-6">If you notice excessive redness, swelling, or have concerns about your treatment:</p><a href={`https://wa.me/${settings?.whatsAppNumber}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 bg-brand-green text-white px-8 py-3 rounded-2xl font-bold shadow-lg"><svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12.031 2c-5.523 0-10 4.477-10 10 0 1.764.457 3.42 1.258 4.86L2 22l5.311-1.393c1.44.8 3.096 1.258 4.86 1.258 5.523 0 10-4.477 10-10s-4.477-10-10-10zm0 18.062c-1.572 0-3.045-.425-4.322-1.162l-.31-.18-3.21.841.855-3.13-.197-.323c-.737-1.277-1.162-2.75-1.162-4.322 0-4.444 3.619-8.063 8.063-8.063s8.063 3.619 8.063 8.063-3.619 8.063-8.063 8.063z"/></svg>Message Studio</a></div>
                 </div>
-            )}
-
-            {activeTab === 'profile' && (
-                <div className="animate-fade-in max-w-2xl mx-auto"><div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-2xl overflow-hidden relative"><div className="absolute top-0 right-0 p-10 opacity-[0.03] pointer-events-none"><img src={logoUrl} className="w-48 h-48 object-contain grayscale" /></div><div className="relative z-10"><h3 className="text-3xl font-script text-brand-green mb-2">Bos Identity</h3><p className="text-gray-500 text-sm mb-8 italic">Review and update your personal details for our studio records.</p><form onSubmit={handleProfileSubmit} className="space-y-6"><div className="grid grid-cols-1 sm:grid-cols-2 gap-5"><div><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Full Name</label><input type="text" required value={profileFormData.name} onChange={e => setProfileFormData({...profileFormData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Tell / Mobile</label><input type="tel" required value={profileFormData.phone} onChange={e => setProfileFormData({...profileFormData, phone: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div className="sm:col-span-1"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Email Address</label><input type="email" readOnly value={profileFormData.email} className="w-full bg-gray-100 border border-gray-200 rounded-xl p-3 text-sm text-gray-400 cursor-not-allowed outline-none" /><p className="text-[9px] text-gray-300 mt-1 italic ml-1">Email cannot be changed.</p></div><div className="sm:col-span-1"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Age</label><input type="number" required min={1} value={profileFormData.age || ''} onChange={e => setProfileFormData({...profileFormData, age: parseInt(e.target.value)})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" /></div><div className="sm:col-span-2"><label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5 ml-1">Physical Address</label><textarea rows={3} required value={profileFormData.address} onChange={e => setProfileFormData({...profileFormData, address: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:ring-2 focus:ring-brand-pink outline-none transition-all" placeholder="123 Street, City, Code" /></div></div><div className="pt-4"><button type="submit" disabled={isProfileSaving} className="w-full bg-brand-green text-white py-4 rounded-2xl font-bold text-sm shadow-xl shadow-brand-green/20 hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-50 tracking-widest uppercase">{isProfileSaving ? 'Saving Changes...' : 'Update Identity'}</button></div></form></div></div></div>
             )}
 
             {activeTab === 'financials' && (
