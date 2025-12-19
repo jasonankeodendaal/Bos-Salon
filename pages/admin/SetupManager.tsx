@@ -53,7 +53,7 @@ const StepWrapper: React.FC<{ number: string; title: string; subtitle?: string; 
                 {subtitle && <p className="text-xs text-gray-400 font-medium uppercase tracking-widest mt-0.5">{subtitle}</p>}
             </div>
             <div className={`transition-transform duration-300 ${isActive ? 'rotate-180' : ''}`}>
-                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
             </div>
         </button>
         {isActive && (
@@ -223,6 +223,21 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
+-- Drop existing policies if they exist to prevent 42710 errors
+drop policy if exists "Admin Expenses" on public.expenses;
+drop policy if exists "Admin Inventory" on public.inventory;
+drop policy if exists "Public Read Portfolio" on public.portfolio;
+drop policy if exists "Public Read Specials" on public.specials;
+drop policy if exists "Public Read Showroom" on public.showroom;
+drop policy if exists "Public Read Settings" on public.settings;
+drop policy if exists "Admin Write Portfolio" on public.portfolio;
+drop policy if exists "Admin Write Specials" on public.specials;
+drop policy if exists "Admin Write Showroom" on public.showroom;
+drop policy if exists "Admin Write Settings" on public.settings;
+drop policy if exists "App Access Bookings" on public.bookings;
+drop policy if exists "App Access Invoices" on public.invoices;
+drop policy if exists "App Access Clients" on public.clients;
+
 -- Policies
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
@@ -269,7 +284,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
           <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">Deployment Guide</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Blueprint for your professional Tattoo Studio platform.</p>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Blueprint for your professional Bos Salon Nails and Beauty platform.</p>
         </header>
 
         <div className="space-y-4">
@@ -309,7 +324,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 </ul>
             </StepWrapper>
 
-            {/* NEW STEP FOR YOCO TERMINAL */}
             <StepWrapper number="5" title="Physical Terminal Integration" subtitle="Yoco Hardware" isActive={activeStep === 5} onHeaderClick={() => setActiveStep(5)}>
                 <div className="space-y-4">
                     <p className="font-bold text-gray-900">How to link your Yoco Machine:</p>
