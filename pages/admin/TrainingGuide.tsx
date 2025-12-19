@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 
-export type TourKey = 'dashboard' | 'art' | 'financials' | 'settings' | 'clients' | 'invoices' | 'inventory' | 'specials' | 'pwa';
+export type TourKey = 'dashboard' | 'art' | 'financials' | 'settings' | 'clients' | 'invoices' | 'inventory' | 'specials' | 'pwa' | 'yoco';
 
 interface TrainingGuideProps {
     activeTour: TourKey | null;
@@ -178,6 +177,41 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                     <li><strong>Banking:</strong> These details appear automatically on the bottom left of every Invoice/Quote PDF.</li>
                     <li><strong>Maintenance Mode:</strong> Hides the website from the public (showing an "Under Construction" page) while you work on the admin panel.</li>
                 </ul>
+            </div>
+        )
+    },
+    yoco: {
+        title: "Yoco Payments Integration",
+        content: (
+            <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
+                <section>
+                    <h4 className="font-bold text-lg text-blue-600 mb-2">Why use Yoco?</h4>
+                    <p>Yoco allows your clients to pay for deposits and full invoices using their Debit or Credit card directly in the Client Portal. No more waiting for EFT clears or handling cash.</p>
+                </section>
+
+                <section>
+                    <h4 className="font-bold text-lg text-blue-600 mb-2">Setup Instructions</h4>
+                    <ol className="list-decimal pl-5 space-y-4">
+                        <li>
+                            <strong>Get your Keys:</strong> Log in to your <a href="https://portal.yoco.com/" target="_blank" className="text-blue-500 underline">Yoco Portal</a>. Go to <strong>Sell Online &rarr; Payment Gateways &rarr; WooCommerce/API</strong>.
+                        </li>
+                        <li>
+                            <strong>Public Key:</strong> Copy your Live Public Key. It starts with <code>pk_live_</code>. Paste this into the "Public Key" field in Settings.
+                        </li>
+                        <li>
+                            <strong>Secret Key:</strong> Copy your Live Secret Key. It starts with <code>sk_live_</code>. Paste this into the "Secret Key" field. 
+                            <br/><span className="text-xs text-red-500 font-bold">Never share this key with anyone.</span>
+                        </li>
+                        <li>
+                            <strong>Enable Gateway:</strong> Flip the "Enable Yoco" switch to ON and Save All.
+                        </li>
+                    </ol>
+                </section>
+
+                <section className="bg-yellow-50 p-4 rounded-lg border border-yellow-100">
+                    <h4 className="font-bold text-yellow-800 mb-1">Testing Mode</h4>
+                    <p className="text-xs text-yellow-700">If you want to test the checkout without real money, use your <strong>Test Keys</strong> (starting with <code>pk_test_</code>) and a test card provided in Yoco's documentation.</p>
+                </section>
             </div>
         )
     },

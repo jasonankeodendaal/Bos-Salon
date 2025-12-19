@@ -10,7 +10,7 @@ import { LoyaltyProgram } from '../../App';
 interface SettingsManagerProps {
   onSaveAllSettings: (settings: any) => Promise<void>;
   onClearAllData: () => Promise<void>;
-  startTour: (tourKey: 'settings') => void;
+  startTour: (tourKey: any) => void;
   // All current settings (now including specific section objects)
   [key: string]: any; 
 }
@@ -24,7 +24,9 @@ const TABS = [
   { id: 'contact', label: 'Footer & Booking Info' },
   { id: 'financials', label: 'Financial Config' },
   { id: 'loyalty', label: 'Loyalty Programs' },
+  { id: 'payments', label: 'Yoco Payments' },
   { id: 'integrations', label: 'Integrations & Adv' },
+  { id: 'system-guide', label: '📖 System Overview' },
 ];
 
 const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
@@ -102,6 +104,11 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     vatPercentage: props.vatPercentage || 15,
     vatNumber: props.vatNumber || '',
 
+    // Yoco Config
+    yocoEnabled: props.payments?.yocoEnabled || false,
+    yocoPublicKey: props.payments?.yocoPublicKey || '',
+    yocoSecretKey: props.payments?.yocoSecretKey || '',
+
     // Integrations
     emailServiceId: props.emailServiceId || '',
     emailTemplateId: props.emailTemplateId || '',
@@ -122,8 +129,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
         heroBgUrl: props.heroBgUrl || prev.heroBgUrl,
         aboutTitle: props.about?.title || prev.aboutTitle,
-        aboutText1: props.about?.text1 || prev.aboutText1,
-        aboutText2: props.about?.text2 || prev.aboutText2,
+        aboutText1: prev.aboutText1, // Keep local state unless initial load
+        aboutText2: prev.aboutText2,
         aboutUsImageUrl: props.aboutUsImageUrl || prev.aboutUsImageUrl,
         showroomTitle: props.showroomTitle || prev.showroomTitle,
         showroomDescription: props.showroomDescription || prev.showroomDescription,
@@ -143,7 +150,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         emailPublicKey: props.emailPublicKey || prev.emailPublicKey,
         apkUrl: props.apkUrl || prev.apkUrl,
         isMaintenanceMode: props.isMaintenanceMode ?? prev.isMaintenanceMode,
-        // Sync new contact fields
         contactIntro: props.contact?.intro || prev.contactIntro,
         processTitle: props.contact?.processTitle || prev.processTitle,
         processIntro: props.contact?.processIntro || prev.processIntro,
@@ -151,11 +157,14 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         designTitle: props.contact?.designTitle || prev.designTitle,
         designIntro: props.contact?.designIntro || prev.designIntro,
         designPoints: props.contact?.designPoints || prev.designPoints,
+        yocoEnabled: props.payments?.yocoEnabled || prev.yocoEnabled,
+        yocoPublicKey: props.payments?.yocoPublicKey || prev.yocoPublicKey,
+        yocoSecretKey: props.payments?.yocoSecretKey || prev.yocoSecretKey,
     }));
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
     }
-  }, [props.companyName, props.socialLinks, props.loyaltyPrograms, props.heroBgUrl, props.contact]);
+  }, [props]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -226,7 +235,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
           if (newProgramIcon) {
               iconUrl = await dbUploadFile(newProgramIcon, 'settings', 'loyalty_');
           } else {
-              iconUrl = settings.logoUrl; // Default to main logo if no specific icon
+              iconUrl = settings.logoUrl; 
           }
 
           const programToAdd: LoyaltyProgram = {
@@ -266,7 +275,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     try {
       // STRICT PAYLOAD CONSTRUCTION
       const dbPayload = {
-        // Direct Columns
         companyName: settings.companyName,
         logoUrl: settings.logoUrl,
         heroBgUrl: settings.heroBgUrl,
@@ -290,8 +298,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         emailServiceId: settings.emailServiceId,
         emailTemplateId: settings.emailTemplateId,
         emailPublicKey: settings.emailPublicKey,
-        
-        // JSONB Columns (Nested Objects)
         hero: {
           title: settings.heroTitle,
           subtitle: settings.heroSubtitle,
@@ -311,8 +317,12 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
              designIntro: settings.designIntro,
              designPoints: settings.designPoints
         },
+        payments: {
+            yocoEnabled: settings.yocoEnabled,
+            yocoPublicKey: settings.yocoPublicKey,
+            yocoSecretKey: settings.yocoSecretKey,
+        },
         loyaltyPrograms: loyaltyPrograms,
-        // Legacy fallback support
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
 
@@ -320,14 +330,12 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       setMessage({ text: 'Saved successfully!', type: 'success' });
     } catch (error: any) {
       console.error("Save failed", error);
-      const errorMessage = error.message || (typeof error === 'string' ? error : 'Unknown error');
-      setMessage({ text: `Failed: ${errorMessage}`, type: 'error' });
+      setMessage({ text: `Failed: ${error.message || 'Unknown error'}`, type: 'error' });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // List Editor Helper
   const updateList = (listName: 'processSteps' | 'designPoints', index: number, value: string) => {
     setSettings(prev => {
         const newList = [...(prev[listName] as string[])];
@@ -372,13 +380,15 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                {message.text}
              </div>
            )}
-           <button 
-             onClick={handleSave} 
-             disabled={isLoading}
-             className="bg-admin-dark-primary text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
-           >
-             {isLoading ? 'Saving...' : 'Save All'}
-           </button>
+           {activeTab !== 'system-guide' && (
+             <button 
+               onClick={handleSave} 
+               disabled={isLoading}
+               className="bg-admin-dark-primary text-white px-3 sm:px-6 py-1.5 sm:py-2 rounded-lg font-bold text-xs sm:text-sm hover:opacity-90 disabled:opacity-50 transition-all shadow-md"
+             >
+               {isLoading ? 'Saving...' : 'Save All'}
+             </button>
+           )}
         </div>
       </header>
 
@@ -575,10 +585,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                     </div>
                 </div>
 
-                {/* NEW: Process & Design Ideas Editor */}
                 <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mt-8 mb-4 uppercase tracking-widest">Process & Design UI</h3>
                 <div className="space-y-8">
-                    {/* Our Process Section */}
                     <div className="bg-white/50 p-4 sm:p-6 rounded-xl border border-admin-dark-border">
                         <h4 className="font-bold text-admin-dark-text mb-4 flex items-center gap-2">
                            <span className="bg-admin-dark-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span>
@@ -611,7 +619,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                         </div>
                     </div>
 
-                    {/* Design Ideas Section */}
                     <div className="bg-white/50 p-4 sm:p-6 rounded-xl border border-admin-dark-border">
                         <h4 className="font-bold text-admin-dark-text mb-4 flex items-center gap-2">
                            <span className="bg-admin-dark-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px]">2</span>
@@ -702,7 +709,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Loyalty Programs</h3>
                
                <div className="space-y-6">
-                 {/* List Programs */}
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                      {loyaltyPrograms.map(prog => (
                          <div key={prog.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative">
@@ -725,7 +731,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                      ))}
                  </div>
 
-                 {/* Add New Program */}
                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 sm:p-6">
                      <h4 className="font-bold text-admin-dark-text mb-4 text-sm">Create New Card</h4>
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -753,6 +758,51 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                      </div>
                  </div>
                </div>
+             </div>
+          )}
+
+          {/* Yoco Payments Tab */}
+          {activeTab === 'payments' && (
+             <div className={sectionClass}>
+                <div className="flex justify-between items-center border-b border-admin-dark-border pb-2 mb-4">
+                    <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text">Yoco Payment Gateway</h3>
+                    <button onClick={() => props.startTour('yoco')} className="flex items-center gap-1 sm:gap-2 bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-bold hover:bg-blue-700 transition-colors">
+                        ℹ️ Setup Guide
+                    </button>
+                </div>
+                
+                <div className="bg-white p-4 sm:p-6 rounded-lg border border-admin-dark-border space-y-6">
+                    <div className="flex items-center gap-3 bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <input type="checkbox" id="yocoEnabled" name="yocoEnabled" checked={settings.yocoEnabled} onChange={handleChange} className="w-5 h-5 accent-admin-dark-primary rounded" />
+                        <label htmlFor="yocoEnabled" className="text-blue-900 font-bold text-sm">Enable Yoco Online Payments</label>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                        <div>
+                            <label className={labelClass}>Yoco Public Key</label>
+                            <input 
+                                name="yocoPublicKey" 
+                                value={settings.yocoPublicKey} 
+                                onChange={handleChange} 
+                                className={inputClass} 
+                                placeholder="pk_test_..."
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Used to load the payment popup securely on the client portal.</p>
+                        </div>
+                        <div>
+                            <label className={labelClass}>Yoco Secret Key</label>
+                            <input 
+                                type="password" 
+                                name="yocoSecretKey" 
+                                value={settings.yocoSecretKey} 
+                                onChange={handleChange} 
+                                className={inputClass} 
+                                placeholder="sk_test_..."
+                            />
+                            <p className="text-[10px] text-gray-400 mt-1">Required for server-side payment verification and charge finalization.</p>
+                        </div>
+                    </div>
+                </div>
              </div>
           )}
 
@@ -798,6 +848,231 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                   </div>
                </div>
              </div>
+          )}
+
+          {/* System Guide Tab */}
+          {activeTab === 'system-guide' && (
+            <div className="space-y-12 animate-fade-in text-gray-700 leading-relaxed pb-32">
+               <div className="bg-white rounded-3xl p-8 sm:p-12 border border-admin-dark-border shadow-2xl relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-10 opacity-10 pointer-events-none">
+                      <img src={settings.logoUrl} className="w-64 h-64 object-contain grayscale" />
+                  </div>
+                  
+                  <h3 className="text-4xl sm:text-5xl font-black text-gray-900 mb-6 tracking-tight flex items-center gap-4">
+                     <span className="bg-admin-dark-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg">ERP</span>
+                     Studio Management Cloud
+                  </h3>
+                  <p className="text-lg text-gray-500 mb-12 italic max-w-3xl">The definitive guide to your high-performance tattoo studio ecosystem. This platform handles the entire business lifecycle from first contact to lifetime loyalty.</p>
+
+                  <div className="space-y-16">
+                     
+                     {/* 1. BOOKING ENGINE */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-blue-100 text-blue-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors shadow-sm">01</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">The Booking Engine</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Public Client Capture</h5>
+                              <p className="text-sm text-gray-600 mb-4">Clients engage with a cinematic, 3D-styled contact form. The system captures critical data points: Name, Method of Contact (WhatsApp or Email), Preferred Date, and Project Details.</p>
+                              <h5 className="font-bold text-gray-900 mb-2">Reference Infrastructure</h5>
+                              <p className="text-sm text-gray-600">The portal allows for up to 5 reference images per request. These are uploaded to a secure Supabase storage bucket (`booking-references`) and linked directly to the database record for high-fidelity viewing by the artist.</p>
+                           </div>
+                           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                              <h6 className="font-black text-[10px] uppercase tracking-widest text-blue-500 mb-3 underline">Pro Feature: Real-time Sync</h6>
+                              <p className="text-xs text-gray-500 leading-loose">Leveraging <strong>Supabase Realtime</strong>, new submissions flash onto your dashboard instantly. No manual refreshing is required. The system pushes the new data payload from the cloud to your screen in under 200ms.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 2. OPERATIONAL WORKFLOW */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-purple-100 text-purple-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-purple-600 group-hover:text-white transition-colors shadow-sm">02</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Operational Workflow</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">The "Golden" Pipeline</h5>
+                              <ul className="text-sm text-gray-600 space-y-3">
+                                 <li><strong>Pending:</strong> Newly arrived leads. The "Waiting Room" of your business.</li>
+                                 <li><strong>Quote Sent:</strong> Use the "Build Quote" engine to send a professional price estimate.</li>
+                                 <li><strong>Confirmed:</strong> Triggered once a client accepts or pays. This locks the date in the Master Calendar.</li>
+                                 <li><strong>Completed:</strong> The final stage. This triggers stock deduction and logs the revenue in Financials.</li>
+                              </ul>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Intelligent Reminders</h5>
+                              <p className="text-sm text-gray-600">The Dashboard features a dedicated <strong>Upcoming Clock</strong>. It scans your future bookings and highlights confirmed appointments for the next 7 days, ensuring you never double-book or miss a session.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 3. QUOTE & INVOICE ENGINE */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-green-100 text-green-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-green-600 group-hover:text-white transition-colors shadow-sm">03</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Quotes & Invoicing</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Dynamic Document Builder</h5>
+                              <p className="text-sm text-gray-600">Create estimates (Quotes) or demands for payment (Invoices) in seconds. The system auto-links to existing client profiles or creates new ones on the fly.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">The WhatsApp Bridge</h5>
+                              <p className="text-sm text-gray-600">Every document generates a unique WhatsApp link. Clicking it opens the client's chat with a pre-written message containing the total, the document number, and their private login PIN for the portal.</p>
+                           </div>
+                           <div className="col-span-full bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                              <h6 className="font-black text-[10px] uppercase tracking-widest text-green-500 mb-2">Professional Output</h6>
+                              <p className="text-xs text-gray-500">Documents are formatted with a specific CSS print sheet. They include your logo, banking details, VAT breakdown (if enabled), and terms. They look just as good on paper as they do on screen.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 4. PAYMENT SYSTEM */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-yellow-100 text-yellow-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-yellow-600 group-hover:text-white transition-colors shadow-sm">04</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Yoco Payment Gateway</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Secured Card Checkout</h5>
+                              <p className="text-sm text-gray-600">Integrated with the <strong>Yoco SDK</strong>. When a client views their invoice in the Portal, they can click "Pay Now" to open a secure credit/debit card popup. No banking details are stored on your server.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Auto-Reconciliation</h5>
+                              <p className="text-sm text-gray-600">Once a payment is authorized, the system triggers a background hook. It marks the invoice as "Paid" and updates the linked Booking to "Confirmed" automatically, reducing manual admin work by 90%.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 5. CLIENT PORTAL */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-indigo-100 text-indigo-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-indigo-600 group-hover:text-white transition-colors shadow-sm">05</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">The Client Portal (CRM)</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Private Access</h5>
+                              <p className="text-sm text-gray-600">Every client gets a dedicated dashboard. They log in using their email and a unique PIN you set in the "Clients" tab. This fosters a sense of exclusivity and professionalism.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Self-Service Utility</h5>
+                              <p className="text-sm text-gray-600">Clients can view their "Tattoo Journey" (history), accept quotes, pay deposits via card, and access <strong>Aftercare Instructions</strong> (a built-in guide on how to heal their new work properly).</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 6. LOYALTY PROGRAM */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-pink-100 text-pink-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-pink-600 group-hover:text-white transition-colors shadow-sm">06</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Loyalty Infrastructure</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Digital Stamp Cards</h5>
+                              <p className="text-sm text-gray-600">Replace lost paper cards. Admins manually add "Stickers" to a client's profile after a session. You can create multiple programs simultaneously (e.g., "Full Back Project" vs "Flash Friday Card").</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Reward Logic</h5>
+                              <p className="text-sm text-gray-600">When a milestone is reached (e.g., 10 stickers), a <strong>Redeem Reward</strong> button appears in the client's portal. Clicking it resets their count and logs a redemption in your analytics.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 7. INVENTORY & SMART DOSING */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-orange-100 text-orange-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-orange-600 group-hover:text-white transition-colors shadow-sm">07</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Inventory Management</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Smart Dosing Engine</h5>
+                              <p className="text-sm text-gray-600">Stop guessing usage. The system knows that a standard tattoo uses approx. 0.5ml of ink and 1 needle set. Clicking <strong>"+1 Service"</strong> in the Log Modal auto-calculates and deducts the correct amount from your stock.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Min-Level Alerts</h5>
+                              <p className="text-sm text-gray-600">Set a minimum stock level for every item. When your supply falls below this threshold, the inventory card turns <span className="text-red-500 font-bold">RED</span> on your dashboard, signaling it's time to reorder.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 8. FINANCIAL INTELLIGENCE */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-red-100 text-red-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-red-600 group-hover:text-white transition-colors shadow-sm">08</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Financial Intelligence</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div className="col-span-full bg-gray-900 p-8 rounded-3xl text-white shadow-2xl">
+                              <h5 className="font-bold text-admin-dark-primary mb-4 text-center text-lg uppercase tracking-widest">Master Profit Formula</h5>
+                              <div className="text-2xl sm:text-3xl text-center font-mono py-6 border-y border-white/10 my-4 bg-white/5 rounded-2xl">
+                                 (Revenue) - (Logged Expenses) - (VAT) = <span className="text-green-400">NET PROFIT</span>
+                              </div>
+                              <p className="text-xs text-gray-400 text-center">Revenue is only recognized when a booking is marked "Completed" and payment is logged.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Yearly Analytics</h5>
+                              <p className="text-sm text-gray-600">Visual bar charts help you track month-over-month performance. Use this to identify busy seasons and plan your marketing specials accordingly.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Tax Compliance</h5>
+                              <p className="text-sm text-gray-600">If enabled in Settings, the system calculates and separates VAT from your gross revenue, providing a clear figure of your tax liability for the selected month.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 9. CMS & LOGIC */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-gray-100 text-gray-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-gray-600 group-hover:text-white transition-colors shadow-sm">09</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">CMS & Global Logic</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">No-Code Website Edits</h5>
+                              <p className="text-sm text-gray-600">Change your Hero title, the "Our Story" text, your WhatsApp number, and even your bank details without touching a line of code. Every field in this Settings tab maps directly to the live site.</p>
+                           </div>
+                           <div>
+                              <h5 className="font-bold text-gray-900 mb-2">Maintenance Mode</h5>
+                              <p className="text-sm text-gray-600">Need to update your prices or re-shoot your portfolio? Flip the Maintenance switch. A "Digital Curtain" drops over the public site, showing a beautiful "Closed for Renovations" page while you work.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                     {/* 10. TECHNICAL INFRASTRUCTURE */}
+                     <section className="group">
+                        <div className="flex items-center gap-4 mb-6">
+                           <div className="bg-cyan-100 text-cyan-600 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold group-hover:bg-cyan-600 group-hover:text-white transition-colors shadow-sm">10</div>
+                           <h4 className="text-2xl font-black text-gray-800 uppercase tracking-wide">Technical Infrastructure</h4>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
+                           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                              <h6 className="font-black text-[10px] uppercase tracking-widest text-cyan-500 mb-3">PWA (Progressive Web App)</h6>
+                              <p className="text-xs text-gray-500 leading-loose">Your site isn't just a website; it's a software application. It uses a <strong>Service Worker</strong> to cache assets, allowing it to load even without an internet connection. It can be installed on iOS and Android home screens as a native icon.</p>
+                           </div>
+                           <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
+                              <h6 className="font-black text-[10px] uppercase tracking-widest text-cyan-500 mb-3">Hybrid Backend Adapter</h6>
+                              <p className="text-xs text-gray-500 leading-loose">The `dbAdapter.ts` module automatically detects your connection status. If Supabase keys are missing, it intelligently switches to <strong>Mock Mode</strong>, using LocalStorage to keep the admin functional for testing purposes.</p>
+                           </div>
+                        </div>
+                     </section>
+
+                  </div>
+               </div>
+               
+               <div className="bg-admin-dark-primary text-white p-10 rounded-3xl text-center shadow-xl">
+                  <h4 className="text-3xl font-black mb-4 tracking-tight">Need further help?</h4>
+                  <p className="mb-8 text-white/80 max-w-xl mx-auto">Our support line is open for technical walkthroughs or to discuss custom feature development.</p>
+                  <a href={`https://wa.me/27695989427`} className="inline-block bg-white text-admin-dark-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-lg">Contact Technical Support</a>
+               </div>
+            </div>
           )}
 
         </main>
