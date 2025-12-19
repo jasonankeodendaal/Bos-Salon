@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = ({ text, label, height = "h-auto" }) => {
@@ -221,6 +220,22 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
+-- Drop existing policies if they exist to prevent errors on rerun
+drop policy if exists "Admin Expenses" on public.expenses;
+drop policy if exists "Admin Inventory" on public.inventory;
+drop policy if exists "Public Read Portfolio" on public.portfolio;
+drop policy if exists "Public Read Specials" on public.specials;
+drop policy if exists "Public Read Showroom" on public.showroom;
+drop policy if exists "Public Read Settings" on public.settings;
+drop policy if exists "Admin Write Portfolio" on public.portfolio;
+drop policy if exists "Admin Write Specials" on public.specials;
+drop policy if exists "Admin Write Showroom" on public.showroom;
+drop policy if exists "Admin Write Settings" on public.settings;
+drop policy if exists "App Access Bookings" on public.bookings;
+drop policy if exists "App Access Invoices" on public.invoices;
+drop policy if exists "App Access Clients" on public.clients;
+
+-- Create Policies
 create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
 create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
 create policy "Public Read Portfolio" on public.portfolio for select using (true);
@@ -239,6 +254,18 @@ create policy "App Access Clients" on public.clients for all using (true);
   const sql_realtime = `
 -- REALTIME SUBSCRIPTION CONFIG
 BEGIN;
+  -- Remove tables if they already exist in the publication to prevent errors
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.portfolio;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.specials;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.showroom;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.bookings;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.expenses;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.inventory;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.settings;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.invoices;
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.clients;
+
+  -- Add tables to the publication
   ALTER PUBLICATION supabase_realtime ADD TABLE public.portfolio;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.specials;
   ALTER PUBLICATION supabase_realtime ADD TABLE public.showroom;

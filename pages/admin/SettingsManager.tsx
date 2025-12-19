@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { dbUploadFile } from '../../utils/dbAdapter';
 import HelpGuideModal from './components/HelpGuideModal';
