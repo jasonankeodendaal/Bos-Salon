@@ -383,10 +383,8 @@ const ClientsManager: React.FC<{
 
   const inputClass = "w-full bg-white border border-admin-dark-border rounded-lg p-2 text-admin-dark-text text-sm outline-none focus:ring-1 focus:ring-admin-dark-primary font-medium transition-all shadow-sm";
   const isActiveAccount = selectedClient && selectedClient.password && selectedClient.password !== 'N/A';
-  
-  // LOGIC FOR LOYALTY HUB SELECTION
-  const currentProgram = activePrograms.find(p => p.id === selectedLoyaltyProgramId);
-  const currentProgramCount = currentProgram ? (selectedClient?.loyaltyProgress?.[currentProgram.id] || (currentProgram.id === 'legacy' ? selectedClient?.stickers : 0) || 0) : 0;
+  const currentProgram = activePrograms.find(p => p.id === selectedLoyaltyProgramId) || activePrograms[0];
+  const currentProgramCount = selectedClient?.loyaltyProgress?.[currentProgram?.id] || (currentProgram?.id === 'legacy' ? selectedClient?.stickers : 0) || 0;
 
   return (
     <div className="h-full flex flex-col bg-admin-dark-bg">
@@ -434,7 +432,7 @@ const ClientsManager: React.FC<{
             <div className={`flex-1 overflow-y-auto custom-scrollbar ${selectedClient ? 'hidden lg:block lg:w-1/3' : 'w-full'}`}>
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                     {filteredClients.map(client => {
-                        // Tiny loyalty preview for the first active program
+                        // Calculate tiny loyalty preview for the first active program
                         const primaryProg = activePrograms[0];
                         const count = client.loyaltyProgress?.[primaryProg?.id] || (primaryProg?.id === 'legacy' ? client.stickers : 0) || 0;
                         const req = primaryProg?.stickersRequired || 10;
@@ -456,6 +454,7 @@ const ClientsManager: React.FC<{
                                 </div>
                                 <h3 className="font-bold text-gray-900 truncate text-xs leading-tight">{client.name}</h3>
                                 
+                                {/* TINY LOYALTY PREVIEW */}
                                 {primaryProg && (
                                     <div className="mt-3 mb-2 flex items-center gap-1">
                                         <div className="flex -space-x-1">
@@ -507,7 +506,7 @@ const ClientsManager: React.FC<{
                         <div className="flex flex-col gap-2 items-end">
                             <div className="flex gap-2">
                                 {activePrograms.length > 0 && (
-                                    <button onClick={() => { setSelectedLoyaltyProgramId(''); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">
+                                    <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">
                                         Loyalty Hub
                                     </button>
                                 )}
@@ -592,89 +591,58 @@ const ClientsManager: React.FC<{
             )}
         </div>
 
-        {isLoyaltyPopupOpen && selectedClient && (
+        {isLoyaltyPopupOpen && selectedClient && currentProgram && (
             <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsLoyaltyPopupOpen(false)}>
                 <div className="bg-white rounded-[3rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up border border-gray-100" onClick={e => e.stopPropagation()}>
-                    
-                    {!selectedLoyaltyProgramId ? (
-                        /* PROGRAM SELECTION VIEW */
-                        <div className="p-8">
-                            <div className="text-center mb-8">
-                                <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Select Program</h3>
-                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Pick a card to stamp</p>
-                            </div>
-                            <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                                {activePrograms.map(prog => (
-                                    <button 
-                                        key={prog.id} 
-                                        onClick={() => setSelectedLoyaltyProgramId(prog.id)}
-                                        className="w-full bg-gray-50 hover:bg-admin-dark-primary/5 border border-gray-200 hover:border-admin-dark-primary rounded-2xl p-4 flex items-center gap-4 transition-all group"
-                                    >
-                                        <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                                            {prog.iconUrl ? <img src={prog.iconUrl} className="w-8 h-8 object-contain" /> : '✨'}
-                                        </div>
-                                        <div className="text-left flex-1">
-                                            <p className="font-bold text-sm text-gray-900">{prog.name}</p>
-                                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                                                Progress: {selectedClient.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? selectedClient.stickers : 0) || 0} / {prog.stickersRequired}
-                                            </p>
-                                        </div>
-                                        <div className="text-gray-300 group-hover:text-admin-dark-primary transition-colors">→</div>
-                                    </button>
-                                ))}
-                            </div>
+                    <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20 relative">
+                        <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg mb-6 transform rotate-3">
+                            {currentProgram.iconUrl ? <img src={currentProgram.iconUrl} className="w-14 h-14 object-contain" /> : <span className="text-3xl">✨</span>}
                         </div>
-                    ) : currentProgram && (
-                        /* STAMPING INTERFACE VIEW */
-                        <>
-                            <div className="bg-[#fff0f5] p-8 flex flex-col items-center border-b border-[#f48fb1]/20 relative">
-                                <button onClick={() => setSelectedLoyaltyProgramId('')} className="absolute top-6 left-6 text-[#f48fb1] hover:text-[#ff1493] font-bold text-xs uppercase tracking-widest">← Back</button>
-                                <div className="w-20 h-20 rounded-3xl bg-white flex items-center justify-center shadow-lg mb-4 transform rotate-3">
-                                    {currentProgram.iconUrl ? <img src={currentProgram.iconUrl} className="w-14 h-14 object-contain" /> : <span className="text-3xl">✨</span>}
-                                </div>
-                                <div className="text-center w-full px-4">
-                                    <h3 className="text-[#4e342e] font-black text-xl uppercase tracking-tighter truncate">{currentProgram.name}</h3>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f48fb1] mt-2">Member Card</p>
-                                </div>
-                                <button onClick={() => setIsLoyaltyPopupOpen(false)} className="absolute top-6 right-6 text-[#f48fb1] hover:text-[#ff1493] transition-colors text-2xl font-bold leading-none">&times;</button>
-                            </div>
+                        <div className="text-center w-full">
+                            <select value={selectedLoyaltyProgramId} onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)} className="bg-transparent text-[#4e342e] font-black text-xl outline-none cursor-pointer text-center appearance-none border-b border-[#f48fb1]/30 uppercase tracking-tighter">
+                                {activePrograms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[#f48fb1] mt-3">Digital Stamp Card</p>
+                        </div>
+                        <button onClick={() => setIsLoyaltyPopupOpen(false)} className="absolute top-6 right-6 text-[#f48fb1] hover:text-[#ff1493] transition-colors text-2xl font-bold">&times;</button>
+                    </div>
 
-                            <div className="p-10">
-                                <div className="grid grid-cols-5 gap-3 mb-10">
-                                    {Array.from({ length: currentProgram.stickersRequired }).map((_, i) => {
-                                        const isFilled = i < currentProgramCount;
-                                        return (
-                                            <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 relative ${isFilled ? 'bg-[#ff1493] border-[#ff1493] shadow-lg shadow-[#ff1493]/30 scale-105' : 'bg-gray-50 border-gray-100'}`}>
-                                                {isFilled ? <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-black text-gray-300">{i + 1}</span>}
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-
-                                {currentProgramCount === currentProgram.stickersRequired - 1 ? (
-                                     <div className="bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 text-center mb-6 animate-bounce">
-                                        <p className="text-xs font-black uppercase text-yellow-800 mb-4">🎉 Reached {currentProgram.stickersRequired - 1} Stickers!</p>
-                                        <button 
-                                            onClick={() => sendRewardCoupon(currentProgram)}
-                                            className="w-full bg-yellow-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-yellow-600"
-                                        >
-                                            <WhatsAppIcon className="w-4 h-4" /> Send Reward Coupon
-                                        </button>
-                                     </div>
-                                ) : null}
-
-                                {currentProgramCount >= currentProgram.stickersRequired ? (
-                                    <button onClick={() => { if(window.confirm('Redeem reward?')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); }} className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all">Redeem Reward</button>
-                                ) : (
-                                    <div className="flex gap-4">
-                                        <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-red-50 hover:text-red-400 transition-all border border-transparent hover:border-red-100 shadow-inner">－</button>
-                                        <button onClick={() => updateStickers(currentProgram.id, 1)} className="flex-1 bg-[#4e342e] text-white rounded-3xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-[#4e342e]/20 hover:bg-black active:scale-95 transition-all">Add Sticker</button>
+                    <div className="p-10">
+                        <div className="grid grid-cols-5 gap-3 mb-10">
+                            {Array.from({ length: currentProgram.stickersRequired }).map((_, i) => {
+                                const isFilled = i < currentProgramCount;
+                                return (
+                                    <div key={i} className={`aspect-square rounded-2xl border-2 flex items-center justify-center transition-all duration-500 relative ${isFilled ? 'bg-[#ff1493] border-[#ff1493] shadow-lg shadow-[#ff1493]/30 scale-105' : 'bg-gray-50 border-gray-100'}`}>
+                                        {isFilled ? <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> : <span className="text-[10px] font-black text-gray-300">{i + 1}</span>}
                                     </div>
-                                )}
-                                <p className="text-center text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-8">Reward: {currentProgram.rewardDescription}</p>
+                                );
+                            })}
+                        </div>
+
+                        {/* REWARD LOGIC: 9th visit triggers coupon */}
+                        {currentProgramCount === currentProgram.stickersRequired - 1 ? (
+                             <div className="bg-yellow-50 border-2 border-yellow-200 rounded-3xl p-6 text-center mb-6 animate-bounce">
+                                <p className="text-xs font-black uppercase text-yellow-800 mb-4">🎉 Reached 9 Stickers!</p>
+                                <button 
+                                    onClick={() => sendRewardCoupon(currentProgram)}
+                                    className="w-full bg-yellow-500 text-white py-4 rounded-2xl font-black uppercase tracking-widest shadow-lg flex items-center justify-center gap-2 hover:bg-yellow-600"
+                                >
+                                    <WhatsAppIcon className="w-4 h-4" /> Send 10th visit Coupon
+                                </button>
+                                <p className="text-[9px] text-yellow-700 mt-2 italic">Sends the discount code via WhatsApp.</p>
+                             </div>
+                        ) : null}
+
+                        {currentProgramCount >= currentProgram.stickersRequired ? (
+                            <button onClick={() => { if(window.confirm('Redeem reward?')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); }} className="w-full bg-[#ff1493] text-white py-5 rounded-3xl font-black uppercase tracking-widest shadow-2xl shadow-[#ff1493]/40 active:scale-95 transition-all">Redeem Reward</button>
+                        ) : (
+                            <div className="flex gap-4">
+                                <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-red-50 hover:text-red-400 transition-all border border-transparent hover:border-red-100 shadow-inner">－</button>
+                                <button onClick={() => updateStickers(currentProgram.id, 1)} className="flex-1 bg-[#4e342e] text-white rounded-3xl flex items-center justify-center gap-2 text-xs font-black uppercase tracking-widest shadow-xl shadow-[#4e342e]/20 hover:bg-black active:scale-95 transition-all">Add Sticker</button>
                             </div>
-                        </>
-                    )}
+                        )}
+                        <p className="text-center text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-8">Reward: {currentProgram.rewardDescription}</p>
+                    </div>
                 </div>
             </div>
         )}
