@@ -4,9 +4,11 @@ import { Booking, Invoice, Client, LoyaltyProgram } from '../../App';
 import WhatsAppIcon from '../../components/icons/WhatsAppIcon';
 import PlusIcon from '../../components/icons/PlusIcon';
 import TrashIcon from '../../components/icons/TrashIcon';
+import PencilIcon from '../../components/icons/PencilIcon';
 
 const IconClients = ({ className = 'w-6 h-6' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
 const MailIcon = ({ className = 'w-5 h-5' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
+const CalendarIcon = ({ className = 'w-4 h-4' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>;
 
 interface ClientProfile extends Client {
   totalSpend: number;
@@ -15,6 +17,7 @@ interface ClientProfile extends Client {
   bookings: Booking[];
   invoices: Invoice[];
   preferredPayment: string;
+  tier: 'Diamond' | 'Gold' | 'Silver' | 'Bronze' | 'New';
 }
 
 const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> = ({ invoice, onClose }) => {
@@ -24,12 +27,11 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50 no-print">
                     <h3 className="font-bold text-gray-800">{invoice.type === 'quote' ? 'Quote' : 'Invoice'} #{invoice.number}</h3>
                     <div className="flex gap-2">
-                        <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded">Print</button>
+                        <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded transition-colors">Print</button>
                         <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
                     </div>
                 </div>
                 <div className="p-8 overflow-y-auto bg-white text-gray-800 text-sm font-sans">
-                    {/* Header */}
                     <div className="flex justify-between items-start border-b pb-6 mb-6">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">{invoice.clientName}</h1>
@@ -42,7 +44,6 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                             <p className="text-gray-500">Due: {invoice.dateDue}</p>
                         </div>
                     </div>
-                    {/* Items */}
                     <table className="w-full mb-8">
                         <thead>
                             <tr className="border-b-2 border-gray-800 text-left">
@@ -63,7 +64,6 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                             ))}
                         </tbody>
                     </table>
-                    {/* Totals */}
                     <div className="flex justify-end">
                         <div className="w-64 space-y-2">
                             <div className="flex justify-between text-gray-600"><span>Subtotal</span><span>R{invoice.subtotal?.toFixed(2)}</span></div>
@@ -94,14 +94,16 @@ const ClientsManager: React.FC<{
     loyaltyPrograms?: LoyaltyProgram[]
 }> = ({ bookings, invoices, clients: dbClients, onUpdateClient, onAddClient, onDeleteClient, logoUrl, loyaltyPrograms = [] }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState<'spend' | 'visits' | 'name' | 'last_visit'>('spend');
   const [selectedClient, setSelectedClient] = useState<ClientProfile | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoyaltyPopupOpen, setIsLoyaltyPopupOpen] = useState(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedLoyaltyProgramId, setSelectedLoyaltyProgramId] = useState<string>(''); // For dropdown in popup
-  
-  // Local state to force refresh for recently activated clients
+  const [selectedLoyaltyProgramId, setSelectedLoyaltyProgramId] = useState<string>('');
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState('');
+
   const [activatedClients, setActivatedClients] = useState<Record<string, string>>({});
 
   // New Client Form State
@@ -110,7 +112,6 @@ const ClientsManager: React.FC<{
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientPassword, setNewClientPassword] = useState('');
 
-  // Fallback for empty programs list
   const activePrograms = loyaltyPrograms.length > 0 ? loyaltyPrograms.filter(p => p.active) : [
       { id: 'legacy', name: 'Default Loyalty', stickersRequired: 10, rewardDescription: '50% Off', active: true }
   ];
@@ -131,6 +132,7 @@ const ClientsManager: React.FC<{
                 bookings: [],
                 invoices: [],
                 preferredPayment: 'Unknown',
+                tier: 'New'
             };
         });
     }
@@ -155,7 +157,8 @@ const ClientsManager: React.FC<{
           lastVisit: booking.bookingDate,
           bookings: [],
           invoices: [],
-          preferredPayment: 'Unknown'
+          preferredPayment: 'Unknown',
+          tier: 'New'
         };
       }
 
@@ -194,7 +197,8 @@ const ClientsManager: React.FC<{
                 password: 'N/A',
                 stickers: 0,
                 loyaltyProgress: {},
-                rewardsRedeemed: 0
+                rewardsRedeemed: 0,
+                tier: 'New'
             };
         }
         
@@ -206,26 +210,60 @@ const ClientsManager: React.FC<{
         }
     });
     
-    // 4. Force Update
-    Object.keys(activatedClients).forEach(email => {
-        if(clientMap[email]) {
-            clientMap[email].password = activatedClients[email];
-        }
+    // 4. Determine Tiers & Force Sync
+    Object.keys(clientMap).forEach(email => {
+        const client = clientMap[email];
+        if(activatedClients[email]) client.password = activatedClients[email];
+        
+        // Tier Logic
+        if (client.totalSpend > 10000) client.tier = 'Diamond';
+        else if (client.totalSpend > 5000) client.tier = 'Gold';
+        else if (client.totalSpend > 2000) client.tier = 'Silver';
+        else if (client.visitCount > 1) client.tier = 'Bronze';
+        else client.tier = 'New';
     });
 
-    return Object.values(clientMap).sort((a, b) => b.totalSpend - a.totalSpend);
-  }, [bookings, invoices, dbClients, activatedClients]);
+    return Object.values(clientMap).sort((a, b) => {
+        if (sortBy === 'spend') return b.totalSpend - a.totalSpend;
+        if (sortBy === 'visits') return b.visitCount - a.visitCount;
+        if (sortBy === 'last_visit') return new Date(b.lastVisit).getTime() - new Date(a.lastVisit).getTime();
+        return a.name.localeCompare(b.name);
+    });
+  }, [bookings, invoices, dbClients, activatedClients, sortBy]);
 
   const filteredClients = clients.filter(c => 
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     c.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleUpdateNotes = async () => {
+      if (!selectedClient || !onUpdateClient) return;
+      setIsLoading(true);
+      try {
+          const clientInDb = dbClients?.find(c => c.email.toLowerCase() === selectedClient.email.toLowerCase());
+          const idToUpdate = selectedClient.id || clientInDb?.id;
+          if (!idToUpdate) throw new Error("Client ID missing");
+
+          await onUpdateClient({ 
+              ...selectedClient, 
+              id: idToUpdate, 
+              notes: notesDraft 
+          });
+          setSelectedClient(prev => prev ? { ...prev, notes: notesDraft } : null);
+          setIsEditingNotes(false);
+          alert("Notes updated.");
+      } catch (err) {
+          console.error(err);
+          alert("Failed to update notes.");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+
   const handleAddClientSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!onAddClient) return;
       setIsLoading(true);
-      
       try {
           const newClient = {
               name: newClientName,
@@ -235,10 +273,8 @@ const ClientsManager: React.FC<{
               notes: 'Added manually via Client Manager',
               stickers: 0
           };
-
           await onAddClient(newClient);
           setActivatedClients(prev => ({ ...prev, [newClientEmail.trim().toLowerCase()]: newClientPassword }));
-
           setIsAddModalOpen(false);
           setNewClientName('');
           setNewClientEmail('');
@@ -255,8 +291,7 @@ const ClientsManager: React.FC<{
 
   const handleActivateAccount = async () => {
       if (!selectedClient || !onAddClient || !onUpdateClient) return;
-      
-      const pin = prompt("Set a PIN:", "1234");
+      const pin = prompt("Set a unique PIN for this client's portal access:", "1234");
       if (!pin) return;
 
       setIsLoading(true);
@@ -267,9 +302,7 @@ const ClientsManager: React.FC<{
           if (existingDbClient && existingDbClient.id) {
               await onUpdateClient({ ...existingDbClient, password: pin });
           } else {
-              const newId = crypto.randomUUID(); 
               const newClientData = {
-                  id: newId,
                   name: selectedClient.name,
                   email: selectedClient.email,
                   phone: selectedClient.phone,
@@ -282,35 +315,13 @@ const ClientsManager: React.FC<{
           
           setActivatedClients(prev => ({ ...prev, [emailKey]: pin }));
           setSelectedClient(prev => prev ? ({ ...prev, password: pin }) : null);
-          alert(`Account activated! PIN: ${pin}`);
+          alert(`Account activated! Client PIN is ${pin}`);
       } catch (error) {
           console.error(error);
-          alert("Failed to activate account. Check console.");
+          alert("Failed to activate account.");
       } finally {
           setIsLoading(false);
       }
-  };
-
-  const handleEditPin = async () => {
-      if (!selectedClient || !onUpdateClient) return;
-      const clientInDb = dbClients?.find(c => c.email.toLowerCase() === selectedClient.email.toLowerCase());
-      const idToUpdate = selectedClient.id || clientInDb?.id;
-      
-      if (!idToUpdate) {
-          alert("Account not fully synced yet. Try reloading.");
-          return;
-      }
-
-      const newPin = prompt("Enter new PIN:", selectedClient.password);
-      if (!newPin || newPin === selectedClient.password) return;
-      
-      try {
-          await onUpdateClient({ id: idToUpdate, name: selectedClient.name, email: selectedClient.email, password: newPin });
-          const emailKey = selectedClient.email.trim().toLowerCase();
-          setActivatedClients(prev => ({ ...prev, [emailKey]: newPin }));
-          setSelectedClient(prev => prev ? ({ ...prev, password: newPin }) : null);
-          alert("PIN Updated.");
-      } catch (error) { console.error(error); alert("Failed."); }
   };
 
   const updateStickers = async (programId: string, change: number) => {
@@ -341,59 +352,10 @@ const ClientsManager: React.FC<{
       } catch(err) { console.error(err); alert("Failed."); }
   };
 
-  const redeemReward = async (programId: string) => {
-      const clientInDb = dbClients?.find(c => c.email.toLowerCase() === selectedClient?.email.toLowerCase());
-      const idToUpdate = selectedClient?.id || clientInDb?.id;
-      
-      if (!idToUpdate || !onUpdateClient || !selectedClient) return;
-      
-      if(!window.confirm(`Redeem reward for ${selectedClient.name}?`)) return;
-      
-      try {
-          const rewardsCount = (selectedClient.rewardsRedeemed || 0) + 1;
-          const currentProgress = selectedClient.loyaltyProgress || {};
-          const newProgress = { ...currentProgress, [programId]: 0 };
-
-          await onUpdateClient({ 
-              id: idToUpdate, 
-              name: selectedClient.name, 
-              email: selectedClient.email, 
-              loyaltyProgress: newProgress,
-              stickers: programId === 'legacy' ? 0 : selectedClient.stickers,
-              rewardsRedeemed: rewardsCount 
-          });
-          
-          setSelectedClient(prev => prev ? ({ ...prev, loyaltyProgress: newProgress, stickers: programId === 'legacy' ? 0 : prev.stickers, rewardsRedeemed: rewardsCount }) : null);
-          alert("Reward Redeemed!");
-      } catch(err) { console.error(err); alert("Failed."); }
-  };
-
-  const handleDeleteClient = async () => {
-      if (!selectedClient || !onDeleteClient) return;
-      if (!window.confirm(`Are you sure you want to delete ${selectedClient.name}? This cannot be undone.`)) return;
-      
-      const clientInDb = dbClients?.find(c => c.email.toLowerCase() === selectedClient.email.toLowerCase());
-      const idToDelete = selectedClient.id || clientInDb?.id;
-
-      if (!idToDelete) {
-          alert("Cannot delete client. ID not found.");
-          return;
-      }
-
-      try {
-          await onDeleteClient(idToDelete);
-          setSelectedClient(null);
-          alert("Client deleted successfully.");
-      } catch (err) {
-          console.error(err);
-          alert("Failed to delete client.");
-      }
-  };
-
   const sendCredentials = (method: 'whatsapp' | 'email') => {
         if (!selectedClient) return;
         const portalLink = window.location.origin;
-        const password = (!selectedClient.password || selectedClient.password === 'N/A') ? 'Ask Admin' : selectedClient.password;
+        const password = (!selectedClient.password || selectedClient.password === 'N/A') ? 'Check with admin' : selectedClient.password;
         const msg = `Hi ${selectedClient.name},\nPortal Login:\nURL: ${portalLink}\nEmail: ${selectedClient.email}\nPIN: ${password}`;
         
         if (method === 'whatsapp') {
@@ -401,214 +363,312 @@ const ClientsManager: React.FC<{
             const url = `https://wa.me/${selectedClient.phone.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         } else {
-            const subject = 'Your Credentials';
+            const subject = 'Your Studio Portal Credentials';
             const url = `mailto:${selectedClient.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         }
   };
 
-  const inputClass = "w-full bg-white border border-admin-dark-border rounded-lg p-2 text-admin-dark-text text-sm outline-none focus:ring-1 focus:ring-admin-dark-primary font-medium";
-  const isActiveAccount = selectedClient && selectedClient.password && selectedClient.password !== 'N/A';
-
-  // Helper to open loyalty modal pre-selected
-  const openLoyaltyFor = (progId: string) => {
-      setSelectedLoyaltyProgramId(progId);
-      setIsLoyaltyPopupOpen(true);
+  const getTierColor = (tier: string) => {
+      switch (tier) {
+          case 'Diamond': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
+          case 'Gold': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+          case 'Silver': return 'bg-gray-100 text-gray-700 border-gray-300';
+          case 'Bronze': return 'bg-orange-100 text-orange-700 border-orange-200';
+          default: return 'bg-blue-50 text-blue-600 border-blue-100';
+      }
   };
 
-  // Current Program for Modal
+  const inputClass = "w-full bg-white border border-admin-dark-border rounded-lg p-2 text-admin-dark-text text-sm outline-none focus:ring-1 focus:ring-admin-dark-primary font-medium transition-all shadow-sm";
+  const isActiveAccount = selectedClient && selectedClient.password && selectedClient.password !== 'N/A';
   const currentProgram = activePrograms.find(p => p.id === selectedLoyaltyProgramId) || activePrograms[0];
   const currentProgramCount = selectedClient?.loyaltyProgress?.[currentProgram?.id] || (currentProgram?.id === 'legacy' ? selectedClient?.stickers : 0) || 0;
 
-  // --- RENDER ---
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-admin-dark-bg">
         {viewInvoice && <InvoicePreviewModal invoice={viewInvoice} onClose={() => setViewInvoice(null)} />}
         
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-4 sm:mb-6 flex-shrink-0 no-print">
-            <div className="flex items-center gap-3">
-                <h2 className="text-xl font-bold text-admin-dark-text">Clients</h2>
+        {/* CRM Dashboard Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6 flex-shrink-0">
+            <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-black text-admin-dark-text tracking-tight uppercase">CRM Hub</h2>
+                <div className="hidden sm:flex items-center gap-2 bg-white/50 p-1 rounded-full border border-gray-200 shadow-sm">
+                    {([
+                        { id: 'spend', label: 'Top Spend' },
+                        { id: 'visits', label: 'Loyal' },
+                        { id: 'last_visit', label: 'Recent' },
+                        { id: 'name', label: 'A-Z' }
+                    ] as const).map(sort => (
+                        <button 
+                            key={sort.id} 
+                            onClick={() => setSortBy(sort.id)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${sortBy === sort.id ? 'bg-admin-dark-primary text-white shadow-md' : 'text-gray-400 hover:text-gray-700'}`}
+                        >
+                            {sort.label}
+                        </button>
+                    ))}
+                </div>
             </div>
             
             <div className="flex gap-2 w-full sm:w-auto">
-                <input 
-                    type="text" 
-                    placeholder="Search..." 
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    className="bg-white border border-admin-dark-border rounded-lg p-2 text-admin-dark-text text-xs sm:text-sm outline-none w-full sm:w-64"
-                />
-                <button onClick={() => setIsAddModalOpen(true)} className="bg-admin-dark-primary text-white px-3 py-2 rounded-lg flex items-center gap-1 font-bold text-xs hover:opacity-90 whitespace-nowrap">
-                    <PlusIcon className="w-4 h-4" /> Add
+                <div className="relative w-full sm:w-64">
+                    <input 
+                        type="text" 
+                        placeholder="Search by name or email..." 
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        className="bg-white border border-gray-200 rounded-xl px-10 py-2.5 text-admin-dark-text text-sm outline-none w-full shadow-sm focus:ring-2 focus:ring-admin-dark-primary/20 transition-all"
+                    />
+                    <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <button onClick={() => setIsAddModalOpen(true)} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl flex items-center gap-2 font-bold text-sm hover:opacity-90 shadow-lg shadow-admin-dark-primary/20 whitespace-nowrap active:scale-95 transition-all">
+                    <PlusIcon className="w-5 h-5" /> <span>Add Client</span>
                 </button>
             </div>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden no-print">
-            {/* Grid List View - 3 Cols Mobile */}
-            <div className={`flex-1 overflow-y-auto ${selectedClient ? 'hidden lg:block lg:w-1/3' : 'w-full'}`}>
-                <div className="grid grid-cols-3 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-4 pb-20">
+        <div className="flex flex-col lg:flex-row gap-6 h-full overflow-hidden no-print pb-4">
+            {/* Grid List View */}
+            <div className={`flex-1 overflow-y-auto custom-scrollbar ${selectedClient ? 'hidden lg:block lg:w-1/3' : 'w-full'}`}>
+                <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3">
                     {filteredClients.map(client => (
                         <div 
                             key={client.email}
-                            onClick={() => setSelectedClient(client)}
-                            className={`bg-white border p-2 sm:p-4 rounded-lg shadow-sm cursor-pointer hover:border-admin-dark-primary/50 transition-all ${selectedClient?.email === client.email ? 'border-admin-dark-primary ring-1 ring-admin-dark-primary' : 'border-gray-200'}`}
+                            onClick={() => { setSelectedClient(client); setNotesDraft(client.notes || ''); setIsEditingNotes(false); }}
+                            className={`bg-white border-2 p-4 rounded-2xl shadow-sm cursor-pointer transition-all relative group overflow-hidden ${selectedClient?.email === client.email ? 'border-admin-dark-primary ring-4 ring-admin-dark-primary/10 -translate-y-1' : 'border-white hover:border-admin-dark-primary/30'}`}
                         >
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="bg-gray-100 w-6 h-6 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-xs sm:text-lg font-bold text-gray-600">
+                            <div className="flex justify-between items-start mb-3">
+                                <div className="bg-gray-100 w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black text-gray-400 group-hover:bg-admin-dark-primary/10 group-hover:text-admin-dark-primary transition-colors">
                                     {client.name.charAt(0)}
                                 </div>
-                                <div className="text-right">
-                                    {client.password && client.password !== 'N/A' && (
-                                        <span className="block text-[8px] text-green-600 font-bold mb-1">
-                                            ✔
-                                        </span>
-                                    )}
-                                </div>
+                                <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${getTierColor(client.tier)}`}>
+                                    {client.tier}
+                                </span>
                             </div>
-                            <h3 className="font-bold text-gray-800 truncate text-[10px] sm:text-sm">{client.name}</h3>
-                            <p className="text-[9px] sm:text-xs text-gray-500 truncate mb-2">{client.email}</p>
+                            <h3 className="font-bold text-gray-900 truncate text-sm leading-tight">{client.name}</h3>
+                            <p className="text-[10px] text-gray-400 truncate mb-4">{client.email}</p>
                             
-                            <div className="flex justify-between items-center text-[9px] sm:text-xs pt-2 border-t border-gray-100">
-                                <span className="text-gray-400">Spent</span>
-                                <span className="font-mono font-bold text-green-600">R{client.totalSpend.toFixed(0)}</span>
+                            <div className="flex justify-between items-center text-[10px] pt-3 border-t border-gray-50">
+                                <div>
+                                    <p className="text-gray-400 uppercase font-black tracking-tighter">Lifetime</p>
+                                    <p className="font-mono font-bold text-green-600">R{client.totalSpend.toFixed(0)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-gray-400 uppercase font-black tracking-tighter">Visits</p>
+                                    <p className="font-bold text-gray-900">{client.visitCount}</p>
+                                </div>
                             </div>
                         </div>
                     ))}
+                    {filteredClients.length === 0 && (
+                        <div className="col-span-full py-20 text-center bg-white/50 border-2 border-dashed border-gray-200 rounded-3xl">
+                            <IconClients className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+                            <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">No collectors found.</p>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Detail View (Right Panel) */}
+            {/* Premium Client Detail Panel */}
             {selectedClient && (
-                <div className="w-full lg:w-2/3 bg-white border border-gray-200 rounded-2xl shadow-xl overflow-y-auto flex flex-col h-full animate-fade-in">
-                    {/* Header */}
-                    <div className="p-4 sm:p-6 border-b border-gray-100 bg-gray-50/50 flex justify-between items-start">
-                        <div>
-                            <button onClick={() => setSelectedClient(null)} className="lg:hidden text-gray-400 text-xs mb-2">← Back</button>
-                            <h2 className="text-xl sm:text-3xl font-bold text-gray-800">{selectedClient.name}</h2>
-                            <div className="flex flex-wrap gap-2 mt-2 text-xs text-gray-600">
-                                <span className="flex items-center gap-1"><MailIcon className="w-3 h-3"/> {selectedClient.email}</span>
-                                {selectedClient.phone && <span className="flex items-center gap-1"><WhatsAppIcon className="w-3 h-3 text-green-500"/> {selectedClient.phone}</span>}
-                                {selectedClient.age && <span className="flex items-center gap-1"><span className="text-[10px]">🎂</span> Age: {selectedClient.age}</span>}
+                <div className="w-full lg:w-2/3 bg-white border border-gray-200 rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col h-full animate-fade-in">
+                    {/* Panel Header */}
+                    <div className="p-8 border-b border-gray-100 bg-gradient-to-br from-white to-gray-50 flex justify-between items-start">
+                        <div className="flex-1">
+                            <button onClick={() => setSelectedClient(null)} className="lg:hidden text-gray-400 text-xs font-black uppercase tracking-widest mb-4 flex items-center gap-1 hover:text-admin-dark-primary transition-colors">
+                                <span>←</span> Collector List
+                            </button>
+                            <div className="flex items-center gap-4 mb-2">
+                                <h2 className="text-3xl font-black text-gray-900 leading-tight">{selectedClient.name}</h2>
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border shadow-sm ${getTierColor(selectedClient.tier)}`}>
+                                    {selectedClient.tier} Tier
+                                </span>
                             </div>
-                            {selectedClient.address && (
-                                <p className="text-xs text-gray-500 mt-2 italic flex items-start gap-1">
-                                    <span className="text-[10px] mt-0.5">📍</span> {selectedClient.address}
-                                </p>
-                            )}
+                            <div className="flex flex-wrap gap-4 text-xs text-gray-500 font-medium">
+                                <span className="flex items-center gap-1.5"><MailIcon className="w-4 h-4 text-blue-400"/> {selectedClient.email}</span>
+                                {selectedClient.phone && <span className="flex items-center gap-1.5"><WhatsAppIcon className="w-4 h-4 text-green-500"/> {selectedClient.phone}</span>}
+                                <span className="flex items-center gap-1.5"><CalendarIcon className="w-4 h-4 text-purple-400"/> Last Seen: {selectedClient.lastVisit ? new Date(selectedClient.lastVisit).toLocaleDateString() : 'Never'}</span>
+                            </div>
                         </div>
                         <div className="flex flex-col gap-2 items-end">
-                            <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-brand-green text-white px-3 py-1.5 rounded text-xs font-bold shadow-sm">
-                                Loyalty Cards
-                            </button>
-                            {selectedClient.id && (
-                                <button onClick={handleDeleteClient} className="text-red-500 hover:text-red-700 flex items-center gap-1 text-[10px] font-bold">
-                                    <TrashIcon className="w-3 h-3" /> Delete Client
+                            <div className="flex gap-2">
+                                <button onClick={() => { setSelectedLoyaltyProgramId(activePrograms[0]?.id); setIsLoyaltyPopupOpen(true); }} className="bg-admin-dark-primary text-white px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-admin-dark-primary/20 hover:scale-105 transition-transform active:scale-95">
+                                    Loyalty
                                 </button>
-                            )}
+                                <button onClick={() => { if(window.confirm('Delete this client profile?')) onDeleteClient?.(selectedClient.id); }} className="p-2.5 text-red-300 hover:text-red-500 transition-colors bg-red-50 rounded-xl hover:bg-red-100">
+                                    <TrashIcon className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <p className="text-[10px] font-black text-gray-300 uppercase tracking-tighter mt-2">Client ID: {selectedClient.id?.slice(0,8)}</p>
                         </div>
                     </div>
 
-                    {/* Content */}
-                    <div className="p-4 sm:p-6 space-y-6">
-                        {/* LOYALTY CARD MINI VIEWS */}
-                        {isActiveAccount && (
-                            <div className="flex gap-4 overflow-x-auto pb-2">
-                                {activePrograms.map(prog => {
-                                    const count = selectedClient.loyaltyProgress?.[prog.id] || (prog.id === 'legacy' ? selectedClient.stickers : 0) || 0;
-                                    return (
-                                        <div key={prog.id} onClick={() => openLoyaltyFor(prog.id)} className="bg-gray-800 rounded-xl p-3 text-white shadow-md relative overflow-hidden min-w-[200px] cursor-pointer hover:bg-gray-700 transition-colors">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <h4 className="font-bold text-brand-gold text-xs truncate max-w-[120px]">{prog.name}</h4>
-                                                <div className="text-sm font-bold text-brand-green">{count} <span className="text-[10px] text-gray-400">/ {prog.stickersRequired}</span></div>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                {Array.from({ length: Math.min(5, prog.stickersRequired) }).map((_, i) => (
-                                                    <div key={i} className={`w-2 h-2 rounded-full ${i < count ? 'bg-white' : 'bg-gray-600'}`}></div>
-                                                ))}
-                                                {prog.stickersRequired > 5 && <span className="text-[10px] text-gray-400">+</span>}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
+                    {/* Stats Ribbon */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 bg-gray-900 text-white divide-x divide-white/5">
+                         <div className="p-4 text-center">
+                             <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Total Spent</p>
+                             <p className="text-lg font-black text-green-400">R {selectedClient.totalSpend.toFixed(0)}</p>
+                         </div>
+                         <div className="p-4 text-center">
+                             <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Total Visits</p>
+                             <p className="text-lg font-black text-cyan-400">{selectedClient.visitCount}</p>
+                         </div>
+                         <div className="p-4 text-center">
+                             <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Avg per Visit</p>
+                             <p className="text-lg font-black text-purple-400">R {selectedClient.visitCount > 0 ? (selectedClient.totalSpend / selectedClient.visitCount).toFixed(0) : '0'}</p>
+                         </div>
+                         <div className="p-4 text-center">
+                             <p className="text-[9px] font-black text-gray-500 uppercase mb-1">Account</p>
+                             <p className={`text-lg font-black ${isActiveAccount ? 'text-green-500' : 'text-gray-600'}`}>{isActiveAccount ? 'Active' : 'Inactive'}</p>
+                         </div>
+                    </div>
 
-                        {/* Credentials */}
-                        <div className="bg-gray-50 border p-3 rounded-lg flex flex-col sm:flex-row justify-between items-center gap-3">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs text-gray-500">PIN:</span>
-                                <div className="font-mono bg-white border px-2 py-1 rounded text-xs font-bold">{isActiveAccount ? selectedClient.password : 'N/A'}</div>
-                                {isActiveAccount ? (
-                                    <button onClick={handleEditPin} className="text-[10px] text-blue-600 underline">Change</button>
-                                ) : (
-                                    <button onClick={handleActivateAccount} disabled={isLoading} className="text-[10px] bg-green-600 text-white px-2 py-1 rounded disabled:opacity-50">
-                                        {isLoading ? 'Wait...' : 'Activate'}
-                                    </button>
-                                )}
+                    {/* Panel Content */}
+                    <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar">
+                        
+                        {/* Credentials & Access Box */}
+                        <section className="bg-gray-50 rounded-3xl p-6 border border-gray-100 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
+                                <IconClients className="w-32 h-32" />
                             </div>
-                            <div className="flex gap-2">
-                                <button onClick={() => sendCredentials('whatsapp')} disabled={!isActiveAccount} className="bg-white border text-green-600 px-2 py-1 rounded text-[10px] font-bold flex items-center gap-1 disabled:opacity-50">
-                                    <WhatsAppIcon className="w-3 h-3" /> WhatsApp
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* History */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <h3 className="font-bold text-gray-800 text-sm border-b pb-1 mb-2">Recent Bookings</h3>
-                                <div className="space-y-1">
-                                    {selectedClient.bookings.slice(0, 5).map(b => (
-                                        <div key={b.id} className="flex justify-between text-xs p-2 bg-gray-50 rounded">
-                                            <span>{new Date(b.bookingDate).toLocaleDateString()}</span>
-                                            <span className="font-bold text-gray-600">{b.status.substring(0,4)}</span>
+                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-admin-dark-primary"></span> Portal Access & Security
+                            </h3>
+                            <div className="flex flex-col sm:flex-row justify-between items-center gap-6 relative z-10">
+                                <div className="flex items-center gap-4">
+                                    <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Access PIN</p>
+                                        <div className="font-mono text-lg font-black tracking-widest text-gray-900">
+                                            {isActiveAccount ? selectedClient.password : '----'}
                                         </div>
-                                    ))}
+                                    </div>
+                                    {!isActiveAccount ? (
+                                        <button onClick={handleActivateAccount} disabled={isLoading} className="bg-green-600 text-white px-6 py-3 rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-green-600/20 hover:scale-105 transition-all">
+                                            {isLoading ? 'Wait...' : 'Activate Portal'}
+                                        </button>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            <button onClick={() => sendCredentials('whatsapp')} className="bg-[#25D366] text-white p-3 rounded-2xl shadow-md hover:scale-105 transition-transform" title="WhatsApp credentials">
+                                                <WhatsAppIcon className="w-5 h-5" />
+                                            </button>
+                                            <button onClick={() => sendCredentials('email')} className="bg-gray-800 text-white p-3 rounded-2xl shadow-md hover:scale-105 transition-transform" title="Email credentials">
+                                                <MailIcon className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="text-right">
+                                     <p className="text-[10px] text-gray-400 font-medium italic">Clients can use their email and PIN <br/> to log in to the Client Portal.</p>
                                 </div>
                             </div>
-                            <div>
-                                <h3 className="font-bold text-gray-800 text-sm border-b pb-1 mb-2">Invoices</h3>
-                                <div className="space-y-1">
-                                    {selectedClient.invoices.slice(0, 5).map(inv => (
-                                        <div key={inv.id} onClick={() => setViewInvoice(inv)} className="flex justify-between text-xs p-2 bg-gray-50 rounded cursor-pointer hover:bg-gray-100">
-                                            <span>{inv.number}</span>
-                                            <span className="font-bold">R{inv.total}</span>
+                        </section>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            {/* The "Journey" Timeline */}
+                            <section>
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span> The Beauty Journey
+                                </h3>
+                                <div className="space-y-6 relative before:absolute before:left-6 before:top-0 before:bottom-0 before:w-0.5 before:bg-gray-100">
+                                    {selectedClient.bookings.length > 0 ? selectedClient.bookings.slice(0, 10).map((b, idx) => (
+                                        <div key={b.id} className="relative pl-12">
+                                            <div className={`absolute left-[1.15rem] top-1 w-3 h-3 rounded-full border-4 border-white shadow-sm ring-1 ring-gray-100 ${b.status === 'completed' ? 'bg-green-500' : 'bg-yellow-400'}`}></div>
+                                            <div className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                                                <div className="flex justify-between items-start mb-1">
+                                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{new Date(b.bookingDate).toLocaleDateString(undefined, {month: 'short', day:'numeric', year:'numeric'})}</p>
+                                                    <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${b.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>{b.status}</span>
+                                                </div>
+                                                <p className="text-xs font-bold text-gray-800 line-clamp-2 italic">"{b.message}"</p>
+                                                {b.totalCost && <p className="text-[10px] font-black text-admin-dark-primary mt-2 uppercase tracking-tighter">Invested: R {b.totalCost}</p>}
+                                            </div>
                                         </div>
-                                    ))}
+                                    )) : <p className="text-xs text-gray-400 italic pl-12">No sessions logged yet.</p>}
                                 </div>
-                            </div>
+                            </section>
+
+                            {/* Internal Collector Notes */}
+                            <section>
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Studio Notes
+                                </h3>
+                                <div className="bg-orange-50 border border-orange-100 rounded-3xl p-6 min-h-[200px] flex flex-col">
+                                    {isEditingNotes ? (
+                                        <div className="flex flex-col gap-4 flex-1">
+                                            <textarea 
+                                                value={notesDraft}
+                                                onChange={e => setNotesDraft(e.target.value)}
+                                                className="flex-1 bg-white border border-orange-200 rounded-2xl p-4 text-xs font-medium text-gray-700 focus:ring-2 focus:ring-orange-200 outline-none resize-none"
+                                                placeholder="Add skin type, ink preferences, or aftercare habits..."
+                                            />
+                                            <div className="flex justify-end gap-2">
+                                                <button onClick={() => setIsEditingNotes(false)} className="text-[10px] font-black uppercase tracking-widest text-gray-400 px-3 py-2">Discard</button>
+                                                <button onClick={handleUpdateNotes} disabled={isLoading} className="bg-orange-500 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-md">
+                                                    {isLoading ? 'Saving...' : 'Save Notes'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col flex-1">
+                                            <div className="flex-1 text-xs text-gray-600 leading-relaxed italic whitespace-pre-wrap">
+                                                {selectedClient.notes || 'No private notes on this collector. Add details about their style or skin type.'}
+                                            </div>
+                                            <button onClick={() => setIsEditingNotes(true)} className="mt-6 self-start flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-orange-600 hover:text-orange-700">
+                                                <PencilIcon className="w-3.5 h-3.5" /> Edit Profile Notes
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <div className="mt-8">
+                                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-4">Financial Documents</h4>
+                                    <div className="space-y-2">
+                                        {selectedClient.invoices.length > 0 ? selectedClient.invoices.slice(0, 5).map(inv => (
+                                            <div key={inv.id} onClick={() => setViewInvoice(inv)} className="flex justify-between items-center bg-white border border-gray-100 p-3 rounded-xl cursor-pointer hover:bg-gray-50 transition-all group">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 font-bold text-[8px] group-hover:bg-admin-dark-primary group-hover:text-white transition-colors">DOC</div>
+                                                    <div><p className="text-xs font-black text-gray-900">{inv.number}</p><p className="text-[9px] text-gray-400 uppercase">{new Date(inv.dateIssued).toLocaleDateString()}</p></div>
+                                                </div>
+                                                <p className="font-mono font-bold text-xs text-gray-900">R {inv.total.toFixed(2)}</p>
+                                            </div>
+                                        )) : <p className="text-xs text-gray-400 italic">No invoices found.</p>}
+                                    </div>
+                                </div>
+                            </section>
                         </div>
                     </div>
                 </div>
             )}
         </div>
 
-        {/* Modal */}
+        {/* Improved Loyalty Popup */}
         {isLoyaltyPopupOpen && selectedClient && currentProgram && (
-            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80" onClick={() => setIsLoyaltyPopupOpen(false)}>
-                <div className="bg-white rounded-lg w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-                    <div className="bg-brand-green p-4 text-white flex justify-between items-center">
-                        <select 
-                            value={selectedLoyaltyProgramId} 
-                            onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)}
-                            className="bg-transparent text-white font-bold outline-none cursor-pointer text-lg"
-                        >
-                            {activePrograms.map(p => <option key={p.id} value={p.id} className="text-black">{p.name}</option>)}
-                        </select>
-                        <button onClick={() => setIsLoyaltyPopupOpen(false)}>&times;</button>
+            <div className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setIsLoyaltyPopupOpen(false)}>
+                <div className="bg-white rounded-[2.5rem] w-full max-w-sm overflow-hidden shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                    <div className="bg-admin-dark-primary p-8 text-white flex justify-between items-center">
+                        <div>
+                            <select 
+                                value={selectedLoyaltyProgramId} 
+                                onChange={(e) => setSelectedLoyaltyProgramId(e.target.value)}
+                                className="bg-transparent text-white font-black outline-none cursor-pointer text-xl appearance-none pr-6 border-b border-white/20 uppercase tracking-tight"
+                            >
+                                {activePrograms.map(p => <option key={p.id} value={p.id} className="text-black">{p.name}</option>)}
+                            </select>
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 mt-1">Loyalty Card</p>
+                        </div>
+                        <button onClick={() => setIsLoyaltyPopupOpen(false)} className="text-3xl leading-none opacity-50 hover:opacity-100 transition-opacity">&times;</button>
                     </div>
-                    <div className="p-6 text-center">
-                        <div className="text-3xl font-bold mb-4 text-gray-800">{currentProgramCount} / {currentProgram.stickersRequired}</div>
-                        <p className="text-sm text-gray-500 mb-6">{currentProgram.rewardDescription}</p>
+                    <div className="p-10 text-center">
+                        <div className="text-6xl font-black mb-2 text-gray-900 tracking-tighter">
+                            {currentProgramCount} <span className="text-2xl text-gray-300">/ {currentProgram.stickersRequired}</span>
+                        </div>
+                        <p className="text-sm font-bold text-admin-dark-primary uppercase tracking-widest mb-10">{currentProgram.rewardDescription}</p>
                         
-                        {(currentProgramCount) >= currentProgram.stickersRequired ? (
-                            <button onClick={() => { redeemReward(currentProgram.id); setIsLoyaltyPopupOpen(false); }} className="bg-brand-gold text-black px-6 py-2 rounded-full font-bold animate-pulse">Redeem Reward</button>
+                        {currentProgramCount >= currentProgram.stickersRequired ? (
+                            <button onClick={() => { if(window.confirm('Confirm redemption?')) updateStickers(currentProgram.id, -currentProgram.stickersRequired); setIsLoyaltyPopupOpen(false); }} className="w-full bg-yellow-400 text-black py-4 rounded-2xl font-black uppercase tracking-widest animate-bounce shadow-xl shadow-yellow-400/20">Redeem Perk</button>
                         ) : (
                             <div className="flex justify-center gap-4">
-                                <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-full font-bold">-</button>
-                                <button onClick={() => updateStickers(currentProgram.id, 1)} className="bg-brand-green text-white px-6 py-2 rounded-full font-bold">+ Sticker</button>
+                                <button onClick={() => updateStickers(currentProgram.id, -1)} className="bg-gray-100 text-gray-400 w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black hover:bg-gray-200 transition-colors shadow-sm">－</button>
+                                <button onClick={() => updateStickers(currentProgram.id, 1)} className="bg-admin-dark-primary text-white flex-1 rounded-2xl flex items-center justify-center text-xs font-black uppercase tracking-widest shadow-xl shadow-admin-dark-primary/20 hover:scale-[1.02] transition-transform active:scale-95">Add Sticker</button>
                             </div>
                         )}
                     </div>
@@ -616,20 +676,35 @@ const ClientsManager: React.FC<{
             </div>
         )}
 
-        {/* Add Modal */}
+        {/* Premium Add Modal */}
         {isAddModalOpen && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60" onClick={() => setIsAddModalOpen(false)}>
-                <div className="bg-white rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
-                    <h3 className="text-xl font-bold mb-4">Add Client</h3>
-                    <form onSubmit={handleAddClientSubmit} className="space-y-3">
-                        <input className={inputClass} placeholder="Name" value={newClientName} onChange={e => setNewClientName(e.target.value)} required />
-                        <input className={inputClass} placeholder="Email" value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} required />
-                        <input className={inputClass} placeholder="Phone" value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} />
-                        <input className={inputClass} placeholder="PIN (Required)" value={newClientPassword} onChange={e => setNewClientPassword(e.target.value)} required />
-                        <div className="flex justify-end gap-2 pt-2">
-                            <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-3 py-1 text-sm">Cancel</button>
-                            <button type="submit" disabled={isLoading} className="bg-green-600 text-white px-4 py-1 rounded text-sm font-bold disabled:opacity-50">
-                                {isLoading ? 'Adding...' : 'Create'}
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}>
+                <div className="bg-white rounded-[2rem] p-10 w-full max-w-md shadow-2xl animate-fade-in-up" onClick={e => e.stopPropagation()}>
+                    <div className="text-center mb-8">
+                        <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight">New Profile</h3>
+                        <p className="text-xs text-gray-400 font-medium">Create a digital profile for this collector.</p>
+                    </div>
+                    <form onSubmit={handleAddClientSubmit} className="space-y-4">
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block ml-1">Full Name</label>
+                            <input className={inputClass} value={newClientName} onChange={e => setNewClientName(e.target.value)} required />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block ml-1">Email Address</label>
+                            <input type="email" className={inputClass} value={newClientEmail} onChange={e => setNewClientEmail(e.target.value)} required />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block ml-1">WhatsApp Tel</label>
+                            <input className={inputClass} value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 block ml-1">Portal Login PIN</label>
+                            <input className={`${inputClass} tracking-widest text-center text-lg`} value={newClientPassword} onChange={e => setNewClientPassword(e.target.value)} required maxLength={6} placeholder="••••" />
+                        </div>
+                        <div className="flex justify-end gap-3 pt-6">
+                            <button type="button" onClick={() => setIsAddModalOpen(false)} className="text-xs font-black uppercase tracking-widest text-gray-400 px-4">Cancel</button>
+                            <button type="submit" disabled={isLoading} className="bg-admin-dark-primary text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-admin-dark-primary/20 disabled:opacity-50 hover:scale-105 active:scale-95 transition-all text-xs">
+                                {isLoading ? 'Processing...' : 'Create Collector'}
                             </button>
                         </div>
                     </form>
