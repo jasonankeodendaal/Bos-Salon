@@ -76,6 +76,7 @@ export interface Booking {
   amountPaid?: number;
   paymentMethod?: 'cash' | 'card' | 'eft' | 'other';
   referenceImages?: string[];
+  selectedOptions?: string[]; // New: store labels of pre-ticked options
 }
 export interface Genre {
   id:string;
@@ -151,6 +152,12 @@ export interface Client {
   address?: string;  // New field
 }
 
+export interface BookingOption {
+  id: string;
+  label: string;
+  description: string;
+}
+
 // --- MAIN APP COMPONENT ---
 const App: React.FC = () => {
   // --- STATE ---
@@ -193,6 +200,12 @@ const App: React.FC = () => {
     emailServiceId: '',
     emailTemplateId: '',
     emailPublicKey: '',
+    
+    bookingOptions: [
+      { id: '1', label: 'Color Tattoo', description: 'Request multi-color ink for your design.' },
+      { id: '2', label: 'Fine Line', description: 'Ultra-thin, delicate needle work.' },
+      { id: '3', label: 'Cover Up', description: 'Existing tattoo needs to be hidden.' },
+    ],
     
     // Legacy Loyalty (Single) - Kept for fallback
     loyaltyProgram: {
@@ -306,6 +319,7 @@ const App: React.FC = () => {
                  ...fetchedSettings,
                  socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
                  loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
+                 bookingOptions: fetchedSettings.bookingOptions || fetchedSettings.bookingoptions || [],
                  isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? false,
                  companyName: fetchedSettings.companyName || fetchedSettings.companyname,
                  logoUrl: fetchedSettings.logoUrl || fetchedSettings.logourl,

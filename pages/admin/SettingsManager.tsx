@@ -1,9 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { dbUploadFile } from '../../utils/dbAdapter';
 import HelpGuideModal from './components/HelpGuideModal';
 import TrashIcon from '../../components/icons/TrashIcon';
 import PlusIcon from '../../components/icons/PlusIcon';
-import { LoyaltyProgram } from '../../App';
+import { LoyaltyProgram, BookingOption } from '../../App';
 
 // Types passed from parent
 interface SettingsManagerProps {
@@ -22,6 +23,7 @@ const TABS = [
   { id: 'showroom', label: 'Showroom & Specials' },
   { id: 'aftercare', label: 'Aftercare Guide' },
   { id: 'contact', label: 'Footer & Booking Info' },
+  { id: 'booking-opts', label: 'Booking Form Options' },
   { id: 'financials', label: 'Financial Config' },
   { id: 'loyalty', label: 'Loyalty Programs' },
   { id: 'payments', label: 'Yoco Payments' },
@@ -49,6 +51,11 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       active: true,
   });
   const [newProgramIcon, setNewProgramIcon] = useState<File | null>(null);
+
+  // Booking Options Local State
+  const [bookingOptions, setBookingOptions] = useState<BookingOption[]>(props.bookingOptions || []);
+  const [newOptLabel, setNewOptLabel] = useState('');
+  const [newOptDesc, setNewOptDesc] = useState('');
 
   // -- STATE MANAGEMENT FOR ALL FIELDS --
   const [settings, setSettings] = useState({
@@ -172,6 +179,9 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
     }
+    if (props.bookingOptions && props.bookingOptions.length > 0) {
+        setBookingOptions(props.bookingOptions);
+    }
   }, [props]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -277,6 +287,23 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       setLoyaltyPrograms(prev => prev.map(p => p.id === id ? { ...p, active: !p.active } : p));
   };
 
+  // --- Booking Options Handlers ---
+  const handleAddBookingOption = () => {
+    if (!newOptLabel) return;
+    const newOpt: BookingOption = {
+      id: crypto.randomUUID(),
+      label: newOptLabel,
+      description: newOptDesc
+    };
+    setBookingOptions(prev => [...prev, newOpt]);
+    setNewOptLabel('');
+    setNewOptDesc('');
+  };
+
+  const handleRemoveBookingOption = (id: string) => {
+    setBookingOptions(prev => prev.filter(o => o.id !== id));
+  };
+
   const handleSave = async () => {
     setIsLoading(true);
     setMessage(null);
@@ -336,6 +363,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             sections: settings.aftercareSections
         },
         loyaltyPrograms: loyaltyPrograms,
+        bookingOptions: bookingOptions,
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
 
@@ -797,6 +825,51 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                    </div>
                 </div>
              </div>
+          )}
+
+          {/* Booking Options Tab */}
+          {activeTab === 'booking-opts' && (
+            <div className={sectionClass}>
+              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Booking Checklist Options</h3>
+              <p className="text-xs text-admin-dark-text-secondary mb-6">These items appear as checkboxes in the "Request Appointment" form in the Client Portal.</p>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {bookingOptions.map(opt => (
+                    <div key={opt.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative group">
+                      <button 
+                        onClick={() => handleRemoveBookingOption(opt.id)}
+                        className="absolute top-2 right-2 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <TrashIcon className="w-4 h-4" />
+                      </button>
+                      <h4 className="font-bold text-gray-900 text-sm mb-1">{opt.label}</h4>
+                      <p className="text-[10px] text-gray-500 italic">{opt.description}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 sm:p-6">
+                  <h4 className="font-bold text-gray-900 mb-4 text-sm">Add New Option</h4>
+                  <div className="space-y-4">
+                    <div>
+                      <label className={labelClass}>Short Name (Label)</label>
+                      <input className={inputClass} value={newOptLabel} onChange={e => setNewOptLabel(e.target.value)} placeholder="e.g. Color Ink" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Tiny Explanation</label>
+                      <input className={inputClass} value={newOptDesc} onChange={e => setNewOptDesc(e.target.value)} placeholder="e.g. For multi-color designs." />
+                    </div>
+                    <button 
+                      onClick={handleAddBookingOption}
+                      className="bg-admin-dark-primary text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2"
+                    >
+                      <PlusIcon className="w-3 h-3" /> Add to Checklist
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Financials Tab */}

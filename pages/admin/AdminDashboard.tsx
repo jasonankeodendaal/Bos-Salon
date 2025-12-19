@@ -134,6 +134,21 @@ const BookingModal: React.FC<{
                          <label className="block text-sm font-semibold mb-2 text-admin-dark-text-secondary">Description / Message</label>
                          <textarea name="message" value={formData.message} onChange={handleChange} rows={3} className={inputClasses}></textarea>
                     </div>
+
+                    {/* REFERENCE IMAGES (If Client Uploaded) */}
+                    {formData.referenceImages && formData.referenceImages.length > 0 && (
+                        <div>
+                            <label className="block text-sm font-semibold mb-3 text-admin-dark-text-secondary">Client's Reference Photos</label>
+                            <div className="grid grid-cols-5 gap-2">
+                                {formData.referenceImages.map((url, idx) => (
+                                    <a key={idx} href={url} target="_blank" rel="noreferrer" className="aspect-square rounded-lg overflow-hidden border border-gray-200 hover:opacity-80 transition-opacity block bg-gray-100">
+                                        <img src={url} alt={`Idea ${idx + 1}`} className="w-full h-full object-cover" />
+                                    </a>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-2 italic">* Click images to view full size.</p>
+                        </div>
+                    )}
                     
                     <div className="flex justify-between items-center gap-4 pt-6 border-t border-admin-dark-border">
                         {isEditing && (

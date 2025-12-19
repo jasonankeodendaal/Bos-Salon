@@ -2,7 +2,7 @@
 import React from 'react';
 import AdminLoginPage from '../AdminLoginPage';
 import AdminDashboard from './AdminDashboard';
-import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client, LoyaltyProgram } from '../../App';
+import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, InventoryItem, Invoice, Client, LoyaltyProgram, BookingOption } from '../../App';
 
 export interface AdminPageProps {
   user: any | null; // Supports Supabase User or Mock User object
@@ -84,6 +84,7 @@ export interface AdminPageProps {
   vatPercentage: number;
   loyaltyProgram: any;
   loyaltyPrograms: LoyaltyProgram[]; 
+  bookingOptions: BookingOption[];
   
   // Settings Sections
   hero?: any;
