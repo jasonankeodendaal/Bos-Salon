@@ -64,7 +64,7 @@ const StepWrapper: React.FC<{ number: string; title: string; subtitle?: string; 
 );
 
 const SetupManager: React.FC = () => {
-  const [activeStep, setActiveStep] = useState<number>(1);
+  const [activeStep, setActiveStep] = useState<number>(3); // Set to 3 by default to help user find SQL
 
   const sql_structure = `
 -- 1. EXTENSIONS
@@ -204,6 +204,8 @@ create table if not exists public.settings (
   hero jsonb,
   about jsonb,
   contact jsonb,
+  aftercare jsonb,
+  payments jsonb,
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
 `.trim();
@@ -267,6 +269,14 @@ CREATE PUBLICATION supabase_realtime FOR TABLE
     public.clients;
 `.trim();
 
+  const sql_patch = `
+-- USE THIS IF YOU SEE "COLUMN NOT FOUND" ERRORS
+-- This adds the missing columns to the settings table without deleting your data.
+
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS aftercare jsonb;
+ALTER TABLE public.settings ADD COLUMN IF NOT EXISTS payments jsonb;
+`.trim();
+
   const env_template = `
 NEXT_PUBLIC_SUPABASE_URL=your_project_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
@@ -283,11 +293,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
           <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">Deployment Guide</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">The complete 7-step blueprint for moving from localhost to a professional, live tattoo studio platform.</p>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">The complete blueprint for moving from localhost to a professional, live tattoo studio platform.</p>
           <div className="flex justify-center gap-4 pt-4">
               <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">Supabase Cloud</span>
               <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold border border-blue-200">Vercel Edge</span>
-              <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">Google OAuth</span>
           </div>
         </header>
 
@@ -304,11 +313,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 <ol className="list-decimal pl-5 space-y-3">
                     <li>Create a new repository on <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</li>
                     <li>Initialize your local project folder and push it to this new repo.</li>
-                    <li><strong>Pro Tip:</strong> Keep your repository private unless you want others to see your client logic.</li>
                 </ol>
-                <div className="bg-gray-100 p-4 rounded-xl border border-gray-200 text-sm">
-                    <strong>Note:</strong> Ensure you do NOT commit any <code>.env</code> files or your <code>supabaseClient.ts</code> with actual keys to GitHub.
-                </div>
             </StepWrapper>
 
             {/* STEP 2: SUPABASE PROJECT */}
@@ -322,12 +327,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 <p>Your database and authentication are powered by Supabase.</p>
                 <ol className="list-decimal pl-5 space-y-3">
                     <li>Sign in to <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and click <strong>"New Project"</strong>.</li>
-                    <li>Wait 2-3 minutes for the database to provision.</li>
-                    <li>Go to <strong>Project Settings &rarr; API</strong>.</li>
-                    <li>Copy your <strong>Project URL</strong> and <strong>anon public API Key</strong>.</li>
+                    <li>Wait for the database to provision.</li>
+                    <li>Go to <strong>Project Settings &rarr; API</strong> to get your Keys.</li>
                 </ol>
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                    <p className="text-sm text-blue-800 font-bold mb-2">Save these for Step 7 (Vercel):</p>
                     <CopyBlock text={env_template} label="Env Template" />
                 </div>
             </StepWrapper>
@@ -340,23 +343,29 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 isActive={activeStep === 3}
                 onHeaderClick={() => setActiveStep(3)}
             >
-                <p>Now, build the actual tables and security rules.</p>
+                <p>Run these scripts in your **Supabase SQL Editor** to build the database.</p>
                 <div className="space-y-8">
                     <section>
+                        <h4 className="font-bold text-red-600 mb-2">Phase D: Schema Patch (RUN THIS IF ERROR)</h4>
+                        <p className="text-sm mb-4">If you see an error about a missing "aftercare" column, run this script to fix it instantly without deleting data.</p>
+                        <CopyBlock text={sql_patch} height="h-24" label="Patch Script" />
+                    </section>
+
+                    <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure</h4>
-                        <p className="text-sm mb-4">Go to <strong>SQL Editor &rarr; New Query</strong>, paste and run this script to create your tables (Portfolio, Bookings, Clients, etc).</p>
+                        <p className="text-sm mb-4">Creates your tables (Portfolio, Bookings, Clients, Settings, etc).</p>
                         <CopyBlock text={sql_structure} height="h-48" label="Structure Script" />
                     </section>
 
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase B: Permissions (RLS)</h4>
-                        <p className="text-sm mb-4">Run this to lock down your data. Only you (the logged-in Admin) will be able to delete or edit data, while the public can read your portfolio.</p>
+                        <p className="text-sm mb-4">Secures your data so only you can manage it.</p>
                         <CopyBlock text={sql_permissions} height="h-32" label="Security Script" />
                     </section>
 
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase C: Realtime Sync</h4>
-                        <p className="text-sm mb-4"><strong>CRITICAL:</strong> Run this so that your Admin Dashboard updates instantly when a client books, without needing a refresh.</p>
+                        <p className="text-sm mb-4">Enables instant dashboard updates for new bookings.</p>
                         <CopyBlock text={sql_realtime} height="h-32" label="Realtime Script" />
                     </section>
                 </div>
@@ -370,96 +379,28 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
                 isActive={activeStep === 4}
                 onHeaderClick={() => setActiveStep(4)}
             >
-                <p>For uploading portfolio images and client references, you must create storage buckets.</p>
-                <ol className="list-decimal pl-5 space-y-3">
-                    <li>Go to <strong>Storage &rarr; New Bucket</strong> in Supabase.</li>
-                    <li>Create the following buckets (all should be <strong>Public</strong>):
-                        <ul className="list-disc pl-5 mt-2 font-mono text-xs space-y-1">
-                            <li>portfolio</li>
-                            <li>specials</li>
-                            <li>showroom</li>
-                            <li>settings</li>
-                            <li>booking-references</li>
-                        </ul>
-                    </li>
-                    <li>Ensure the "Public" toggle is ON for all of them so images load on your site.</li>
-                </ol>
+                <p>Create the following **Public** buckets in Supabase Storage:</p>
+                <ul className="list-disc pl-5 font-mono text-xs space-y-1">
+                    <li>portfolio</li>
+                    <li>specials</li>
+                    <li>showroom</li>
+                    <li>settings</li>
+                    <li>booking-references</li>
+                </ul>
             </StepWrapper>
 
-            {/* STEP 5: GOOGLE LOGIN */}
+            {/* STEP 5: VERCEL */}
             <StepWrapper 
                 number="5" 
-                title="Social Authentication" 
-                subtitle="Google Login Setup"
+                title="Production Launch" 
+                subtitle="Vercel Deployment"
                 isActive={activeStep === 5}
                 onHeaderClick={() => setActiveStep(5)}
             >
-                <p>Allow clients to sign in with their Google account to access the Portal.</p>
-                <div className="space-y-4">
-                    <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <h4 className="font-bold text-gray-800 mb-2">Part 1: Google Cloud Console</h4>
-                        <ol className="list-decimal pl-5 space-y-2 text-sm">
-                            <li>Go to <ExternalLink href="https://console.cloud.google.com/">Google Cloud Console</ExternalLink>.</li>
-                            <li>Create a new project. Search for <strong>APIs & Services &rarr; OAuth Consent Screen</strong>.</li>
-                            <li>Choose <strong>External</strong>, fill out info.</li>
-                            <li>Go to <strong>Credentials &rarr; Create Credentials &rarr; OAuth Client ID</strong>.</li>
-                            <li>Select <strong>Web Application</strong>.</li>
-                            <li>Add <code>https://YOUR_SUPABASE_ID.supabase.co/auth/v1/callback</code> to "Authorized redirect URIs".</li>
-                        </ol>
-                    </div>
-                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <h4 className="font-bold text-blue-900 mb-2">Part 2: Supabase Integration</h4>
-                        <ol className="list-decimal pl-5 space-y-2 text-sm text-blue-800">
-                            <li>Copy the <strong>Client ID</strong> and <strong>Secret</strong> from Google.</li>
-                            <li>Go to Supabase <strong>Authentication &rarr; Providers &rarr; Google</strong>.</li>
-                            <li>Paste the keys, toggle "Enabled", and Save.</li>
-                        </ol>
-                    </div>
-                </div>
-            </StepWrapper>
-
-            {/* STEP 6: EMAILJS */}
-            <StepWrapper 
-                number="6" 
-                title="Booking Notifications" 
-                subtitle="EmailJS Setup"
-                isActive={activeStep === 6}
-                onHeaderClick={() => setActiveStep(6)}
-            >
-                <p>Get notified via email whenever a new booking request comes in.</p>
-                <ol className="list-decimal pl-5 space-y-3">
-                    <li>Create a free account at <ExternalLink href="https://www.emailjs.com/">EmailJS</ExternalLink>.</li>
-                    <li><strong>Add Service:</strong> Connect your Gmail account. Note the <strong>Service ID</strong>.</li>
-                    <li><strong>Create Template:</strong> Use variables like <code>&#123;&#123;from_name&#125;&#125;</code> and <code>&#123;&#123;message&#125;&#125;</code>. Note the <strong>Template ID</strong>.</li>
-                    <li><strong>Get API Key:</strong> Go to Account &rarr; Public Key.</li>
-                    <li>Enter these values in the <strong>Settings &rarr; Integrations</strong> tab of this Admin Dashboard.</li>
-                </ol>
-            </StepWrapper>
-
-            {/* STEP 7: VERCEL */}
-            <StepWrapper 
-                number="7" 
-                title="Production Launch" 
-                subtitle="Vercel Deployment"
-                isActive={activeStep === 7}
-                onHeaderClick={() => setActiveStep(7)}
-            >
-                <p>The final step! Hosting your site on the web with high performance.</p>
-                <ol className="list-decimal pl-5 space-y-3">
-                    <li>Sign in to <ExternalLink href="https://vercel.com">Vercel</ExternalLink> and click <strong>"Add New &rarr; Project"</strong>.</li>
-                    <li>Import the repository you created in Step 1.</li>
-                    <li><strong>Environment Variables:</strong> This is the most important part. Expand this section.</li>
-                    <li>Add two variables:
-                        <ul className="mt-2 space-y-2">
-                            <li className="flex items-center gap-2"><code className="bg-gray-100 px-1 rounded text-xs font-bold">NEXT_PUBLIC_SUPABASE_URL</code> &rarr; (Your project URL)</li>
-                            <li className="flex items-center gap-2"><code className="bg-gray-100 px-1 rounded text-xs font-bold">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> &rarr; (Your anon key)</li>
-                        </ul>
-                    </li>
-                    <li>Click <strong>Deploy</strong>.</li>
-                </ol>
-                <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl shadow-green-500/20">
-                    <h3 className="text-2xl font-bold mb-2">Deployment Complete! 🎉</h3>
-                    <p className="text-green-100">Your professional tattoo studio platform is now live and secure.</p>
+                <p>Deploy to Vercel and add your environment variables.</p>
+                <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl">
+                    <h3 className="text-2xl font-bold mb-2">Almost Live! 🚀</h3>
+                    <p className="text-green-100">Ensure all SQL phases are run before saving settings.</p>
                 </div>
             </StepWrapper>
         </div>
