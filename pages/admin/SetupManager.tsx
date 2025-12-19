@@ -202,6 +202,8 @@ create table if not exists public.settings (
   "emailPublicKey" text,
   "loyaltyProgram" jsonb,
   "loyaltyPrograms" jsonb,
+  "bookingOptions" jsonb default '[]'::jsonb,
+  "businessHours" text,
   hero jsonb,
   about jsonb,
   contact jsonb,
@@ -209,6 +211,17 @@ create table if not exists public.settings (
   payments jsonb,
   updated_at timestamp with time zone default timezone('utc'::text, now())
 );
+
+-- 3. SCHEMA REPAIR (Safely add missing columns to existing tables)
+DO $$ 
+BEGIN 
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='bookingOptions') THEN
+    ALTER TABLE public.settings ADD COLUMN "bookingOptions" jsonb DEFAULT '[]'::jsonb;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='businessHours') THEN
+    ALTER TABLE public.settings ADD COLUMN "businessHours" text;
+  END IF;
+END $$;
 `.trim();
 
   const sql_permissions = `
@@ -300,11 +313,12 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
             </StepWrapper>
 
             <StepWrapper number="3" title="Database Architecture" subtitle="SQL Scripts" isActive={activeStep === 3} onHeaderClick={() => setActiveStep(3)}>
-                <p>Run these in your Supabase SQL Editor.</p>
+                <p>Run these in your Supabase SQL Editor to create or repair your database tables.</p>
                 <div className="space-y-8">
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure</h4>
-                        <CopyBlock text={sql_structure} height="h-48" label="Structure Script" />
+                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair</h4>
+                        <p className="text-xs text-gray-500 mb-3 italic">* This script will automatically add missing columns like 'bookingOptions' if your tables already exist.</p>
+                        <CopyBlock text={sql_structure} height="h-64" label="Structure Script" />
                     </section>
                     <section>
                         <h4 className="font-bold text-gray-800 mb-2">Phase B: Permissions (RLS)</h4>
