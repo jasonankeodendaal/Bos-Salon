@@ -1069,8 +1069,15 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                
                <div className="bg-admin-dark-primary text-white p-10 rounded-3xl text-center shadow-xl">
                   <h4 className="text-3xl font-black mb-4 tracking-tight">Need further help?</h4>
-                  <p className="mb-8 text-white/80 max-w-xl mx-auto">Our support line is open for technical walkthroughs or to discuss custom feature development.</p>
-                  <a href={`https://wa.me/27695989427`} className="inline-block bg-white text-admin-dark-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-lg">Contact Technical Support</a>
+                  <p className="mb-8 text-white/80 max-w-xl mx-auto">Our support line is open for technical walkthroughs or to discuss custom feature development. Click below to chat with the creator.</p>
+                  <a 
+                    href={`https://wa.me/27695989427?text=${encodeURIComponent("Hi Jason, I need technical support for my Tattoo Studio ERP system.")}`} 
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-block bg-white text-admin-dark-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-lg"
+                  >
+                    Contact Technical Support
+                  </a>
                </div>
             </div>
           )}
