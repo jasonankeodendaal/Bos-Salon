@@ -29,8 +29,8 @@ const InvoicePreviewModal: React.FC<{ invoice: Invoice, onClose: () => void }> =
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50 no-print">
                     <h3 className="font-bold text-gray-800">{invoice.type === 'quote' ? 'Quote' : 'Invoice'} #{invoice.number}</h3>
                     <div className="flex gap-2">
-                        <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded">Print</button>
-                        <button onClose={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
+                        <button onClick={() => window.print()} className="text-sm font-bold text-blue-600 hover:text-blue-800 px-3 py-1 border border-blue-200 rounded transition-colors">Print</button>
+                        <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl leading-none">&times;</button>
                     </div>
                 </div>
                 <div className="p-8 overflow-y-auto bg-white text-gray-800 text-sm font-sans">
