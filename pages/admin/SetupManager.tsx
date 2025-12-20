@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 
 const CopyBlock: React.FC<{ text: string; label?: string; height?: string }> = ({ text, label, height = "h-auto" }) => {
@@ -76,8 +75,6 @@ const SetupManager: React.FC = () => {
 create extension if not exists "uuid-ossp";
 
 -- 2. MASTER TABLE CREATION
--- We use IF NOT EXISTS to prevent errors if running multiple times.
-
 create table if not exists public.portfolio (
   id uuid primary key default uuid_generate_v4(),
   title text,
@@ -184,7 +181,6 @@ create table if not exists public.clients (
   "rewardsRedeemed" integer default 0,
   age integer,
   address text,
-  -- Safety columns for calculated fields sent from UI
   "totalSpend" numeric default 0,
   "visitCount" integer default 0,
   "lastVisit" text,
@@ -222,7 +218,7 @@ create table if not exists public.settings (
   "emailPublicKey" text,
   "loyaltyProgram" jsonb,
   "loyaltyPrograms" jsonb,
-  "sanctuaryPerks" jsonb default '[]'::jsonb,
+  "loungePerks" jsonb default '[]'::jsonb,
   "bookingOptions" jsonb default '[]'::jsonb,
   "businessHours" text,
   hero jsonb,
@@ -235,10 +231,19 @@ create table if not exists public.settings (
 
 -- ==========================================
 -- 3. SCHEMA REPAIR (Safely add missing columns)
--- Run this if you see "Could not find column" errors.
 -- ==========================================
 DO $$ 
 BEGIN 
+  -- Settings Table Fixes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='loungePerks') THEN
+    ALTER TABLE public.settings ADD COLUMN "loungePerks" jsonb DEFAULT '[]'::jsonb;
+  END IF;
+  
+  -- Transfer data from old column if exists
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='sanctuaryPerks') THEN
+    UPDATE public.settings SET "loungePerks" = "sanctuaryPerks" WHERE "loungePerks" = '[]'::jsonb;
+  END IF;
+
   -- Bookings Table Fixes
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='bookings' AND column_name='contactMethod') THEN
     ALTER TABLE public.bookings ADD COLUMN "contactMethod" text;
@@ -250,12 +255,9 @@ BEGIN
     ALTER TABLE public.bookings ADD COLUMN "selectedOptions" text[];
   END IF;
 
-  -- Clients Table Fixes (Critical for the "bookings column missing" error)
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='age') THEN
-    ALTER TABLE public.clients ADD COLUMN "age" integer;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='address') THEN
-    ALTER TABLE public.clients ADD COLUMN "address" text;
+  -- Clients Table Fixes
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='loyaltyProgress') THEN
+    ALTER TABLE public.clients ADD COLUMN "loyaltyProgress" jsonb DEFAULT '{}'::jsonb;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='totalSpend') THEN
     ALTER TABLE public.clients ADD COLUMN "totalSpend" numeric default 0;
@@ -265,61 +267,6 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='lastVisit') THEN
     ALTER TABLE public.clients ADD COLUMN "lastVisit" text;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='bookings') THEN
-    ALTER TABLE public.clients ADD COLUMN "bookings" jsonb default '[]'::jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='invoices') THEN
-    ALTER TABLE public.clients ADD COLUMN "invoices" jsonb default '[]'::jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='preferredPayment') THEN
-    ALTER TABLE public.clients ADD COLUMN "preferredPayment" text;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='clients' AND column_name='tier') THEN
-    ALTER TABLE public.clients ADD COLUMN "tier" text;
-  END IF;
-
-  -- Settings Table Fixes
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='bookingOptions') THEN
-    ALTER TABLE public.settings ADD COLUMN "bookingOptions" jsonb DEFAULT '[]'::jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='loyaltyPrograms') THEN
-    ALTER TABLE public.settings ADD COLUMN "loyaltyPrograms" jsonb DEFAULT '[]'::jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='sanctuaryPerks') THEN
-    ALTER TABLE public.settings ADD COLUMN "sanctuaryPerks" jsonb DEFAULT '[]'::jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='businessHours') THEN
-    ALTER TABLE public.settings ADD COLUMN "businessHours" text;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='aftercare') THEN
-    ALTER TABLE public.settings ADD COLUMN "aftercare" jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='payments') THEN
-    ALTER TABLE public.settings ADD COLUMN "payments" jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='hero') THEN
-    ALTER TABLE public.settings ADD COLUMN "hero" jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='about') THEN
-    ALTER TABLE public.settings ADD COLUMN "about" jsonb;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='settings' AND column_name='contact') THEN
-    ALTER TABLE public.settings ADD COLUMN "contact" jsonb;
-  END IF;
-
-  -- Specials Table Fixes
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='priceType') THEN
-    ALTER TABLE public.specials ADD COLUMN "priceType" text DEFAULT 'fixed';
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='priceValue') THEN
-    ALTER TABLE public.specials ADD COLUMN "priceValue" numeric;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='details') THEN
-    ALTER TABLE public.specials ADD COLUMN "details" text[];
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='specials' AND column_name='voucherCode') THEN
-    ALTER TABLE public.specials ADD COLUMN "voucherCode" text;
   END IF;
 
 END $$;
@@ -340,35 +287,20 @@ alter table public.bookings enable row level security;
 alter table public.invoices enable row level security;
 alter table public.clients enable row level security;
 
--- Drop existing policies if they exist to prevent duplication errors
-drop policy if exists "Admin Expenses" on public.expenses;
-drop policy if exists "Admin Inventory" on public.inventory;
-drop policy if exists "Public Read Portfolio" on public.portfolio;
-drop policy if exists "Public Read Specials" on public.specials;
-drop policy if exists "Public Read Showroom" on public.showroom;
-drop policy if exists "Public Read Settings" on public.settings;
-drop policy if exists "Admin Write Portfolio" on public.portfolio;
-drop policy if exists "Admin Write Specials" on public.specials;
-drop policy if exists "Admin Write Showroom" on public.showroom;
-drop policy if exists "Admin Write Settings" on public.settings;
-drop policy if exists "App Access Bookings" on public.bookings;
-drop policy if exists "App Access Invoices" on public.invoices;
-drop policy if exists "App Access Clients" on public.clients;
-
--- Define Policies
-create policy "Admin Expenses" on public.expenses for all using (auth.role() = 'authenticated');
-create policy "Admin Inventory" on public.inventory for all using (auth.role() = 'authenticated');
-create policy "Public Read Portfolio" on public.portfolio for select using (true);
-create policy "Public Read Specials" on public.specials for select using (true);
-create policy "Public Read Showroom" on public.showroom for select using (true);
-create policy "Public Read Settings" on public.settings for select using (true);
-create policy "Admin Write Portfolio" on public.portfolio for all using (auth.role() = 'authenticated');
-create policy "Admin Write Specials" on public.specials for all using (auth.role() = 'authenticated');
-create policy "Admin Write Showroom" on public.showroom for all using (auth.role() = 'authenticated');
-create policy "Admin Write Settings" on public.settings for all using (auth.role() = 'authenticated');
-create policy "App Access Bookings" on public.bookings for all using (true);
-create policy "App Access Invoices" on public.invoices for all using (true);
-create policy "App Access Clients" on public.clients for all using (true);
+-- Define Policies (Simplified for broad app use)
+create policy "Admin All" on public.expenses for all using (auth.role() = 'authenticated');
+create policy "Admin All Inv" on public.inventory for all using (auth.role() = 'authenticated');
+create policy "Public Read All" on public.portfolio for select using (true);
+create policy "Public Read All Spec" on public.specials for select using (true);
+create policy "Public Read All Show" on public.showroom for select using (true);
+create policy "Public Read All Sett" on public.settings for select using (true);
+create policy "Admin All Sett" on public.settings for all using (auth.role() = 'authenticated');
+create policy "Admin All Port" on public.portfolio for all using (auth.role() = 'authenticated');
+create policy "Admin All Spec" on public.specials for all using (auth.role() = 'authenticated');
+create policy "Admin All Show" on public.showroom for all using (auth.role() = 'authenticated');
+create policy "Public All Book" on public.bookings for all using (true);
+create policy "Public All Inv" on public.invoices for all using (true);
+create policy "Public All Cli" on public.clients for all using (true);
 `.trim();
 
   const sql_realtime = `
@@ -403,67 +335,52 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 
       <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
         <header className="text-center py-16 space-y-4">
-          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">System Recovery</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Use these tools to repair or initialize your Studio database schema.</p>
+          <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight drop-shadow-sm">System Setup</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">Initialize your Cloud Studio Database.</p>
         </header>
 
         <div className="space-y-4">
-            <StepWrapper number="1" title="Repository Hosting" subtitle="GitHub" isActive={activeStep === 1} onHeaderClick={() => setActiveStep(1)}>
-                <p>Initialize your project and push to <ExternalLink href="https://github.com/new">GitHub</ExternalLink>.</p>
-            </StepWrapper>
-
-            <StepWrapper number="2" title="Backend Engine" subtitle="Supabase Setup" isActive={activeStep === 2} onHeaderClick={() => setActiveStep(2)}>
-                <p>Create a project on <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and get your Keys.</p>
+            <StepWrapper number="1" title="Backend Engine" subtitle="Supabase Setup" isActive={activeStep === 1} onHeaderClick={() => setActiveStep(1)}>
+                <p>Create a project on <ExternalLink href="https://supabase.com">Supabase</ExternalLink> and get your API Keys.</p>
                 <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
                     <CopyBlock text={env_template} label="Env Template" />
                 </div>
             </StepWrapper>
 
+            <StepWrapper number="2" title="Media Storage" subtitle="Buckets" isActive={activeStep === 2} onHeaderClick={() => setActiveStep(2)}>
+                <p>Ensure these **Public** buckets exist in Supabase Storage:</p>
+                <ul className="list-disc pl-5 font-mono text-xs space-y-1">
+                    <li>portfolio</li>
+                    <li>specials</li>
+                    <li>showroom</li>
+                    <li>settings</li>
+                    <li>booking-references</li>
+                </ul>
+            </StepWrapper>
+
             <StepWrapper number="3" title="Database Architecture" subtitle="SQL Scripts" isActive={activeStep === 3} onHeaderClick={() => setActiveStep(3)}>
-                <p>Run these in your Supabase SQL Editor. **Phase A** contains the schema repair logic to fix missing column errors.</p>
+                <p>Run these scripts in your Supabase SQL Editor. **Phase A** includes the fix for the `loungePerks` column.</p>
                 <div className="space-y-8">
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Repair (Fixes Errors)</h4>
-                        <p className="text-xs text-gray-500 mb-3 italic">* This script adds missing columns (like 'bookings') to your tables automatically.</p>
+                        <h4 className="font-bold text-gray-800 mb-2">Phase A: Structure & Schema Repair</h4>
                         <CopyBlock text={sql_structure} height="h-96" label="Structure Script" />
                     </section>
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase B: Permissions (RLS)</h4>
+                        <h4 className="font-bold text-gray-800 mb-2">Phase B: Security Policies (RLS)</h4>
                         <CopyBlock text={sql_permissions} height="h-32" label="Security Script" />
                     </section>
                     <section>
-                        <h4 className="font-bold text-gray-800 mb-2">Phase C: Realtime Sync</h4>
+                        <h4 className="font-bold text-gray-800 mb-2">Phase C: Realtime Subscription</h4>
                         <CopyBlock text={sql_realtime} height="h-32" label="Realtime Script" />
                     </section>
                 </div>
             </StepWrapper>
 
-            <StepWrapper number="4" title="Media Storage" subtitle="Buckets" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
-                <p>Ensure these **Public** buckets exist in Supabase Storage:</p>
-                <ul className="list-disc pl-5 font-mono text-xs space-y-1">
-                    <li>portfolio, specials, showroom, settings, booking-references</li>
-                </ul>
-            </StepWrapper>
-
-            <StepWrapper number="5" title="Physical Terminal Integration" subtitle="Yoco Hardware" isActive={activeStep === 5} onHeaderClick={() => setActiveStep(5)}>
-                <div className="space-y-4">
-                    <p className="font-bold text-gray-900">How to link your Yoco Machine:</p>
-                    <ol className="list-decimal pl-5 space-y-3">
-                        <li>Ensure you have a **Yoco Neo** or **Yoco Khumo** connected to Wi-Fi.</li>
-                        <li>Log in to your <ExternalLink href="https://portal.yoco.com">Yoco Portal</ExternalLink>.</li>
-                        <li>Navigate to **Settings &rarr; API Keys**. Generate a Secret Key.</li>
-                        <li>Find your **Terminal ID** on your machine (Settings &rarr; Device Info) or in the Portal under Devices.</li>
-                        <li>Go to the **Settings** tab in this Admin Panel &rarr; **Yoco Machine** sub-tab.</li>
-                        <li>Enter your ID and Key, then toggle **Enable**.</li>
-                    </ol>
-                </div>
-            </StepWrapper>
-
-            <StepWrapper number="6" title="Production Launch" subtitle="Vercel Deployment" isActive={activeStep === 6} onHeaderClick={() => setActiveStep(6)}>
-                <p>Deploy to Vercel and add your environment variables.</p>
-                <div className="mt-8 bg-green-600 text-white p-6 rounded-2xl text-center shadow-xl">
-                    <h3 className="text-2xl font-bold mb-2">System Ready! 🚀</h3>
-                    <p className="text-green-100">If you still see errors, refresh your Supabase Schema cache or restart the app.</p>
+            <StepWrapper number="4" title="Final Launch" subtitle="Vercel Deployment" isActive={activeStep === 4} onHeaderClick={() => setActiveStep(4)}>
+                <p>Deploy your code to Vercel and add your environment variables. If you see schema errors, run Phase A again in Supabase.</p>
+                <div className="mt-8 bg-brand-green text-white p-6 rounded-2xl text-center shadow-xl">
+                    <h3 className="text-2xl font-bold mb-2">Ready to Go! 🚀</h3>
+                    <p className="text-white/80">Your cloud-connected studio is now operational.</p>
                 </div>
             </StepWrapper>
         </div>

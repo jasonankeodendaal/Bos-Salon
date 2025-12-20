@@ -190,6 +190,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     }
     if (props.loungePerks && props.loungePerks.length > 0) {
         setLoungePerks(props.loungePerks);
+    } else if (props.sanctuaryPerks && props.sanctuaryPerks.length > 0) {
+        setLoungePerks(props.sanctuaryPerks);
     }
     if (props.bookingOptions && props.bookingOptions.length > 0) {
         setBookingOptions(props.bookingOptions);
@@ -388,7 +390,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             sections: settings.aftercareSections
         },
         loyaltyPrograms: loyaltyPrograms,
-        loungePerks: loungePerks,
+        loungePerks: loungePerks, // Unified to loungePerks
         bookingOptions: bookingOptions,
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
