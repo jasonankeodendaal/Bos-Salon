@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface MaintenancePageProps {
@@ -30,7 +29,7 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ onNavigate, logoUrl }
         </h2>
         
         <p className="text-white/70 max-w-xs md:max-w-md leading-relaxed text-sm md:text-base italic">
-            We are currently updating our sanctuary. <br/>
+            We are currently updating our lounge. <br/>
             Check back soon for the new collection.
         </p>
       </div>

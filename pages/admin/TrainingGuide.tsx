@@ -35,13 +35,13 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                 
                 <section>
                     <h4 className="font-bold text-lg text-brand-green mb-2">Inventory Logic</h4>
-                    <p>When you move a booking to <strong>Completed</strong>, the system will automatically pop up a "Log Supplies" window. This allows you to deduct the exact amount of polish/supplies used, keeping your stock levels accurate without manual counting later.</p>
+                    <p>When you move a booking to <strong>Completed</strong>, the system will automatically pop up a "Log Supplies" window. This allows you to deduct the exact amount of supplies used, keeping your stock levels accurate without manual counting later.</p>
                 </section>
             </div>
         )
     },
     clients: {
-        title: "Client Database & Bos Identity",
+        title: "Client Database & Lounge Identity",
         content: (
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <section className="bg-brand-pink/10 p-4 rounded-xl border border-brand-pink/20">
@@ -53,11 +53,11 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                         </li>
                         <li className="flex gap-2">
                             <span className="text-brand-green">🌸</span>
-                            <span><strong>Bos Identity:</strong> Upon registration, clients must fill in their Full Name, Tel, Email, Age, and Address. This creates their digital profile.</span>
+                            <span><strong>Lounge Profile:</strong> Upon registration, clients provide their profile details. This creates their digital history.</span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-brand-green">🏰</span>
-                            <span><span><strong>The Sanctuary:</strong> This is the Client Portal. Clients can track their "Beauty Journey," view history, and check rewards here.</span></span>
+                            <span><span><strong>The Lounge:</strong> This is the Client Portal. Clients can track their "Beauty Journey," view history, and check rewards here.</span></span>
                         </li>
                         <li className="flex gap-2">
                             <span className="text-brand-green">📱</span>
@@ -107,7 +107,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
                     <div className="grid grid-cols-2 gap-4">
                         <div className="bg-gray-50 p-3 rounded">
                             <strong>1. Portfolio (Home Page)</strong>
-                            <p className="mt-1 text-xs">These are your best nail and beauty works. They appear in the Hero section carousel.</p>
+                            <p className="mt-1 text-xs">These are your best works. They appear in the Hero section carousel.</p>
                         </div>
                         <div className="bg-gray-50 p-3 rounded">
                             <strong>2. Showroom (Gallery Wall)</strong>
@@ -138,7 +138,7 @@ const contentMap: Record<TourKey, { title: string; content: React.ReactNode }> =
             <div className="space-y-6 text-gray-700 leading-relaxed text-sm">
                 <section>
                     <h4 className="font-bold text-lg text-brand-green mb-2">Smart Dosing</h4>
-                    <p>Instead of guessing milliliters:</p>
+                    <p>Instead of guessing usage:</p>
                     <ol className="list-decimal pl-5 space-y-2 mt-2">
                         <li>Set up your items with a total quantity (e.g., 100ml bottle).</li>
                         <li>When you finish a booking, the log popup appears.</li>

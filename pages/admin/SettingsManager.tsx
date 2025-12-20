@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { dbUploadFile } from '../../utils/dbAdapter';
 import HelpGuideModal from './components/HelpGuideModal';
@@ -25,7 +24,7 @@ const TABS = [
   { id: 'contact', label: 'Footer & Booking Info' },
   { id: 'booking-opts', label: 'Booking Form Options' },
   { id: 'financials', label: 'Financial Config' },
-  { id: 'loyalty', label: 'Loyalty & Sanctuary' },
+  { id: 'loyalty', label: 'Loyalty & Lounge' },
   { id: 'payments', label: 'Yoco Payments' },
   { id: 'terminal', label: 'Yoco Machine (Terminal)' },
   { id: 'integrations', label: 'Integrations & Adv' },
@@ -52,7 +51,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       active: true,
   });
   const [newProgramIcon, setNewProgramIcon] = useState<File | null>(null);
-  const [sanctuaryPerks, setSanctuaryPerks] = useState<string[]>(props.sanctuaryPerks || []);
+  const [loungePerks, setLoungePerks] = useState<string[]>(props.loungePerks || props.sanctuaryPerks || []);
 
   // Booking Options Local State
   const [bookingOptions, setBookingOptions] = useState<BookingOption[]>(props.bookingOptions || []);
@@ -189,8 +188,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     if (props.loyaltyPrograms && props.loyaltyPrograms.length > 0) {
         setLoyaltyPrograms(props.loyaltyPrograms);
     }
-    if (props.sanctuaryPerks && props.sanctuaryPerks.length > 0) {
-        setSanctuaryPerks(props.sanctuaryPerks);
+    if (props.loungePerks && props.loungePerks.length > 0) {
+        setLoungePerks(props.loungePerks);
     }
     if (props.bookingOptions && props.bookingOptions.length > 0) {
         setBookingOptions(props.bookingOptions);
@@ -279,7 +278,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
               iconUrl
           };
 
-          // FIX: Corrected typo 'programToAddToAdd' to 'programToAdd'
           setLoyaltyPrograms(prev => [...prev, programToAdd]);
           setNewProgram({ name: '', stickersRequired: 10, rewardDescription: '', terms: '', active: true });
           setNewProgramIcon(null);
@@ -302,13 +300,13 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   };
 
   const updatePerk = (index: number, value: string) => {
-      const newPerks = [...sanctuaryPerks];
+      const newPerks = [...loungePerks];
       newPerks[index] = value;
-      setSanctuaryPerks(newPerks);
+      setLoungePerks(newPerks);
   };
 
-  const addPerk = () => setSanctuaryPerks([...sanctuaryPerks, "New sanctuary benefit..."]);
-  const removePerk = (index: number) => setSanctuaryPerks(sanctuaryPerks.filter((_, i) => i !== index));
+  const addPerk = () => setLoungePerks([...loungePerks, "New lounge benefit..."]);
+  const removePerk = (index: number) => setLoungePerks(loungePerks.filter((_, i) => i !== index));
 
   // --- Booking Options Handlers ---
   const handleAddBookingOption = () => {
@@ -390,7 +388,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             sections: settings.aftercareSections
         },
         loyaltyPrograms: loyaltyPrograms,
-        sanctuaryPerks: sanctuaryPerks,
+        loungePerks: loungePerks,
         bookingOptions: bookingOptions,
         loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
       };
@@ -951,7 +949,6 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                              </div>
                              <div className="flex justify-end gap-2 mt-2 border-t pt-2">
                                  <button onClick={() => handleToggleProgram(prog.id)} className="text-xs text-blue-500 hover:underline">{prog.active ? 'Disable' : 'Enable'}</button>
-                                 {/* FIX: Corrected undefined 'id' to 'prog.id' */}
                                  <button onClick={() => handleDeleteProgram(prog.id)} className="text-xs text-red-500 hover:text-red-700 font-bold"><TrashIcon className="w-3 h-3" /></button>
                              </div>
                          </div>
@@ -985,13 +982,13 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                      </div>
                  </div>
 
-                 {/* Sanctuary Perks Editor */}
+                 {/* Lounge Perks Editor */}
                  <div className="bg-white border border-admin-dark-border rounded-xl p-4 sm:p-8 shadow-sm">
-                    <h4 className="text-xl font-black text-admin-dark-text mb-2 uppercase tracking-tighter">Full Sanctuary Perks</h4>
+                    <h4 className="text-xl font-black text-admin-dark-text mb-2 uppercase tracking-tighter">Full Beauty Lounge Perks</h4>
                     <p className="text-xs text-admin-dark-text-secondary mb-6 italic">Manage the bullet points shown on the Client Portal overview page.</p>
                     
                     <div className="space-y-3">
-                        {sanctuaryPerks.map((perk, idx) => (
+                        {loungePerks.map((perk, idx) => (
                             <div key={idx} className="flex gap-2 group">
                                 <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-xs font-black text-gray-400">{idx+1}</div>
                                 <input value={perk} onChange={e => updatePerk(idx, e.target.value)} className={inputClass} placeholder="Benefit description..." />
@@ -1161,7 +1158,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                      <span className="bg-admin-dark-primary text-white w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-lg">ERP</span>
                      Studio Management Cloud
                   </h3>
-                  <p className="text-lg text-gray-500 mb-12 italic max-w-3xl">The definitive guide to your high-performance tattoo studio ecosystem. This platform handles the entire business lifecycle from first contact to lifetime loyalty.</p>
+                  <p className="text-lg text-gray-500 mb-12 italic max-w-3xl">The definitive guide to your high-performance beauty studio ecosystem. This platform handles the entire business lifecycle from first contact to lifetime loyalty.</p>
 
                   <div className="space-y-16">
                      
@@ -1261,7 +1258,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                            </div>
                            <div>
                               <h5 className="font-bold text-gray-900 mb-2">Self-Service Utility</h5>
-                              <p className="text-sm text-gray-600">Clients can view their "Tattoo Journey" (history), accept quotes, pay deposits via card, and access <strong>Aftercare Instructions</strong> (a built-in guide on how to heal their new work properly).</p>
+                              <p className="text-sm text-gray-600">Clients can view their "Beauty Journey" (history), accept quotes, pay deposits via card, and access <strong>Aftercare Instructions</strong> (a built-in guide on how to heal their new work properly).</p>
                            </div>
                         </div>
                      </section>
@@ -1293,7 +1290,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4 border-l-2 border-gray-100">
                            <div>
                               <h5 className="font-bold text-gray-900 mb-2">Smart Dosing Engine</h5>
-                              <p className="text-sm text-gray-600">Stop guessing usage. The system knows that a standard tattoo uses approx. 0.5ml of ink and 1 needle set. Clicking <strong>"+1 Service"</strong> in the Log Modal auto-calculates and deducts the correct amount from your stock.</p>
+                              <p className="text-sm text-gray-600">Stop guessing usage. The system knows that a standard treatment uses specific quantities. Clicking <strong>"+1 Service"</strong> in the Log Modal auto-calculates and deducts the correct amount from your stock.</p>
                            </div>
                            <div>
                               <h5 className="font-bold text-gray-900 mb-2">Min-Level Alerts</h5>
@@ -1370,7 +1367,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                   <h4 className="text-3xl font-black mb-4 tracking-tight">Need further help?</h4>
                   <p className="mb-8 text-white/80 max-w-xl mx-auto">Our support line is open for technical walkthroughs or to discuss custom feature development. Click below to chat with the creator.</p>
                   <a 
-                    href={`https://wa.me/27695989427?text=${encodeURIComponent("Hi Jason, I need technical support for my Tattoo Studio ERP system.")}`} 
+                    href={`https://wa.me/27695989427?text=${encodeURIComponent("Hi Jason, I need technical support for my Beauty Studio ERP system.")}`} 
                     target="_blank"
                     rel="noreferrer"
                     className="inline-block bg-white text-admin-dark-primary px-10 py-4 rounded-2xl font-bold uppercase tracking-widest hover:scale-105 transition-transform shadow-lg"

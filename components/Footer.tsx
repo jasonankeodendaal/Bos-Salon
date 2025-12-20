@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SocialLink } from '../App';
 import CreatorModal from './CreatorModal'; // Import the new modal component
@@ -56,7 +55,7 @@ const Footer: React.FC<FooterProps> = ({ companyName, address, phone, email, bus
       <footer className="relative bg-brand-off-white text-brand-dark border-t border-gray-200 py-10 sm:py-16 overflow-hidden">
         <PowderSplashBackground />
         <div className="relative z-10 container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12 text-center md:text-left">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12 mb-12 text-center md:text-left">
             
             {/* Branding Column */}
             <div>
@@ -109,32 +108,22 @@ const Footer: React.FC<FooterProps> = ({ companyName, address, phone, email, bus
               </div>
             </div>
 
-            {/* App / Call to Action Column */}
-            <div className="flex flex-col gap-6">
+            {/* App Download Column */}
+            {apkUrl && (
+              <div className="flex flex-col gap-6">
                 <div>
-                   <h4 className="font-bold text-gray-900 mb-4 text-lg">Sanctuary Access</h4>
-                   <button 
-                        onClick={() => onNavigate('client-portal')}
-                        className="w-full bg-[#4e342e] text-white py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg active:scale-95"
-                    >
-                        Client Portal Login
-                    </button>
+                  <h4 className="font-bold text-gray-900 mb-3 text-xs uppercase tracking-widest">Get The App</h4>
+                  <a 
+                    href={apkUrl} 
+                    download 
+                    className="inline-flex items-center gap-2 bg-gray-200/80 border border-gray-300/80 text-gray-900 px-5 py-2.5 rounded-full text-xs font-bold hover:bg-brand-green hover:text-white transition-all shadow-sm"
+                  >
+                    <AndroidIcon className="w-5 h-5" />
+                    Download APK
+                  </a>
                 </div>
-                
-                {apkUrl && (
-                  <div>
-                    <h4 className="font-bold text-gray-900 mb-3 text-xs uppercase tracking-widest">Get The App</h4>
-                    <a 
-                      href={apkUrl} 
-                      download 
-                      className="inline-flex items-center gap-2 bg-gray-200/80 border border-gray-300/80 text-gray-900 px-5 py-2.5 rounded-full text-xs font-bold hover:bg-brand-green hover:text-white transition-all shadow-sm"
-                    >
-                      <AndroidIcon className="w-5 h-5" />
-                      Download APK
-                    </a>
-                  </div>
-                )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Credits Row */}
