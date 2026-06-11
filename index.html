@@ -19,7 +19,7 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Yoco SDK -->
-    <script src="https://js.yoco.com/sdk/v1/yoco-sdk-loader.js"></script>
+    <script src="https://js.yoco.com/sdk/v1/yoco-sdk-web.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
@@ -28,32 +28,32 @@
         theme: {
           extend: {
             fontFamily: {
-              'sans': ['Montserrat', 'sans-serif'],
-              'script': ['Dancing Script', 'cursive'],
+              'sans': ['var(--font-sans, "Montserrat")', 'sans-serif'],
+              'script': ['var(--font-script, "Dancing Script")', 'cursive'],
             },
             colors: {
               // Theme: Soft Pink, White, Bright Pink Accents
-              'brand-dark': '#fff0f5',  // Lavender Blush / Soft Pink (Background)
-              'brand-light': '#4e342e', // Dark Brown / Horn Brown (Text)
-              'brand-off-white': '#ffffff', // White (Cards/Secondary Background)
-              'brand-gold': '#d4a373', // Bone/Light Horn (Accents)
-              'brand-green': '#ff1493', // Bright Pink (Buttons/Primary Actions - replaced brown)
-              'brand-pink': '#f48fb1', // Softer Pink Accent
+              'brand-dark': 'var(--color-brand-dark, #fff0f5)',  // Lavender Blush / Soft Pink (Background)
+              'brand-light': 'var(--color-brand-light, #4e342e)', // Dark Brown / Horn Brown (Text)
+              'brand-off-white': 'var(--color-brand-off-white, #ffffff)', // White (Cards/Secondary Background)
+              'brand-gold': 'var(--color-brand-gold, #d4a373)', // Bone/Light Horn (Accents)
+              'brand-green': 'var(--color-brand-green, #ff1493)', // Bright Pink (Buttons/Primary Actions - replaced brown)
+              'brand-pink': 'var(--color-brand-pink, #f48fb1)', // Softer Pink Accent
               
               // Admin Theme (Remapped to match Website Light Theme)
-              'admin-bg': '#fff0f5', // Matches brand-dark
-              'admin-primary': '#ff1493', // Matches brand-green (Bright Pink)
-              'admin-secondary': '#d4a373', // Matches brand-gold
-              'admin-text': '#4e342e', // Matches brand-light
-              'admin-text-light': '#ff1493',
+              'admin-bg': 'var(--color-brand-dark, #fff0f5)', // Matches brand-dark
+              'admin-primary': 'var(--color-brand-green, #ff1493)', // Matches brand-green (Bright Pink)
+              'admin-secondary': 'var(--color-brand-gold, #d4a373)', // Matches brand-gold
+              'admin-text': 'var(--color-brand-light, #4e342e)', // Matches brand-light
+              'admin-text-light': 'var(--color-brand-green, #ff1493)',
               
               // Remapping "Dark Mode" admin classes to Light Mode colors
-              'admin-dark-bg': '#fff0f5', // Background
-              'admin-dark-card': '#ffffff', // Cards are white
-              'admin-dark-border': 'rgba(78, 52, 46, 0.1)', // Subtle brown border
-              'admin-dark-primary': '#ff1493', // Primary buttons/accents (Bright Pink)
-              'admin-dark-text': '#4e342e', // Main text
-              'admin-dark-text-secondary': '#795548', // Secondary text (lighter brown)
+              'admin-dark-bg': 'var(--color-brand-dark, #fff0f5)', // Background
+              'admin-dark-card': 'var(--color-brand-off-white, #ffffff)', // Cards are white
+              'admin-dark-border': 'var(--color-border, rgba(78, 52, 46, 0.1))', // Subtle brown border
+              'admin-dark-primary': 'var(--color-brand-green, #ff1493)', // Primary buttons/accents (Bright Pink)
+              'admin-dark-text': 'var(--color-brand-light, #4e342e)', // Main text
+              'admin-dark-text-secondary': 'var(--color-text-secondary, #795548)', // Secondary text (lighter brown)
             },
             animation: {
               'infinite-scroll': 'infinite-scroll 40s linear infinite',
@@ -144,57 +144,21 @@
       }
     </script>
     <style>
-      /* --- GLOBAL PINK SCROLLBARS --- */
-      /* Inspired by the clean material sliders: subtle track, vibrant thumb */
+      /* --- HIDE SCROLLBARS --- */
       
       /* Webkit (Chrome, Safari, Edge) */
       ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-      }
-
-      ::-webkit-scrollbar-track {
-        background: #fff0f5; /* brand-dark (soft lavender blush) */
-        border-radius: 100px;
-      }
-
-      ::-webkit-scrollbar-thumb {
-        background: #ff1493; /* brand-green / bright pink */
-        border: 2px solid #fff0f5; /* creates a "floating" effect like the slider thumb */
-        border-radius: 100px;
-        transition: background 0.3s ease;
-      }
-
-      ::-webkit-scrollbar-thumb:hover {
-        background: #f48fb1; /* brand-pink (softer pink accent) */
+        display: none;
       }
 
       /* Firefox */
       * {
-        scrollbar-width: thin;
-        scrollbar-color: #ff1493 #fff0f5;
+        scrollbar-width: none;
       }
 
-      /* Specific utility for dense scrollable areas */
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-      }
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        border: 1px solid #fff0f5;
-      }
-
-      /* Hide arrows in number input */
-      /* Chrome, Safari, Edge, Opera */
-      input::-webkit-outer-spin-button,
-      input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-
-      /* Firefox */
-      input[type=number] {
-        -moz-appearance: textfield;
+      /* IE/Edge (legacy) */
+      * {
+        -ms-overflow-style: none;
       }
 
       /* Print Styles */
@@ -230,10 +194,34 @@
           navigator.serviceWorker.register('/service-worker.js')
             .then(registration => {
               console.log('ServiceWorker registration successful with scope: ', registration.scope);
+              
+              // Force an update check every time the page loads
+              registration.update();
+              
+              // Listen for new versions
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (!newWorker) return;
+                newWorker.addEventListener('statechange', () => {
+                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      // Tell the new service worker to take over immediately
+                      newWorker.postMessage({ type: 'SKIP_WAITING' });
+                   }
+                });
+              });
             })
             .catch(error => {
               console.log('ServiceWorker registration failed: ', error);
             });
+            
+          // Listen for the controlling service worker to change, then reload to get the latest app content
+          let refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
         });
       }
     </script>

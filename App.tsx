@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import * as UAParserMod from 'ua-parser-js';
+const UAParser = (UAParserMod as any).UAParser || UAParserMod;
 import { 
   dbOnAuthStateChange, 
   dbSubscribeToCollection, 
@@ -20,16 +23,20 @@ import AdminPage from './pages/AdminPage';
 import Showroom from './pages/ShowroomPage';
 import AboutUs from './components/AboutUs';
 import WelcomeIntro from './components/WelcomeIntro';
+import WelcomeSection from './components/WelcomeSection';
 import MaintenancePage from './components/MaintenancePage';
 import SpecialsSection from './components/SpecialsSection';
-import ClientPortal from './pages/ClientPortal';
 import StaticBosSalonBackground from './components/StaticBosSalonBackground';
+import PhotographyApp from './pages/photography/PhotographyApp';
+import PhotographyAdminDashboard from './pages/photography/PhotographyAdminDashboard';
+import AdminLoginPage from './pages/AdminLoginPage';
 
 // --- INTERFACES ---
 export interface PortfolioItem {
   id: string;
   title: string;
   story: string;
+  tags: string[];
   primaryImage: string;
   galleryImages: string[];
   videoData?: string;
@@ -46,6 +53,7 @@ export interface SpecialItem {
   title: string;
   description: string;
   price: number;
+  tags: string[];
   imageUrl: string; // Primary image for cards
   images?: string[]; // Multiple images for the modal gallery
   active: boolean;
@@ -157,6 +165,8 @@ export interface BookingOption {
   id: string;
   label: string;
   description: string;
+  price?: number;
+  category?: string;
 }
 
 // --- MAIN APP COMPONENT ---
@@ -171,16 +181,14 @@ const App: React.FC = () => {
   const [specialsData, setSpecialsData] = useState<SpecialItem[]>([]); // New Specials
   const [showroomData, setShowroomData] = useState<Genre[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]); // New Inventory
-  const [invoices, setInvoices] = useState<Invoice[]>([]); // New Invoices
   const [clients, setClients] = useState<Client[]>([]); // New Clients collection
+  const [invoices, setInvoices] = useState<Invoice[]>([]); // New Invoices collection
   
   // Site settings - Now includes nested objects for specific sections
   const [settings, setSettings] = useState<any>({
     companyName: 'Bos Salon',
     logoUrl: 'https://i.ibb.co/gLSThX4v/unnamed-removebg-preview.png',
-    heroBgUrl: 'https://images.unsplash.com/photo-1519014816548-bf5fe059e98b?auto=format&fit=crop&w=1920&q=80',
+    heroBgUrl: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?auto=format&fit=crop&w=1920&q=80',
     aboutUsImageUrl: 'https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=800&q=80',
     whatsAppNumber: '27795904162',
     address: '123 Nature Way, Green Valley, 45678',
@@ -220,6 +228,18 @@ const App: React.FC = () => {
     // NEW: Multiple Loyalty Programs
     loyaltyPrograms: [], // Array of LoyaltyProgram objects
     
+    // Default theme config
+    theme: {
+      brandDark: '#fff0f5',
+      brandLight: '#4e342e',
+      brandOffWhite: '#ffffff',
+      brandGold: '#d4a373',
+      brandGreen: '#ff1493',
+      brandPink: '#f48fb1',
+      fontSans: 'Montserrat',
+      fontScript: 'Dancing Script',
+    },
+
     // Default lounge perks
     loungePerks: [
         'Exclusive early access to seasonal flash collections.',
@@ -233,6 +253,10 @@ const App: React.FC = () => {
         title: 'Nails & Beauty',
         subtitle: 'Experience the art of nature',
         buttonText: 'Book an Appointment'
+    },
+    welcome: {
+        title: 'Welcome to Bos Salon',
+        text: 'We are delighted to have you here. Step into our world of beauty and relaxation.'
     },
     about: {
         title: 'Our Story',
@@ -284,14 +308,168 @@ const App: React.FC = () => {
     }
   });
 
-  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'client-portal'>('home');
+  const [currentView, setCurrentView] = useState<'home' | 'admin' | 'photography' | 'magicalmemories_admin'>('home');
   const [isIntroVisible, setIsIntroVisible] = useState(true);
   
+  const location = useLocation();
+  const nav = useNavigate();
+
+  // --- TRAFFIC TRACKING ---
+  useEffect(() => {
+    try {
+      const logs = JSON.parse(localStorage.getItem('traffic_logs') || '[]');
+      const urlParams = new URLSearchParams(window.location.search);
+      
+      const utmSource = urlParams.get('utm_source');
+      const utmMedium = urlParams.get('utm_medium');
+      const utmCampaign = urlParams.get('utm_campaign');
+      
+      const referrer = document.referrer;
+      let rawSource = utmSource || '';
+      if (!rawSource) {
+          if (referrer) {
+              try {
+                  rawSource = new URL(referrer).hostname;
+              } catch (e) {
+                  rawSource = referrer;
+              }
+          } else {
+              rawSource = 'Direct';
+          }
+      }
+
+      const parser = new UAParser();
+      const result = parser.getResult();
+      
+      const lastLog = logs[logs.length - 1];
+      // simplistic session anti-spam: only log if last log was more than 10 mins ago or different source
+      const isNewSession = !lastLog || (Date.now() - lastLog.id > 10 * 60 * 1000) || lastLog.source !== rawSource;
+      
+      if (isNewSession) {
+          logs.push({
+            id: Date.now(),
+            date: new Date().toISOString(),
+            source: rawSource,
+            medium: utmMedium || '',
+            campaign: utmCampaign || '',
+            referrer: referrer,
+            userAgent: navigator.userAgent,
+            browser: `${result.browser.name || 'Unknown'} ${result.browser.version || ''}`.trim(),
+            os: `${result.os.name || 'Unknown'} ${result.os.version || ''}`.trim(),
+            deviceType: result.device.type || (result.os.name?.match(/iOS|Android/i) ? 'mobile' : 'desktop'),
+            page: window.location.pathname
+          });
+          localStorage.setItem('traffic_logs', JSON.stringify(logs));
+      }
+    } catch {}
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === '/' || path === '/boshome') setCurrentView('home');
+    else if (path === '/magicalmemories' || path.startsWith('/magicalmemories/')) setCurrentView('photography');
+    else if (path === '/magicalmemories_admin') setCurrentView('magicalmemories_admin');
+    else if (path === '/admin') setCurrentView('admin');
+  }, [location]);
+
+  // --- DYNAMIC BRANDING EFFECT ---
+  useEffect(() => {
+    if (settings.companyName) {
+      document.title = settings.companyName;
+    }
+    
+    if (settings.logoUrl) {
+      // Update Favicon
+      let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+      if (!link) {
+        link = document.createElement('link');
+        link.rel = 'icon';
+        document.head.appendChild(link);
+      }
+      link.href = settings.logoUrl;
+
+      // Update Apple Touch Icon
+      let appleLink = document.querySelector("link[rel~='apple-touch-icon']") as HTMLLinkElement;
+      if (!appleLink) {
+        appleLink = document.createElement('link');
+        appleLink.rel = 'apple-touch-icon';
+        document.head.appendChild(appleLink);
+      }
+      appleLink.href = settings.logoUrl;
+
+      // Update PWA Manifest dynamically
+      const manifest = {
+        name: settings.companyName || "Studio App",
+        short_name: settings.companyName || "Studio App",
+        description: "A premium beauty studio.",
+        start_url: "/",
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#ffffff",
+        icons: [
+          {
+            src: settings.logoUrl,
+            sizes: "192x192 512x512",
+            type: "image/png",
+            purpose: "any maskable"
+          }
+        ]
+      };
+      
+      const manifestString = JSON.stringify({ ...manifest, start_url: window.location.origin + '/' });      
+      const manifestUrl = `data:application/manifest+json;charset=utf-8,${encodeURIComponent(manifestString)}`;
+      
+      let manifestLink = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+      if (!manifestLink) {
+        manifestLink = document.createElement('link');
+        manifestLink.rel = 'manifest';
+        document.head.appendChild(manifestLink);
+      }
+      manifestLink.href = manifestUrl;
+    }
+
+    if (settings.theme) {
+      const root = document.documentElement;
+      if (settings.theme.brandDark) root.style.setProperty('--color-brand-dark', settings.theme.brandDark);
+      if (settings.theme.brandLight) root.style.setProperty('--color-brand-light', settings.theme.brandLight);
+      if (settings.theme.brandOffWhite) root.style.setProperty('--color-brand-off-white', settings.theme.brandOffWhite);
+      if (settings.theme.brandGold) root.style.setProperty('--color-brand-gold', settings.theme.brandGold);
+      if (settings.theme.brandGreen) root.style.setProperty('--color-brand-green', settings.theme.brandGreen);
+      if (settings.theme.brandPink) root.style.setProperty('--color-brand-pink', settings.theme.brandPink);
+      
+      const loadFont = (fontFamily: string) => {
+        if (!fontFamily) return;
+        const fontName = fontFamily.replace(/ /g, '+');
+        const linkId = `google-font-${fontName}`;
+        if (!document.getElementById(linkId)) {
+          const fontLink = document.createElement('link');
+          fontLink.id = linkId;
+          fontLink.rel = 'stylesheet';
+          fontLink.href = `https://fonts.googleapis.com/css2?family=${fontName}:wght@400;500;700&display=swap`;
+          document.head.appendChild(fontLink);
+        }
+      };
+
+      if (settings.theme.fontSans) {
+        root.style.setProperty('--font-sans', settings.theme.fontSans);
+        loadFont(settings.theme.fontSans);
+      }
+      if (settings.theme.fontScript) {
+        root.style.setProperty('--font-script', settings.theme.fontScript);
+        loadFont(settings.theme.fontScript);
+      }
+    }
+  }, [settings.companyName, settings.logoUrl, settings.theme]);
+
   // --- REFRESH AUTO LOGOUT LOGIC ---
   useEffect(() => {
       // User specifically requested auto-logout on every refresh
       const performAutoLogoutOnRefresh = async () => {
-          await dbLogout();
+          try {
+              await dbLogout();
+          } catch(e) {
+              console.warn("Auto logout failed (Supabase might not be configured)");
+          }
           setUser(null);
       };
       
@@ -305,12 +483,14 @@ const App: React.FC = () => {
       setUser(currentUser);
       setAuthChecked(true);
 
-      // Check for redirect intent from Google Login
-      const redirectDest = localStorage.getItem('login_redirect_destination');
-      if (currentUser && redirectDest) {
-          if (redirectDest === 'client-portal') setCurrentView('client-portal');
-          if (redirectDest === 'admin') setCurrentView('admin');
-          localStorage.removeItem('login_redirect_destination');
+      // Check for redirect intent from Google Login URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const redirectDest = searchParams.get('redirect');
+      
+      if (currentUser && redirectDest === 'admin') {
+          setCurrentView('admin');
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
       }
     });
     return () => unsubscribe();
@@ -324,29 +504,34 @@ const App: React.FC = () => {
       // Subscribe to settings document
       const unsubSettings = dbSubscribeToDoc("settings", "main", (fetchedSettings: any) => {
           if (fetchedSettings) {
-             // NORMALIZE DATA
-             const normalizedSettings = {
-                 ...fetchedSettings,
-                 socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || [],
-                 loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || [],
-                 loungePerks: fetchedSettings.loungePerks || fetchedSettings.loungeperks || fetchedSettings.sanctuaryPerks || [],
-                 bookingOptions: fetchedSettings.bookingOptions || fetchedSettings.bookingoptions || [],
-                 isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? false,
-                 companyName: fetchedSettings.companyName || fetchedSettings.companyname,
-                 logoUrl: fetchedSettings.logoUrl || fetchedSettings.logourl,
-                 heroBgUrl: fetchedSettings.heroBgUrl || fetchedSettings.herobgurl,
-                 aboutUsImageUrl: fetchedSettings.aboutUsImageUrl || fetchedSettings.aboutusimageurl,
-                 whatsAppNumber: fetchedSettings.whatsAppNumber || fetchedSettings.whatsappnumber,
-                 showroomTitle: fetchedSettings.showroomTitle || fetchedSettings.showroomtitle,
-                 showroomDescription: fetchedSettings.showroomDescription || fetchedSettings.showroomdescription,
-                 taxEnabled: fetchedSettings.taxEnabled ?? fetchedSettings.taxenabled,
-                 vatPercentage: fetchedSettings.vatPercentage ?? fetchedSettings.vatpercentage,
-                 emailServiceId: fetchedSettings.emailServiceId || fetchedSettings.emailserviceid,
-                 emailTemplateId: fetchedSettings.emailTemplateId || fetchedSettings.emailtemplateid,
-                 emailPublicKey: fetchedSettings.emailPublicKey || fetchedSettings.emailpublickey,
-                 businessHours: fetchedSettings.businessHours || fetchedSettings.businesshours,
-             };
-             setSettings((prev: any) => ({ ...prev, ...normalizedSettings }));
+             setSettings((prev: any) => {
+                 const hasOptions = (arr: any) => Array.isArray(arr) && arr.length > 0;
+                 return {
+                     ...prev,
+                     ...fetchedSettings,
+                     socialLinks: fetchedSettings.socialLinks || fetchedSettings.sociallinks || prev.socialLinks || [],
+                     loyaltyPrograms: fetchedSettings.loyaltyPrograms || fetchedSettings.loyaltyprograms || prev.loyaltyPrograms || [],
+                     loungePerks: fetchedSettings.loungePerks || fetchedSettings.loungeperks || fetchedSettings.sanctuaryPerks || prev.loungePerks || [],
+                     bookingOptions: hasOptions(fetchedSettings.bookingOptions) ? fetchedSettings.bookingOptions :
+                                     hasOptions(fetchedSettings.bookingoptions) ? fetchedSettings.bookingoptions :
+                                     prev.bookingOptions,
+                     isMaintenanceMode: fetchedSettings.isMaintenanceMode ?? fetchedSettings.ismaintenancemode ?? prev.isMaintenanceMode ?? false,
+                     companyName: fetchedSettings.companyName || fetchedSettings.companyname || prev.companyName,
+                     logoUrl: fetchedSettings.logoUrl || fetchedSettings.logourl || prev.logoUrl,
+                     heroBgUrl: fetchedSettings.heroBgUrl || fetchedSettings.herobgurl || prev.heroBgUrl,
+                     heroVideoUrl: fetchedSettings.heroVideoUrl || prev.heroVideoUrl,
+                     aboutUsImageUrl: fetchedSettings.aboutUsImageUrl || fetchedSettings.aboutusimageurl || prev.aboutUsImageUrl,
+                     whatsAppNumber: fetchedSettings.whatsAppNumber || fetchedSettings.whatsappnumber || prev.whatsAppNumber,
+                     showroomTitle: fetchedSettings.showroomTitle || fetchedSettings.showroomtitle || prev.showroomTitle,
+                     showroomDescription: fetchedSettings.showroomDescription || fetchedSettings.showroomdescription || prev.showroomDescription,
+                     taxEnabled: fetchedSettings.taxEnabled ?? fetchedSettings.taxenabled ?? prev.taxEnabled,
+                     vatPercentage: fetchedSettings.vatPercentage ?? fetchedSettings.vatpercentage ?? prev.vatPercentage,
+                     emailServiceId: fetchedSettings.emailServiceId || fetchedSettings.emailserviceid || prev.emailServiceId,
+                     emailTemplateId: fetchedSettings.emailTemplateId || fetchedSettings.emailtemplateid || prev.emailTemplateId,
+                     emailPublicKey: fetchedSettings.emailPublicKey || fetchedSettings.emailpublickey || prev.emailPublicKey,
+                     businessHours: fetchedSettings.businessHours || fetchedSettings.businesshours || prev.businessHours,
+                 };
+             });
           }
       });
       unsubscribers.push(unsubSettings);
@@ -370,26 +555,7 @@ const App: React.FC = () => {
   }, []);
 
   // --- PRIVATE (ADMIN) DATA FETCHING ---
-  useEffect(() => {
-    if (!user) {
-      setExpenses([]);
-      setInventory([]);
-      return;
-    }
-
-    const unsubscribers: (() => void)[] = [];
-    try {
-        unsubscribers.push(dbSubscribeToCollection('expenses', (data) => setExpenses(data)));
-        unsubscribers.push(dbSubscribeToCollection('inventory', (data) => setInventory(data)));
-    } catch (error) {
-      console.error("Error setting up private listeners:", error);
-      setDataError("A critical error occurred while trying to load administrator data.");
-    }
-    
-    return () => {
-      unsubscribers.forEach(unsub => unsub());
-    };
-  }, [user]); 
+  // No longer needed. Admin data fetched via public routes now or unnecessary.
 
   // --- LOADING STATE ---
   useEffect(() => {
@@ -411,26 +577,144 @@ const App: React.FC = () => {
     setIsIntroVisible(false);
   };
 
-  const navigate = (view: 'home' | 'admin' | 'client-portal') => setCurrentView(view);
+  const PhotographyView = () => (
+      <Routes>
+          <Route path="/" element={<Navigate to="/magicalmemories/home" replace />} />
+          <Route path="home" element={<PhotographyApp view="home" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+          <Route path="library" element={<PhotographyApp view="library" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+          <Route path="booking" element={<PhotographyApp view="booking" onNavigateHome={() => nav('/')} onNavigateAdmin={() => nav('/magicalmemories_admin')} />} />
+      </Routes>
+  );
+
+  const PhotographyAdminView = () => {
+    if (!user) {
+        return <AdminLoginPage onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} />;
+    }
+    return <PhotographyAdminDashboard user={user} onNavigate={(view) => {
+        if(view === 'home') nav('/');
+        else if(view.startsWith('magicalmemories')) nav(`/${view}`);
+        else nav(`/${view}`);
+    }} />;
+  };
+
+  const AdminView = () => (
+      <AdminPage
+        user={user}
+        onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)}
+        portfolioData={portfolioData}
+        onAddPortfolioItem={handleAddPortfolioItem}
+        onUpdatePortfolioItem={handleUpdatePortfolioItem}
+        onDeletePortfolioItem={handleDeletePortfolioItem}
+        specialsData={specialsData}
+        onAddSpecialItem={handleAddSpecialItem}
+        onUpdateSpecialItem={handleUpdateSpecialItem}
+        onDeleteSpecialItem={handleDeleteSpecialItem}
+        showroomData={showroomData}
+        onAddShowroomGenre={handleAddShowroomGenre}
+        onUpdateShowroomGenre={handleUpdateShowroomGenre}
+        onDeleteShowroomGenre={handleDeleteShowroomGenre}
+        bookings={bookings}
+        onUpdateBooking={handleUpdateBooking}
+        onManualAddBooking={handleManualAddBooking}
+        onDeleteBooking={handleDeleteBooking}
+        clients={clients} 
+        onAddClient={handleAddClient} 
+        onUpdateClient={handleUpdateClient} 
+        onDeleteClient={handleDeleteClient} 
+        invoices={invoices}
+        onAddInvoice={handleAddInvoice}
+        onUpdateInvoice={handleUpdateInvoice}
+        onDeleteInvoice={handleDeleteInvoice}
+        onSaveAllSettings={handleSaveAllSettings}
+        onClearAllData={handleClearAllData}
+        onSuccessfulLogout={handleLogoutSuccess}
+        {...settings}
+      />
+  );
 
   const handleLogoutSuccess = async () => {
     await dbLogout();
     setUser(null); 
-    navigate('home');
+    nav('/');
+  };
+
+  const HomeView = () => (
+    <div className="relative">
+      <StaticBosSalonBackground />
+      <div>
+        <Header onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} companyName={settings.companyName} />
+        <main>
+          <Hero 
+            portfolioData={portfolioData} 
+            onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} 
+            heroBgUrl={settings.heroBgUrl}
+            heroVideoUrl={settings.heroVideoUrl}
+            title={settings.hero?.title}
+            subtitle={settings.hero?.subtitle}
+            buttonText={settings.hero?.buttonText}
+            whatsAppNumber={settings.whatsAppNumber}
+          />
+          <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
+          <WelcomeSection 
+            title={settings.welcome?.title}
+            text={settings.welcome?.text}
+          />
+          <AboutUs 
+            aboutUsImageUrl={settings.aboutUsImageUrl} 
+            title={settings.about?.title}
+            text1={settings.about?.text1}
+            text2={settings.about?.text2}
+          />
+          <SpecialsSection specials={specialsData} onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} whatsAppNumber={settings.whatsAppNumber} />
+          <Showroom 
+            showroomData={showroomData} 
+            showroomTitle={settings.showroomTitle} 
+            showroomDescription={settings.showroomDescription} 
+            whatsAppNumber={settings.whatsAppNumber}
+          />
+          <ContactForm onAddBooking={handleAddBooking} settings={settings} />
+        </main>
+        <Footer
+          companyName={settings.companyName}
+          address={settings.address}
+          phone={settings.phone}
+          email={settings.email}
+          businessHours={settings.businessHours}
+          socialLinks={settings.socialLinks}
+          apkUrl={settings.apkUrl}
+          onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)}
+        />
+      </div>
+    </div>
+  );
+
+  const HomeWrapper = () => {
+      const showMaintenance = settings.isMaintenanceMode && !user;
+      if (showMaintenance) {
+        return <MaintenancePage onNavigate={(view) => nav(view === 'home' ? '/' : `/${view}`)} logoUrl={settings.logoUrl} />;
+      }
+      if (isIntroVisible) {
+        return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
+      }
+      return <HomeView />;
   };
 
   // --- CRUD FUNCTIONS (Adapter Wrappers) ---
-  const handleUpdatePortfolioItem = async (item: PortfolioItem) => await dbUpdateItem('portfolio', item);
-  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => await dbAddItem('portfolio', item);
-  const handleDeletePortfolioItem = async (itemId: string) => await dbDeleteItem('portfolio', itemId);
+  const optimisticAdd = (setter: any, item: any) => { setter((prev: any) => [...prev, item]); };
+  const optimisticUpdate = (setter: any, item: any) => { setter((prev: any) => prev.map((i: any) => i.id === item.id ? item : i)); };
+  const optimisticDelete = (setter: any, id: string) => { setter((prev: any) => prev.filter((i: any) => i.id !== id)); };
 
-  const handleUpdateSpecialItem = async (item: SpecialItem) => await dbUpdateItem('specials', item);
-  const handleAddSpecialItem = async (item: Omit<SpecialItem, 'id'>) => await dbAddItem('specials', item);
-  const handleDeleteSpecialItem = async (itemId: string) => await dbDeleteItem('specials', itemId);
+  const handleUpdatePortfolioItem = async (item: PortfolioItem) => { optimisticUpdate(setPortfolioData, item); await dbUpdateItem('portfolio', item); };
+  const handleAddPortfolioItem = async (item: Omit<PortfolioItem, 'id'>) => { const added = await dbAddItem('portfolio', item); optimisticAdd(setPortfolioData, added); };
+  const handleDeletePortfolioItem = async (itemId: string) => { optimisticDelete(setPortfolioData, itemId); await dbDeleteItem('portfolio', itemId); };
 
-  const handleUpdateShowroomGenre = async (item: Genre) => await dbUpdateItem('showroom', item);
-  const handleAddShowroomGenre = async (item: Omit<Genre, 'id'>) => await dbAddItem('showroom', item);
-  const handleDeleteShowroomGenre = async (itemId: string) => await dbDeleteItem('showroom', itemId);
+  const handleUpdateSpecialItem = async (item: SpecialItem) => { optimisticUpdate(setSpecialsData, item); await dbUpdateItem('specials', item); };
+  const handleAddSpecialItem = async (item: Omit<SpecialItem, 'id'>) => { const added = await dbAddItem('specials', item); optimisticAdd(setSpecialsData, added); };
+  const handleDeleteSpecialItem = async (itemId: string) => { optimisticDelete(setSpecialsData, itemId); await dbDeleteItem('specials', itemId); };
+
+  const handleUpdateShowroomGenre = async (item: Genre) => { optimisticUpdate(setShowroomData, item); await dbUpdateItem('showroom', item); };
+  const handleAddShowroomGenre = async (item: Omit<Genre, 'id'>) => { const added = await dbAddItem('showroom', item); optimisticAdd(setShowroomData, added); };
+  const handleDeleteShowroomGenre = async (itemId: string) => { optimisticDelete(setShowroomData, itemId); await dbDeleteItem('showroom', itemId); };
   
   const handleAddBooking = async (newBookingData: Omit<Booking, 'id' | 'status' | 'bookingType'>) => {
     const newBooking = {
@@ -438,41 +722,38 @@ const App: React.FC = () => {
       status: 'pending',
       bookingType: 'online',
     };
-    await dbAddItem('bookings', newBooking);
+    const added = await dbAddItem('bookings', newBooking);
+    optimisticAdd(setBookings, added);
   };
   const handleManualAddBooking = async (newBookingData: Omit<Booking, 'id' | 'bookingType'>) => {
     const newBooking = {
       ...newBookingData,
       bookingType: 'manual',
     };
-    await dbAddItem('bookings', newBooking);
+    const added = await dbAddItem('bookings', newBooking);
+    optimisticAdd(setBookings, added);
   };
-  const handleUpdateBooking = async (item: Booking) => await dbUpdateItem('bookings', item);
-  const handleDeleteBooking = async (id: string) => await dbDeleteItem('bookings', id);
+  const handleUpdateBooking = async (item: Booking) => { optimisticUpdate(setBookings, item); await dbUpdateItem('bookings', item); };
+  const handleDeleteBooking = async (id: string) => { optimisticDelete(setBookings, id); await dbDeleteItem('bookings', id); };
 
-  const handleAddExpense = async (newExpense: Omit<Expense, 'id'>) => await dbAddItem('expenses', newExpense);
-  const handleUpdateExpense = async (updatedExpense: Expense) => await dbUpdateItem('expenses', updatedExpense);
-  const handleDeleteExpense = async (expenseId: string) => await dbDeleteItem('expenses', expenseId);
+  const handleAddClient = async (item: Omit<Client, 'id'>) => { const added = await dbAddItem('clients', item); optimisticAdd(setClients, added); };
+  const handleUpdateClient = async (item: Client) => { optimisticUpdate(setClients, item); await dbUpdateItem('clients', item); };
+  const handleDeleteClient = async (id: string) => { optimisticDelete(setClients, id); await dbDeleteItem('clients', id); };
 
-  const handleAddInventoryItem = async (item: Omit<InventoryItem, 'id'>) => await dbAddItem('inventory', item);
-  const handleUpdateInventoryItem = async (item: InventoryItem) => await dbUpdateItem('inventory', item);
-  const handleDeleteInventoryItem = async (id: string) => await dbDeleteItem('inventory', id);
-
-  const handleAddInvoice = async (item: Omit<Invoice, 'id'>) => await dbAddItem('invoices', item);
-  const handleUpdateInvoice = async (item: Invoice) => await dbUpdateItem('invoices', item);
-  const handleDeleteInvoice = async (id: string) => await dbDeleteItem('invoices', id);
-
-  const handleAddClient = async (item: Omit<Client, 'id'>) => await dbAddItem('clients', item);
-  const handleUpdateClient = async (item: Client) => await dbUpdateItem('clients', item);
-  const handleDeleteClient = async (id: string) => await dbDeleteItem('clients', id);
+  const handleAddInvoice = async (item: Omit<Invoice, 'id'>) => { const added = await dbAddItem('invoices', item); optimisticAdd(setInvoices, added); };
+  const handleUpdateInvoice = async (item: Invoice) => { optimisticUpdate(setInvoices, item); await dbUpdateItem('invoices', item); };
+  const handleDeleteInvoice = async (id: string) => { optimisticDelete(setInvoices, id); await dbDeleteItem('invoices', id); };
 
   const handleSaveAllSettings = async (newSettings: any) => {
+    // Optimistically update local application state instantly,
+    // avoiding the need for a page refresh if Supabase Realtime isn't enabled
+    setSettings((prev: any) => ({ ...prev, ...newSettings }));
     await dbSetDoc('settings', 'main', newSettings);
   };
 
   const handleClearAllData = async () => {
       if (!window.confirm("ARE YOU SURE? This will delete ALL content from your live database. This is irreversible.")) return;
-      const collections = ['portfolio', 'specials', 'showroom', 'bookings', 'expenses', 'inventory', 'invoices', 'clients'];
+      const collections = ['portfolio', 'specials', 'showroom', 'bookings', 'clients'];
       try {
           for (const col of collections) {
               await dbClearCollection(col as any);
@@ -508,126 +789,15 @@ const App: React.FC = () => {
     );
   }
 
-  // Admin and Client Portal views are always accessible if explicitly navigated to
-  if (currentView === 'admin') {
-    return (
-      <AdminPage
-        user={user}
-        onNavigate={navigate}
-        portfolioData={portfolioData}
-        onAddPortfolioItem={handleAddPortfolioItem}
-        onUpdatePortfolioItem={handleUpdatePortfolioItem}
-        onDeletePortfolioItem={handleDeletePortfolioItem}
-        specialsData={specialsData}
-        onAddSpecialItem={handleAddSpecialItem}
-        onUpdateSpecialItem={handleUpdateSpecialItem}
-        onDeleteSpecialItem={handleDeleteSpecialItem}
-        showroomData={showroomData}
-        onAddShowroomGenre={handleAddShowroomGenre}
-        onUpdateShowroomGenre={handleUpdateShowroomGenre}
-        onDeleteShowroomGenre={handleDeleteShowroomGenre}
-        bookings={bookings}
-        onUpdateBooking={handleUpdateBooking}
-        onManualAddBooking={handleManualAddBooking}
-        onDeleteBooking={handleDeleteBooking}
-        expenses={expenses}
-        onAddExpense={handleAddExpense}
-        onUpdateExpense={handleUpdateExpense}
-        onDeleteExpense={handleDeleteExpense}
-        inventory={inventory}
-        onAddInventoryItem={handleAddInventoryItem}
-        onUpdateInventoryItem={handleUpdateInventoryItem}
-        onDeleteInventoryItem={handleDeleteInventoryItem}
-        invoices={invoices}
-        onAddInvoice={handleAddInvoice}
-        onUpdateInvoice={handleUpdateInvoice}
-        onDeleteInvoice={handleDeleteInvoice}
-        clients={clients} 
-        onAddClient={handleAddClient} 
-        onUpdateClient={handleUpdateClient} 
-        onDeleteClient={handleDeleteClient} 
-        onSaveAllSettings={handleSaveAllSettings}
-        onClearAllData={handleClearAllData}
-        onSuccessfulLogout={handleLogoutSuccess}
-        {...settings}
-      />
-    );
-  }
-
-  if (currentView === 'client-portal') {
-      return (
-          <ClientPortal 
-            logoUrl={settings.logoUrl}
-            companyName={settings.companyName}
-            onNavigate={navigate}
-            clients={clients}
-            bookings={bookings}
-            invoices={invoices}
-            specials={specialsData}
-            onAddBooking={handleAddBooking}
-            onUpdateBooking={handleUpdateBooking}
-            onUpdateInvoice={handleUpdateInvoice}
-            onUpdateClient={handleUpdateClient}
-            settings={settings}
-            onAddClient={handleAddClient}
-            authenticatedUser={user}
-          />
-      );
-  }
-
-  // Maintenance Mode Logic: Triggered if enabled AND user is NOT an admin (auth user)
-  // This ensures admins can still see the dashboard even if maintenance is on
-  const showMaintenance = settings.isMaintenanceMode && !user;
-
-  if (showMaintenance) {
-    return <MaintenancePage onNavigate={navigate} logoUrl={settings.logoUrl} />;
-  }
-
-  if (isIntroVisible) {
-    return <WelcomeIntro isVisible={isIntroVisible} onEnter={handleEnter} logoUrl={settings.logoUrl} />;
-  }
-  
   return (
-    <div className="relative">
-      <StaticBosSalonBackground />
-      <div>
-        <Header onNavigate={navigate} logoUrl={settings.logoUrl} companyName={settings.companyName} />
-        <main>
-          <Hero 
-            portfolioData={portfolioData} 
-            onNavigate={navigate} 
-            heroBgUrl={settings.heroBgUrl}
-            title={settings.hero?.title}
-            subtitle={settings.hero?.subtitle}
-            buttonText={settings.hero?.buttonText}
-          />
-          <SpecialsCollage specials={[]} whatsAppNumber={settings.whatsAppNumber} /> 
-          <AboutUs 
-            aboutUsImageUrl={settings.aboutUsImageUrl} 
-            title={settings.about?.title}
-            text1={settings.about?.text1}
-            text2={settings.about?.text2}
-          />
-          <SpecialsSection specials={specialsData} onNavigate={navigate} whatsAppNumber={settings.whatsAppNumber} />
-          <Showroom 
-            showroomData={showroomData} 
-            showroomTitle={settings.showroomTitle} 
-            showroomDescription={settings.showroomDescription} 
-          />
-          <ContactForm onAddBooking={handleAddBooking} settings={settings} />
-        </main>
-        <Footer
-          companyName={settings.companyName}
-          address={settings.address}
-          phone={settings.phone}
-          email={settings.email}
-          businessHours={settings.businessHours}
-          socialLinks={settings.socialLinks}
-          apkUrl={settings.apkUrl}
-          onNavigate={navigate}
-        />
-      </div>
-    </div>
+    <Routes>
+      <Route path="/" element={<HomeWrapper />} />
+      <Route path="/boshome" element={<HomeWrapper />} />
+      <Route path="/magicalmemories/*" element={<PhotographyView />} />
+      <Route path="/magicalmemories_admin" element={<PhotographyAdminView />} />
+      <Route path="/admin" element={<AdminView />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   );
 };
 

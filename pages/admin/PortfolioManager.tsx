@@ -27,6 +27,7 @@ const PortfolioItemEditForm = ({
   const [formData, setFormData] = useState<any>({
     title: initialItem.title || '',
     story: initialItem.story || '',
+    tags: Array.isArray(initialItem.tags) ? initialItem.tags.join(', ') : (initialItem.tags || ''),
   });
   const [gallery, setGallery] = useState<(string | File)[]>([]);
   const [primaryImage, setPrimaryImage] = useState<string | File | null>(null);
@@ -132,6 +133,10 @@ const PortfolioItemEditForm = ({
                   <label className="block text-xs sm:text-sm font-semibold mb-2 text-admin-dark-text-secondary">Story</label>
                   <textarea value={formData.story} onChange={(e) => setFormData({...formData, story: e.target.value})} rows={3} className={inputClasses} required />
               </div>
+              <div>
+                  <label className="block text-xs sm:text-sm font-semibold mb-2 text-admin-dark-text-secondary">Tags (comma separated)</label>
+                  <input type="text" value={formData.tags} onChange={(e) => setFormData({...formData, tags: e.target.value})} className={inputClasses} placeholder="e.g. fine line, traditional" />
+              </div>
           </div>
           <div className="space-y-2">
               <label className="block text-xs sm:text-sm font-semibold text-admin-dark-text-secondary">Video (Optional)</label>
@@ -165,12 +170,12 @@ const PortfolioItemEditForm = ({
                       {gallery.map((img, index) => (
                           <div key={index} className="relative group aspect-square">
                               <img src={getPreviewUrl(img)} className={`w-full h-full object-cover rounded-lg transition-all duration-300 ${primaryImage === img ? 'ring-2 ring-offset-1 ring-offset-white ring-admin-dark-primary' : ''}`} alt="Gallery item" />
-                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                              <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
                                   <button type="button" onClick={() => setPrimaryImage(img)} className="p-1.5 bg-black/50 text-white rounded-full hover:bg-admin-dark-primary" title="Set as Primary">
-                                      <StarIcon className={`w-3 h-3 ${primaryImage === img ? 'text-yellow-400' : ''}`} />
+                                      <StarIcon className={`w-3.5 h-3.5 ${primaryImage === img ? 'text-yellow-400' : ''}`} />
                                   </button>
                                   <button type="button" onClick={() => removeImage(img)} className="p-1.5 bg-black/50 text-white rounded-full hover:bg-red-500/80" title="Delete Image">
-                                      <TrashIcon className="w-3 h-3" />
+                                      <TrashIcon className="w-3.5 h-3.5" />
                                   </button>
                               </div>
                           </div>
@@ -226,7 +231,13 @@ const PortfolioManager: React.FC<PortfolioManagerProps> = ({
             
             const videoUrl = videoFile instanceof File ? await dbUploadFile(videoFile, 'portfolio', 'videos/') : videoFile ? itemData.videoData : undefined;
 
-            const finalData = { ...restOfData, primaryImage: primaryImageUrl, galleryImages: galleryImageUrls, videoData: videoUrl };
+            const finalData = { 
+                ...restOfData, 
+                tags: restOfData.tags ? (typeof restOfData.tags === 'string' ? restOfData.tags.split(',').map((t: string) => t.trim()) : restOfData.tags) : [],
+                primaryImage: primaryImageUrl, 
+                galleryImages: galleryImageUrls, 
+                videoData: videoUrl 
+            };
             
             if (isAddingNew) {
                 const { id, ...newItemData } = finalData;

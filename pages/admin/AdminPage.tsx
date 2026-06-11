@@ -6,7 +6,7 @@ import { PortfolioItem, SpecialItem, Genre, Booking, SocialLink, Expense, Invent
 
 export interface AdminPageProps {
   user: any | null; // Supports Supabase User or Mock User object
-  onNavigate: (view: 'home' | 'admin') => void;
+  onNavigate: (view: 'home' | 'admin' | 'photography' | 'magicalmemories_admin') => void;
   onSuccessfulLogout: () => void;
 
   // Portfolio

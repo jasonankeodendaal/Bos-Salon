@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Invoice, InvoiceLineItem, Booking, Client } from '../../App';
+import { sanitizePhoneNumber } from '../../utils/formatUtils';
 import PlusIcon from '../../components/icons/PlusIcon';
 import TrashIcon from '../../components/icons/TrashIcon';
 import PencilIcon from '../../components/icons/PencilIcon';
@@ -149,7 +150,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
       if (initialBooking) {
           setActiveTab('quotes');
           const prefix = 'Q-';
-          const count = invoices.filter(i => i.type === 'quote').length + 1001;
+          const count = (invoices || []).filter(i => i.type === 'quote').length + 1001;
           const number = `${prefix}${count}`;
           
           setFormData({
@@ -223,7 +224,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
 
   const generateNumber = (type: 'quote' | 'invoice') => {
       const prefix = type === 'quote' ? 'Q-' : 'INV-';
-      const count = invoices.filter(i => i.type === type).length + 1001;
+      const count = (invoices || []).filter(i => i.type === type).length + 1001;
       return `${prefix}${count}`;
   };
 
@@ -255,6 +256,28 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
       setFormData(inv);
       setEditingId(inv.id);
       setIsEditing(true);
+  };
+
+  const handleConvertQuoteToInvoice = async (quote: Invoice) => {
+      if (confirm(`Convert ${quote.number} to an Invoice?`)) {
+          try {
+              const nextInvoiceNumber = generateNumber('invoice');
+              const convertedInvoice = {
+                  ...quote,
+                  type: 'invoice' as const,
+                  number: nextInvoiceNumber,
+                  status: 'draft' as const,
+                  dateIssued: new Date().toISOString().split('T')[0],
+              };
+              await onUpdateInvoice(convertedInvoice);
+              setActiveTab('invoices');
+              setSavedInvoice(convertedInvoice);
+              setShowSendModal(true);
+          } catch (err) {
+              console.error(err);
+              alert("Failed to convert quote.");
+          }
+      }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -319,7 +342,8 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
       const password = client ? client.password : 'Check with admin';
       const typeLabel = inv.type === 'quote' ? 'Quote' : 'Invoice';
       let msg = `Hi ${inv.clientName},\nHere is your ${typeLabel} *${inv.number}*.\nTotal: R${inv.total.toFixed(2)}\nDue: ${inv.dateDue}\nLogin: ${window.location.origin}\nEmail: ${inv.clientEmail}\nPIN: ${password}`;
-      return `https://wa.me/${inv.clientPhone.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
+      const cleanNumber = sanitizePhoneNumber(inv.clientPhone);
+      return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
   };
   
   const handleMarkAsSent = async () => {
@@ -331,7 +355,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
 
   const groupedInvoices = useMemo(() => {
       // 1. Filter by Type (Quote/Invoice)
-      const filtered = invoices.filter(i => {
+      const filtered = (invoices || []).filter(i => {
           const expectedType = activeTab === 'quotes' ? 'quote' : 'invoice';
           return i.type === expectedType;
       }).sort((a,b) => new Date(b.dateIssued).getTime() - new Date(a.dateIssued).getTime());
@@ -450,7 +474,7 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                            <h4 className="font-bold text-gray-800 text-sm">Client Info</h4>
                            <select onChange={handleSelectClient} className="w-full bg-gray-50 border border-gray-300 rounded p-2 text-xs text-gray-900 mb-1">
                                <option value="">Select Existing Client...</option>
-                               {clients.map(c => <option key={c.email} value={c.email}>{c.name}</option>)}
+                               {(clients || []).map(c => <option key={c.email} value={c.email}>{c.name}</option>)}
                            </select>
                            <input placeholder="Client Full Name" value={formData.clientName} onChange={e => setFormData({...formData, clientName: e.target.value})} className={inputClass} required />
                            <input placeholder="Email Address" value={formData.clientEmail} onChange={e => setFormData({...formData, clientEmail: e.target.value})} className={inputClass} required />
@@ -533,7 +557,17 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                                     <div className="text-[9px] text-gray-500">{new Date(inv.dateIssued).toLocaleDateString()}</div>
                                     <div className="flex justify-between items-center mt-1 pt-1 border-t border-gray-100">
                                         <span className={`text-[8px] font-bold uppercase px-1 rounded ${inv.status === 'paid' ? 'bg-green-100 text-green-700' : inv.status === 'draft' ? 'bg-gray-100 text-gray-600' : 'bg-yellow-100 text-yellow-700'}`}>{inv.status}</span>
-                                        <div className="flex gap-1">
+                                        <div className="flex gap-1 items-center">
+                                            {inv.type === 'quote' && (
+                                                <button 
+                                                    onClick={() => handleConvertQuoteToInvoice(inv)} 
+                                                    className="flex items-center gap-1.5 bg-blue-600 text-white px-2 py-1 rounded text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition-colors"
+                                                    title="Convert to Invoice"
+                                                >
+                                                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                    Invoice
+                                                </button>
+                                            )}
                                             <button onClick={() => { setSavedInvoice(inv); setShowSendModal(true); }} className="text-green-600"><WhatsAppIcon className="w-3 h-3"/></button>
                                             <button onClick={() => handleEdit(inv)} className="text-gray-500"><PencilIcon className="w-3 h-3"/></button>
                                         </div>
@@ -566,7 +600,17 @@ const QuoteInvoiceManager: React.FC<QuoteInvoiceManagerProps> = ({
                                             <td className="px-4 py-2 text-xs text-gray-500">{new Date(inv.dateIssued).toLocaleDateString()}</td>
                                             <td className="px-4 py-2 text-right font-bold text-gray-800">R {inv.total.toFixed(2)}</td>
                                             <td className="px-4 py-2 text-center"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${inv.status === 'draft' ? 'bg-gray-100' : 'bg-transparent'}`}>{inv.status}</span></td>
-                                            <td className="px-4 py-2 text-right flex justify-end gap-2">
+                                            <td className="px-4 py-2 text-right flex justify-end gap-2 items-center">
+                                             {inv.type === 'quote' && (
+                                                    <button 
+                                                        onClick={() => handleConvertQuoteToInvoice(inv)} 
+                                                        className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1.5 rounded-lg font-bold uppercase tracking-wider text-[11px] shadow-sm hover:bg-blue-700 transition-all transform hover:-translate-y-0.5 active:scale-95"
+                                                        title="Convert to Invoice"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                                        Convert to Invoice
+                                                    </button>
+                                                )}
                                                 <button onClick={() => { setSavedInvoice(inv); setShowSendModal(true); }} className="text-green-600 hover:text-green-800" title="Send/Print"><WhatsAppIcon className="w-4 h-4" /></button>
                                                 <button onClick={() => handleEdit(inv)} className="text-gray-600 hover:text-gray-800" title="Edit"><PencilIcon className="w-4 h-4" /></button>
                                                 <button onClick={() => onDeleteInvoice(inv.id)} className="text-red-500 hover:text-red-700" title="Delete"><TrashIcon className="w-4 h-4" /></button>

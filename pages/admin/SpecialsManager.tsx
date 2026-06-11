@@ -15,7 +15,10 @@ const SpecialForm = ({
   onSave: (item: any) => Promise<void>;
   onCancel: () => void;
 }) => {
-  const [formData, setFormData] = useState(initialItem);
+  const [formData, setFormData] = useState({
+    ...initialItem,
+    tags: Array.isArray(initialItem.tags) ? initialItem.tags.join(', ') : (initialItem.tags || '')
+  });
   const [images, setImages] = useState<(string | File)[]>([]);
   const [primaryImage, setPrimaryImage] = useState<string | File | null>(null);
   const [loading, setLoading] = useState(false);
@@ -89,6 +92,16 @@ const SpecialForm = ({
               className={inputClasses} 
               rows={3}
               required
+            />
+          </div>
+          <div>
+            <label className="block text-xs sm:text-sm font-semibold mb-1 text-admin-dark-text-secondary">Tags (comma separated)</label>
+            <input 
+              type="text" 
+              value={formData.tags || ''} 
+              onChange={e => setFormData({...formData, tags: e.target.value})}
+              className={inputClasses} 
+              placeholder="e.g. promo, tattoo, special"
             />
           </div>
           <div className="flex gap-2">
@@ -207,6 +220,7 @@ const SpecialsManager: React.FC<SpecialsManagerProps> = ({ specialsData, onAddSp
         price: data.price,
         priceType: data.priceType || 'fixed',
         active: data.active !== false,
+        tags: data.tags ? (typeof data.tags === 'string' ? data.tags.split(',').map((t: string) => t.trim()) : data.tags) : [],
         imageUrl: imageUrl, 
         images: images,     
         details: data.details || [],
@@ -276,6 +290,25 @@ const SpecialsManager: React.FC<SpecialsManagerProps> = ({ specialsData, onAddSp
               <p className="text-[9px] sm:text-xs text-admin-dark-text-secondary line-clamp-2">{special.description}</p>
             </div>
             <div className="p-1 border-t border-admin-dark-border flex justify-end gap-1 bg-gray-50">
+              <button 
+                onClick={() => {
+                    const text = `Check out our special offer: ${special.title}! \n\n${special.description} \n\nPrice: ${special.priceType === 'percentage' ? `${special.priceValue}%` : `R${special.price}`} \n\n${special.tags ? `Tags: ${special.tags}` : ''}`;
+                    if (navigator.share) {
+                        navigator.share({
+                            title: special.title,
+                            text: text,
+                            url: window.location.href, // or link to the special's page in public app if exists
+                        }).catch(console.error);
+                    } else {
+                        navigator.clipboard.writeText(text);
+                        alert("Offer details copied to clipboard!");
+                    }
+                }}
+                className="p-1 text-green-600 hover:text-green-700 rounded transition-colors"
+                title="Share"
+              >
+                <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-1.342A3 3 0 0015.316 7.658z" /></svg>
+              </button>
               <button onClick={() => setEditingItem(special)} className="p-1 text-admin-dark-text-secondary hover:text-admin-dark-text rounded transition-colors" title="Edit">
                 <PencilIcon className="w-3 h-3 sm:w-4 sm:h-4" />
               </button>

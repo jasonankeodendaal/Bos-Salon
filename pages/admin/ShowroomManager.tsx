@@ -129,7 +129,7 @@ const ShowroomItemForm = ({
                     {imagePreviews.map((src, index) => (
                         <div key={index} className="relative group aspect-square">
                             <img src={src} alt="preview" className="w-full h-full object-cover rounded-md"/>
-                            <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={() => removeImage(index)} className="absolute -top-1 -right-1 p-1 bg-red-600 text-white rounded-full transition-opacity shadow-sm">
                                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                         </div>
@@ -242,10 +242,13 @@ const ShowroomManager: React.FC<ShowroomManagerProps> = ({
     };
 
     const handleDeleteItem = async (genreId: string, itemId: string) => {
+        console.log("DEBUG: handleDeleteItem called", { genreId, itemId, showroomData });
         if (window.confirm("Delete piece?")) {
             const genreToUpdate = showroomData.find(g => g.id === genreId);
+            console.log("DEBUG: genreToUpdate", genreToUpdate);
             if(genreToUpdate) {
               const updatedItems = genreToUpdate.items.filter(i => i.id !== itemId);
+              console.log("DEBUG: updatedItems", updatedItems);
               await onUpdateShowroomGenre({ ...genreToUpdate, items: updatedItems });
             }
         }
@@ -287,12 +290,12 @@ const ShowroomManager: React.FC<ShowroomManagerProps> = ({
                          {genre.items.map(item => (
                             <div key={item.id} className="relative group aspect-square">
                                 <img src={item.images[0]} alt={item.title} className="w-full h-full object-cover rounded-md"/>
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                                     <button onClick={() => setEditingItem({ item, genreId: genre.id })} className="p-1 bg-black/50 text-white rounded-full hover:bg-admin-dark-primary">
-                                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"/></svg>
+                                <div className="absolute inset-0 bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
+                                     <button onClick={() => setEditingItem({ item, genreId: genre.id })} className="p-1.5 bg-black/50 text-white rounded-full hover:bg-admin-dark-primary">
+                                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"/></svg>
                                      </button>
-                                     <button onClick={() => handleDeleteItem(genre.id, item.id)} className="p-1 bg-black/50 text-white rounded-full hover:bg-red-500/80">
-                                        <TrashIcon className="w-3 h-3"/>
+                                     <button onClick={() => handleDeleteItem(genre.id, item.id)} className="p-1.5 bg-black/50 text-white rounded-full hover:bg-red-500/80">
+                                        <TrashIcon className="w-3.5 h-3.5"/>
                                      </button>
                                 </div>
                             </div>

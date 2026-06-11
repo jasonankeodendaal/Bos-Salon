@@ -22,6 +22,7 @@ interface ShowroomProps {
   showroomData: Genre[];
   showroomTitle: string;
   showroomDescription: string;
+  whatsAppNumber: string;
 }
 
 const ShowroomGridItem: React.FC<{ item: ShowroomItem, onClick: () => void }> = ({ item, onClick }) => {
@@ -115,7 +116,7 @@ const ShowroomGridItem: React.FC<{ item: ShowroomItem, onClick: () => void }> = 
   );
 };
 
-const Showroom: React.FC<ShowroomProps> = ({ showroomData, showroomTitle, showroomDescription }) => {
+const Showroom: React.FC<ShowroomProps> = ({ showroomData, showroomTitle, showroomDescription, whatsAppNumber }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<ShowroomItem | null>(null);
 
@@ -137,6 +138,7 @@ const Showroom: React.FC<ShowroomProps> = ({ showroomData, showroomTitle, showro
         primaryImage: item.images[0],
         galleryImages: item.images.slice(1),
         videoData: item.videoUrl as string | undefined,
+        tags: [],
     };
   };
 
@@ -177,6 +179,7 @@ const Showroom: React.FC<ShowroomProps> = ({ showroomData, showroomTitle, showro
           isOpen={isModalOpen}
           onClose={closeModal}
           item={adaptShowroomItemForModal(selectedItem)}
+          whatsAppNumber={whatsAppNumber}
         />
       )}
     </>

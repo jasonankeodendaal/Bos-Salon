@@ -2,7 +2,7 @@ import React, { useState, FormEvent, MouseEvent } from 'react';
 import { dbLogin, dbLoginWithGoogle } from '../utils/dbAdapter';
 
 interface AdminLoginPageProps {
-  onNavigate: (view: 'home' | 'admin') => void;
+  onNavigate: (view: 'home' | 'admin' | 'photography' | 'magicalmemories_admin') => void;
   logoUrl: string;
 }
 
@@ -20,8 +20,7 @@ const AdminLoginPage: React.FC<AdminLoginPageProps> = ({ onNavigate, logoUrl }) 
   const handleGoogleLogin = async () => {
     try {
         setLoading(true);
-        localStorage.setItem('login_redirect_destination', 'admin');
-        await dbLoginWithGoogle();
+        await dbLoginWithGoogle('admin');
     } catch (err: any) {
         console.error("Google Login Error:", err);
         setError(err.message || 'Failed to sign in with Google.');

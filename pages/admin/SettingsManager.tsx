@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { dbUploadFile } from '../../utils/dbAdapter';
 import HelpGuideModal from './components/HelpGuideModal';
+import SystemOverview from './components/SystemOverview';
 import TrashIcon from '../../components/icons/TrashIcon';
 import PlusIcon from '../../components/icons/PlusIcon';
 import { LoyaltyProgram, BookingOption } from '../../App';
+
+const FONT_OPTIONS = [
+  "Inter", "Roboto", "Open Sans", "Poppins", "Lato", "Montserrat", "Oswald", "Raleway", "Playfair Display", "Dancing Script",
+  "Lobster", "Pacifico", "Cabin", "Merriweather", "Nunito", "Quicksand", "Ubuntu", "PT Sans", "Work Sans", "Arvo"
+];
 
 // Types passed from parent
 interface SettingsManagerProps {
@@ -17,17 +23,14 @@ interface SettingsManagerProps {
 // Section Tabs
 const TABS = [
   { id: 'general', label: '🏢 Company Profile' },
+  { id: 'theme', label: '🎨 Theme & Branding (Pro)' },
   { id: 'hero', label: 'Home Page (Hero)' },
+  { id: 'welcome', label: 'Welcome Section' },
   { id: 'about', label: 'About Page' },
   { id: 'showroom', label: 'Showroom & Specials' },
   { id: 'aftercare', label: 'Aftercare Guide' },
   { id: 'contact', label: 'Footer & Booking Info' },
   { id: 'booking-opts', label: 'Booking Form Options' },
-  { id: 'financials', label: 'Financial Config' },
-  { id: 'loyalty', label: 'Loyalty & Lounge' },
-  { id: 'payments', label: 'Yoco Payments' },
-  { id: 'terminal', label: 'Yoco Machine (Terminal)' },
-  { id: 'integrations', label: 'Integrations & Adv' },
   { id: 'system-guide', label: '📖 System Overview' },
 ];
 
@@ -57,6 +60,14 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const [bookingOptions, setBookingOptions] = useState<BookingOption[]>(props.bookingOptions || []);
   const [newOptLabel, setNewOptLabel] = useState('');
   const [newOptDesc, setNewOptDesc] = useState('');
+  const [newOptPrice, setNewOptPrice] = useState('');
+  const [newCategory, setNewCategory] = useState(''); // Text input for creating a category
+  const [newOptionCategory, setNewOptionCategory] = useState(''); // Dropdown selection for new option
+  const [editingOptionId, setEditingOptionId] = useState<string | null>(null);
+  const [editOptLabel, setEditOptLabel] = useState('');
+  const [editOptDesc, setEditOptDesc] = useState('');
+  const [editOptPrice, setEditOptPrice] = useState('');
+  const [editOptCategory, setEditOptCategory] = useState('');
 
   // -- STATE MANAGEMENT FOR ALL FIELDS --
   const [settings, setSettings] = useState({
@@ -66,11 +77,28 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     logoUrl: props.logoUrl || '',
     businessHours: props.businessHours || '',
     
+    // Theme & Branding
+    brandDark: props.theme?.brandDark || '#fff0f5',
+    brandLight: props.theme?.brandLight || '#4e342e',
+    brandOffWhite: props.theme?.brandOffWhite || '#ffffff',
+    brandGold: props.theme?.brandGold || '#d4a373',
+    brandGreen: props.theme?.brandGreen || '#ff1493',
+    brandPink: props.theme?.brandPink || '#f48fb1',
+    fontSans: props.theme?.fontSans || 'Montserrat',
+    fontScript: props.theme?.fontScript || 'Dancing Script',
+    borderRadius: props.theme?.borderRadius || '0.5rem',
+    shadowStyle: props.theme?.shadowStyle || 'md',
+
     // Hero Section
     heroTitle: props.hero?.title || 'Nail and beauty',
     heroSubtitle: props.hero?.subtitle || 'Experience the art of nature',
     heroButtonText: props.hero?.buttonText || 'Book an Appointment',
     heroBgUrl: props.heroBgUrl || '', 
+    heroVideoUrl: props.heroVideoUrl || '',
+    
+    // Welcome Section
+    welcomeTitle: props.welcome?.title || 'Welcome',
+    welcomeText: props.welcome?.text || 'We are glad you are here.',
     
     // About Section
     aboutTitle: props.about?.title || 'Our Story',
@@ -107,6 +135,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       "Service Type: Fine Line, Traditional, Realism, or Custom Art?",
       "Inspiration: Upload photos of designs you love."
     ],
+    bookingCategories: props.bookingCategories || [], // Add this
 
     // Financials
     taxEnabled: props.taxEnabled || false,
@@ -144,10 +173,19 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         whatsAppNumber: props.whatsAppNumber || prev.whatsAppNumber,
         logoUrl: props.logoUrl || prev.logoUrl,
         businessHours: props.businessHours || prev.businessHours,
+        brandDark: props.theme?.brandDark || prev.brandDark,
+        brandLight: props.theme?.brandLight || prev.brandLight,
+        brandOffWhite: props.theme?.brandOffWhite || prev.brandOffWhite,
+        brandGold: props.theme?.brandGold || prev.brandGold,
+        brandGreen: props.theme?.brandGreen || prev.brandGreen,
+        brandPink: props.theme?.brandPink || prev.brandPink,
+        fontSans: props.theme?.fontSans || prev.fontSans,
+        fontScript: props.theme?.fontScript || prev.fontScript,
         heroTitle: props.hero?.title || prev.heroTitle,
         heroSubtitle: props.hero?.subtitle || prev.heroSubtitle,
         heroButtonText: props.hero?.buttonText || prev.heroButtonText,
         heroBgUrl: props.heroBgUrl || prev.heroBgUrl,
+        heroVideoUrl: props.heroVideoUrl || prev.heroVideoUrl,
         aboutTitle: props.about?.title || prev.aboutTitle,
         aboutUsImageUrl: props.aboutUsImageUrl || prev.aboutUsImageUrl,
         showroomTitle: props.showroomTitle || prev.showroomTitle,
@@ -175,6 +213,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
         designTitle: props.contact?.designTitle || prev.designTitle,
         designIntro: props.contact?.designIntro || prev.designIntro,
         designPoints: props.contact?.designPoints || prev.designPoints,
+        bookingCategories: props.bookingCategories || prev.bookingCategories,
         yocoEnabled: props.payments?.yocoEnabled || prev.yocoEnabled,
         yocoPublicKey: props.payments?.yocoPublicKey || prev.yocoPublicKey,
         yocoSecretKey: props.payments?.yocoSecretKey || prev.yocoSecretKey,
@@ -209,8 +248,14 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
       setIsLoading(true);
       try {
         const url = await dbUploadFile(e.target.files[0], bucket);
-        setSettings(prev => ({ ...prev, [fieldName]: url }));
-        setMessage({ text: 'Image uploaded successfully!', type: 'success' });
+        setSettings(prev => {
+            const newState = { ...prev, [fieldName]: url };
+            if (props.onSaveAllSettings) {
+                props.onSaveAllSettings(getPayload(newState)).catch(console.error);
+            }
+            return newState;
+        });
+        setMessage({ text: 'Image uploaded successfully & applied!', type: 'success' });
       } catch (error: any) {
         console.error("Upload failed", error);
         setMessage({ text: `Upload failed: ${error.message || 'Unknown error'}`, type: 'error' });
@@ -311,20 +356,152 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
   const removePerk = (index: number) => setLoungePerks(loungePerks.filter((_, i) => i !== index));
 
   // --- Booking Options Handlers ---
-  const handleAddBookingOption = () => {
+  const handleAddBookingOption = async () => {
     if (!newOptLabel) return;
     const newOpt: BookingOption = {
       id: crypto.randomUUID(),
       label: newOptLabel,
-      description: newOptDesc
+      description: newOptDesc,
+      price: parseFloat(newOptPrice) || 0,
+      category: newOptionCategory || 'Uncategorized'
     };
-    setBookingOptions(prev => [...prev, newOpt]);
+    const updatedOptions = [...bookingOptions, newOpt];
+    setBookingOptions(updatedOptions);
     setNewOptLabel('');
     setNewOptDesc('');
+    setNewOptPrice('');
+    setNewOptionCategory('');
+
+    // Immediately persist
+    if (props.onSaveAllSettings) {
+        const payload = getPayload({ ...settings, bookingOptions: updatedOptions });
+        await props.onSaveAllSettings(payload);
+    }
   };
 
-  const handleRemoveBookingOption = (id: string) => {
-    setBookingOptions(prev => prev.filter(o => o.id !== id));
+  const handleRemoveBookingOption = async (id: string) => {
+    const updatedOptions = bookingOptions.filter(o => o.id !== id);
+    setBookingOptions(updatedOptions);
+
+    // Immediately persist
+    if (props.onSaveAllSettings) {
+        const payload = getPayload({ ...settings, bookingOptions: updatedOptions });
+        await props.onSaveAllSettings(payload);
+    }
+  };
+
+  const startEdit = (opt: BookingOption) => {
+    setEditingOptionId(opt.id);
+    setEditOptLabel(opt.label);
+    setEditOptDesc(opt.description || '');
+    setEditOptPrice(String(opt.price || 0));
+    setEditOptCategory(opt.category || 'Uncategorized');
+  };
+
+  const saveEdit = async () => {
+    if (!editingOptionId) return;
+    const updatedOptions = bookingOptions.map(o => o.id === editingOptionId ? {
+      ...o,
+      label: editOptLabel,
+      description: editOptDesc,
+      price: parseFloat(editOptPrice) || 0,
+      category: editOptCategory || 'Uncategorized'
+    } : o);
+    setBookingOptions(updatedOptions);
+    setEditingOptionId(null);
+    setEditOptLabel('');
+    setEditOptDesc('');
+    setEditOptPrice('');
+    setEditOptCategory('');
+
+    // Immediately persist
+    if (props.onSaveAllSettings) {
+        const payload = getPayload({ ...settings, bookingOptions: updatedOptions });
+        await props.onSaveAllSettings(payload);
+    }
+  };
+
+  const getPayload = (currentState: any) => {
+    return {
+        companyName: currentState.companyName,
+        logoUrl: currentState.logoUrl,
+        heroBgUrl: currentState.heroBgUrl,
+        heroVideoUrl: currentState.heroVideoUrl,
+        aboutUsImageUrl: currentState.aboutUsImageUrl,
+        whatsAppNumber: currentState.whatsAppNumber,
+        businessHours: currentState.businessHours,
+        address: currentState.address,
+        phone: currentState.phone,
+        email: currentState.email,
+        socialLinks: currentState.socialLinks,
+        showroomTitle: currentState.showroomTitle,
+        showroomDescription: currentState.showroomDescription,
+        bankName: currentState.bankName,
+        accountNumber: currentState.accountNumber,
+        branchCode: currentState.branchCode,
+        accountType: currentState.accountType,
+        vatNumber: currentState.vatNumber,
+        isMaintenanceMode: currentState.isMaintenanceMode,
+        apkUrl: currentState.apkUrl,
+        taxEnabled: currentState.taxEnabled,
+        vatPercentage: currentState.vatPercentage,
+        emailServiceId: currentState.emailServiceId,
+        emailTemplateId: currentState.emailTemplateId,
+        emailPublicKey: currentState.emailPublicKey,
+        theme: {
+            brandDark: currentState.brandDark,
+            brandLight: currentState.brandLight,
+            brandOffWhite: currentState.brandOffWhite,
+            brandGold: currentState.brandGold,
+            brandGreen: currentState.brandGreen,
+            brandPink: currentState.brandPink,
+            fontSans: currentState.fontSans,
+            fontScript: currentState.fontScript,
+            borderRadius: currentState.borderRadius,
+            shadowStyle: currentState.shadowStyle,
+        },
+        hero: {
+          title: currentState.heroTitle,
+          subtitle: currentState.heroSubtitle,
+          buttonText: currentState.heroButtonText,
+        },
+        welcome: {
+          title: currentState.welcomeTitle,
+          text: currentState.welcomeText,
+        },
+        about: {
+          title: currentState.aboutTitle,
+          text1: currentState.aboutText1,
+          text2: currentState.aboutText2,
+        },
+        contact: {
+             intro: currentState.contactIntro,
+             processTitle: currentState.processTitle,
+             processIntro: currentState.processIntro,
+             processSteps: currentState.processSteps,
+             designTitle: currentState.designTitle,
+             designIntro: currentState.designIntro,
+             designPoints: currentState.designPoints
+        },
+        payments: {
+            yocoEnabled: currentState.yocoEnabled,
+            yocoPublicKey: currentState.yocoPublicKey,
+            yocoSecretKey: currentState.yocoSecretKey,
+            terminalEnabled: currentState.terminalEnabled,
+            terminalId: currentState.terminalId,
+            terminalSecretKey: currentState.terminalSecretKey,
+        },
+        aftercare: {
+            title: currentState.aftercareTitle,
+            intro: currentState.aftercareIntro,
+            sections: currentState.aftercareSections
+        },
+        loyaltyPrograms: loyaltyPrograms,
+        loungePerks: loungePerks, // Unified to loungePerks
+        bookingOptions: currentState.bookingOptions,
+        bookingCategories: currentState.bookingCategories,
+        loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
+    };
   };
 
   const handleSave = async () => {
@@ -332,68 +509,7 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
     setMessage(null);
     try {
       // STRICT PAYLOAD CONSTRUCTION
-      const dbPayload = {
-        companyName: settings.companyName,
-        logoUrl: settings.logoUrl,
-        heroBgUrl: settings.heroBgUrl,
-        aboutUsImageUrl: settings.aboutUsImageUrl,
-        whatsAppNumber: settings.whatsAppNumber,
-        businessHours: settings.businessHours,
-        address: settings.address,
-        phone: settings.phone,
-        email: settings.email,
-        socialLinks: settings.socialLinks,
-        showroomTitle: settings.showroomTitle,
-        showroomDescription: settings.showroomDescription,
-        bankName: settings.bankName,
-        accountNumber: settings.accountNumber,
-        branchCode: settings.branchCode,
-        accountType: settings.accountType,
-        vatNumber: settings.vatNumber,
-        isMaintenanceMode: settings.isMaintenanceMode,
-        apkUrl: settings.apkUrl,
-        taxEnabled: settings.taxEnabled,
-        vatPercentage: settings.vatPercentage,
-        emailServiceId: settings.emailServiceId,
-        emailTemplateId: settings.emailTemplateId,
-        emailPublicKey: settings.emailPublicKey,
-        hero: {
-          title: settings.heroTitle,
-          subtitle: settings.heroSubtitle,
-          buttonText: settings.heroButtonText,
-        },
-        about: {
-          title: settings.aboutTitle,
-          text1: settings.aboutText1,
-          text2: settings.aboutText2,
-        },
-        contact: {
-             intro: settings.contactIntro,
-             processTitle: settings.processTitle,
-             processIntro: settings.processIntro,
-             processSteps: settings.processSteps,
-             designTitle: settings.designTitle,
-             designIntro: settings.designIntro,
-             designPoints: settings.designPoints
-        },
-        payments: {
-            yocoEnabled: settings.yocoEnabled,
-            yocoPublicKey: settings.yocoPublicKey,
-            yocoSecretKey: settings.yocoSecretKey,
-            terminalEnabled: settings.terminalEnabled,
-            terminalId: settings.terminalId,
-            terminalSecretKey: settings.terminalSecretKey,
-        },
-        aftercare: {
-            title: settings.aftercareTitle,
-            intro: settings.aftercareIntro,
-            sections: settings.aftercareSections
-        },
-        loyaltyPrograms: loyaltyPrograms,
-        loungePerks: loungePerks, // Unified to loungePerks
-        bookingOptions: bookingOptions,
-        loyaltyProgram: { enabled: true, stickersRequired: 10, rewardDescription: 'See Programs' }, 
-      };
+      const dbPayload = getPayload(settings);
 
       await props.onSaveAllSettings(dbPayload);
       setMessage({ text: 'Saved successfully!', type: 'success' });
@@ -568,6 +684,82 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
             </div>
           )}
 
+          {/* Theme Tab */}
+          {activeTab === 'theme' && (
+            <div className={sectionClass}>
+              <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Website Colors & Fonts</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                 <div>
+                    <label className={labelClass}>Main Background Color</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandDark" value={settings.brandDark} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandDark" value={settings.brandDark} onChange={handleChange} className={inputClass} placeholder="#fff0f5" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Main Text Color</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandLight" value={settings.brandLight} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandLight" value={settings.brandLight} onChange={handleChange} className={inputClass} placeholder="#4e342e" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Card Background Color</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandOffWhite" value={settings.brandOffWhite} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandOffWhite" value={settings.brandOffWhite} onChange={handleChange} className={inputClass} placeholder="#ffffff" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Accent Color 1 (Gold/Highlight)</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandGold" value={settings.brandGold} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandGold" value={settings.brandGold} onChange={handleChange} className={inputClass} placeholder="#d4a373" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Primary Action Color (Buttons)</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandGreen" value={settings.brandGreen} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandGreen" value={settings.brandGreen} onChange={handleChange} className={inputClass} placeholder="#ff1493" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Soft Accent Color (Hovers/Secondary)</label>
+                    <div className="flex items-center gap-2">
+                       <input type="color" name="brandPink" value={settings.brandPink} onChange={handleChange} className="w-10 h-10 border-0 p-0 rounded cursor-pointer" />
+                       <input type="text" name="brandPink" value={settings.brandPink} onChange={handleChange} className={inputClass} placeholder="#f48fb1" />
+                    </div>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Primary Font Name</label>
+                    <select name="fontSans" value={settings.fontSans} onChange={handleChange} className={inputClass}>
+                      {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
+                    </select>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Script/Heading Font Name</label>
+                    <select name="fontScript" value={settings.fontScript} onChange={handleChange} className={inputClass}>
+                      {FONT_OPTIONS.map(font => <option key={font} value={font}>{font}</option>)}
+                    </select>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Border Radius (e.g. 0.5rem)</label>
+                    <input name="borderRadius" value={settings.borderRadius} onChange={handleChange} className={inputClass} placeholder="0.5rem" />
+                 </div>
+                 <div>
+                    <label className={labelClass}>Shadow Style</label>
+                    <select name="shadowStyle" value={settings.shadowStyle} onChange={handleChange} className={inputClass}>
+                      <option value="none">None</option>
+                      <option value="sm">Small</option>
+                      <option value="md">Medium</option>
+                      <option value="lg">Large</option>
+                    </select>
+                 </div>
+              </div>
+            </div>
+          )}
+
           {/* Hero Tab */}
           {activeTab === 'hero' && (
             <div className={sectionClass}>
@@ -591,9 +783,49 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                        {settings.heroBgUrl && <img src={settings.heroBgUrl} alt="Hero" className="w-full sm:w-32 h-20 object-cover rounded-lg" />}
                        <input type="file" onChange={(e) => handleFileUpload(e, 'heroBgUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
                     </div>
+                    <p className="text-[10px] text-gray-400 mt-1">Fallback if no video is provided.</p>
+                 </div>
+                 <div>
+                    <label className={labelClass}>Background Video (Optional)</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                       {settings.heroVideoUrl && <video src={settings.heroVideoUrl} muted autoPlay loop className="w-full sm:w-32 h-20 object-cover rounded-lg" />}
+                       <input type="file" accept="video/mp4,video/webm" onChange={(e) => handleFileUpload(e, 'heroVideoUrl', 'settings')} className="text-xs sm:text-sm text-admin-dark-text-secondary w-full" />
+                       {settings.heroVideoUrl && (
+                          <button 
+                              type="button"
+                              onClick={() => {
+                                  setSettings(prev => {
+                                      const newState = { ...prev, heroVideoUrl: '' };
+                                      if (props.onSaveAllSettings) props.onSaveAllSettings(getPayload(newState)).catch(console.error);
+                                      return newState;
+                                  });
+                              }}
+                              className="text-xs text-red-500 hover:text-red-700"
+                          >
+                              Remove Video
+                          </button>
+                       )}
+                    </div>
                  </div>
                </div>
             </div>
+          )}
+
+          {/* Welcome Tab */}
+          {activeTab === 'welcome' && (
+             <div className={sectionClass}>
+                <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Welcome Section</h3>
+                <div className="grid grid-cols-1 gap-4 sm:gap-6">
+                  <div>
+                     <label className={labelClass}>Welcome Header</label>
+                     <input name="welcomeTitle" value={settings.welcomeTitle} onChange={handleChange} className={inputClass} />
+                  </div>
+                  <div>
+                     <label className={labelClass}>Welcome Paragraph</label>
+                     <textarea name="welcomeText" rows={6} value={settings.welcomeText} onChange={handleChange} className={inputClass} />
+                  </div>
+                </div>
+             </div>
           )}
 
           {/* About Tab */}
@@ -865,43 +1097,127 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
               <h3 className="text-sm sm:text-lg font-bold text-admin-dark-text border-b border-admin-dark-border pb-2 mb-4">Booking Checklist Options</h3>
               <p className="text-xs text-admin-dark-text-secondary mb-6">These items appear as checkboxes in the "Request Appointment" form in the Client Portal.</p>
               
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {bookingOptions.map(opt => (
-                    <div key={opt.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative group">
-                      <button 
-                        onClick={() => handleRemoveBookingOption(opt.id)}
-                        className="absolute top-2 right-2 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
-                      <h4 className="font-bold text-gray-900 text-sm mb-1">{opt.label}</h4>
-                      <p className="text-[10px] text-gray-500 italic">{opt.description}</p>
+              <div className="space-y-8">
+                {/* Category Management */}
+                <div className="bg-white border rounded-xl p-4 sm:p-6 mb-6">
+                    <h4 className="font-bold text-gray-900 mb-4 text-sm">Manage Booking Categories</h4>
+                    <div className="flex flex-wrap gap-2 mb-4">
+                        {settings.bookingCategories.map((cat: string) => (
+                        <span key={cat} className="bg-admin-dark-primary text-white px-3 py-1 rounded-full text-xs flex items-center gap-2">
+                            {cat}
+                            <button onClick={() => {
+                                setSettings(prev => {
+                                    const next = { ...prev, bookingCategories: prev.bookingCategories.filter((c: string) => c !== cat) };
+                                    if (props.onSaveAllSettings) {
+                                        props.onSaveAllSettings(getPayload(next));
+                                    }
+                                    return next;
+                                });
+                            }} className="hover:text-red-200">×</button>
+                        </span>
+                        ))}
                     </div>
-                  ))}
+                    <div className="flex gap-2">
+                        <input className={inputClass} value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="New category name" />
+                        <button onClick={() => {
+                        if (!newCategory || settings.bookingCategories.includes(newCategory)) return;
+                        setSettings(prev => {
+                            const next = { ...prev, bookingCategories: [...prev.bookingCategories, newCategory] };
+                            if (props.onSaveAllSettings) {
+                                props.onSaveAllSettings(getPayload(next));
+                            }
+                            return next;
+                        });
+                        setNewCategory('');
+                        }} className="bg-gray-800 text-white px-4 py-2 rounded-lg text-xs font-bold">Add Category</button>
+                    </div>
                 </div>
+
+                {Object.entries(bookingOptions.reduce((acc: any, opt: any) => {
+                    const cat = opt.category || 'Uncategorized';
+                    if (!acc[cat]) acc[cat] = [];
+                    acc[cat].push(opt);
+                    return acc;
+                }, {})).map(([category, opts]: [string, any]) => (
+                    <div key={category} className="space-y-4">
+                      <h4 className="font-bold text-admin-dark-primary text-md uppercase border-b border-admin-dark-border pb-1">{category}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {opts.map((opt: any) => (
+                           <div key={opt.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm relative group">
+                             {editingOptionId === opt.id ? (
+                                 <div className="space-y-2">
+                                     <input className={inputClass} value={editOptLabel} onChange={e => setEditOptLabel(e.target.value)} placeholder="Label" />
+                                     <select className={inputClass} value={editOptCategory} onChange={e => setEditOptCategory(e.target.value)}>
+                                        <option value="">Select Category</option>
+                                        {settings.bookingCategories.map((cat: string) => <option key={cat} value={cat}>{cat}</option>)}
+                                     </select>
+                                     <input type="number" className={inputClass} value={editOptPrice} onChange={e => setEditOptPrice(e.target.value)} placeholder="Price" />
+                                     <input className={inputClass} value={editOptDesc} onChange={e => setEditOptDesc(e.target.value)} placeholder="Description" />
+                                     <button onClick={saveEdit} className="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold w-full">Save Changes</button>
+                                 </div>
+                             ) : (
+                                 <>
+                                     <button 
+                                       onClick={() => handleRemoveBookingOption(opt.id)}
+                                       className="absolute top-2 right-2 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                     >
+                                       <TrashIcon className="w-4 h-4" />
+                                     </button>
+                                     <button 
+                                       onClick={() => startEdit(opt)}
+                                       className="absolute top-2 right-8 text-blue-400 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold"
+                                     >
+                                       Edit
+                                     </button>
+                                     <h4 className="font-bold text-gray-900 text-sm mb-1">{opt.label} - <span className="text-brand-green">R{opt.price || 0}</span></h4>
+                                     <p className="text-[10px] text-gray-500 italic">{opt.description}</p>
+                                 </>
+                             )}
+                           </div>
+                        ))}
+                      </div>
+                    </div>
+                ))}
 
                 <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl p-4 sm:p-6">
                   <h4 className="font-bold text-gray-900 mb-4 text-sm">Add New Option</h4>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className={labelClass}>Short Name (Label)</label>
+                      <label className={labelClass}>Label</label>
                       <input className={inputClass} value={newOptLabel} onChange={e => setNewOptLabel(e.target.value)} placeholder="e.g. Color Ink" />
+                    </div>
+                    <div>
+                      <label className={labelClass}>Category</label>
+                      <select className={inputClass} value={newOptionCategory} onChange={e => setNewOptionCategory(e.target.value)}>
+                        <option value="">Select Category</option>
+                        {settings.bookingCategories.map((cat: string) => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelClass}>Price (R)</label>
+                      <input type="number" className={inputClass} value={newOptPrice} onChange={e => setNewOptPrice(e.target.value)} placeholder="e.g. 150" />
                     </div>
                     <div>
                       <label className={labelClass}>Tiny Explanation</label>
                       <input className={inputClass} value={newOptDesc} onChange={e => setNewOptDesc(e.target.value)} placeholder="e.g. For multi-color designs." />
                     </div>
-                    <button 
-                      onClick={handleAddBookingOption}
-                      className="bg-admin-dark-primary text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2"
-                    >
-                      <PlusIcon className="w-3 h-3" /> Add to Checklist
-                    </button>
                   </div>
+                  <button 
+                    onClick={handleAddBookingOption}
+                    className="bg-admin-dark-primary text-white px-4 py-2 mt-4 rounded-lg font-bold text-xs flex items-center gap-2"
+                  >
+                    <PlusIcon className="w-3 h-3" /> Add to Checklist
+                  </button>
                 </div>
               </div>
             </div>
+          )}
+
+          {/* System Overview Tab */}
+          {activeTab === 'system-guide' && (
+              <div className="animate-fade-in">
+                  <SystemOverview />
+              </div>
           )}
 
           {/* Financials Tab */}
@@ -1356,8 +1672,8 @@ const SettingsManager: React.FC<SettingsManagerProps> = (props) => {
                               <p className="text-xs text-gray-500 leading-loose">Your site isn't just a website; it's a software application. It uses a <strong>Service Worker</strong> to cache assets, allowing it to load even without an internet connection. It can be installed on iOS and Android home screens as a native icon.</p>
                            </div>
                            <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
-                              <h6 className="font-black text-[10px] uppercase tracking-widest text-cyan-500 mb-3">Hybrid Backend Adapter</h6>
-                              <p className="text-xs text-gray-500 leading-loose">The `dbAdapter.ts` module automatically detects your connection status. If Supabase keys are missing, it intelligently switches to <strong>Mock Mode</strong>, using LocalStorage to keep the admin functional for testing purposes.</p>
+                              <h6 className="font-black text-[10px] uppercase tracking-widest text-cyan-500 mb-3">Backend Adapter</h6>
+                              <p className="text-xs text-gray-500 leading-loose">The system is configured to connect to your Supabase instance to store all data securely.</p>
                            </div>
                         </div>
                      </section>

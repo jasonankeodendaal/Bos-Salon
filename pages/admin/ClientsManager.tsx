@@ -5,6 +5,7 @@ import WhatsAppIcon from '../../components/icons/WhatsAppIcon';
 import PlusIcon from '../../components/icons/PlusIcon';
 import TrashIcon from '../../components/icons/TrashIcon';
 import PencilIcon from '../../components/icons/PencilIcon';
+import { sanitizePhoneNumber } from '../../utils/formatUtils';
 
 const IconClients = ({ className = 'w-6 h-6' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
 const MailIcon = ({ className = 'w-5 h-5' }) => <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>;
@@ -362,7 +363,8 @@ const ClientsManager: React.FC<{
         
         if (method === 'whatsapp') {
             if (!selectedClient.phone) return alert('No phone number on file.');
-            const url = `https://wa.me/${selectedClient.phone.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
+            const cleanNumber = sanitizePhoneNumber(selectedClient.phone);
+            const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
             window.open(url, '_blank');
         } else {
             const subject = 'Your Studio Portal Credentials';
@@ -377,7 +379,8 @@ const ClientsManager: React.FC<{
       const msg = `🎉 Congratulations ${selectedClient.name}!\nYou have reached ${program.stickersRequired - 1} stickers!\n\nYour 10th visit is the reward visit! Use code *${couponCode}* to redeem your: ${program.rewardDescription}.\n\nBook your 10th session here: ${window.location.origin}`;
       
       if (!selectedClient.phone) return alert('No phone number on file.');
-      const url = `https://wa.me/${selectedClient.phone.replace(/\+/g, '').replace(/\s/g, '')}?text=${encodeURIComponent(msg)}`;
+      const cleanNumber = sanitizePhoneNumber(selectedClient.phone);
+      const url = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
   };
 
