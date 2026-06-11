@@ -1,5 +1,5 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
+import TrafficLogsPage from './TrafficLogsPage';
 
 interface CreatorModalProps {
   isOpen: boolean;
@@ -8,6 +8,7 @@ interface CreatorModalProps {
 
 const CreatorModal: React.FC<CreatorModalProps> = ({ isOpen, onClose }) => {
   const [isClosing, setIsClosing] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
 
   const handleClose = useCallback(() => {
     setIsClosing(true);
@@ -19,13 +20,17 @@ const CreatorModal: React.FC<CreatorModalProps> = ({ isOpen, onClose }) => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') handleClose();
+      if (e.key === 'Escape' && !showLogs) handleClose();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleClose]);
+  }, [handleClose, showLogs]);
 
   if (!isOpen && !isClosing) return null;
+
+  if (showLogs) {
+      return <TrafficLogsPage onClose={() => setShowLogs(false)} />;
+  }
 
   const modalAnimation = isOpen && !isClosing ? 'opacity-100' : 'opacity-0';
   const contentAnimation = isOpen && !isClosing ? 'opacity-100 scale-100' : 'opacity-0 scale-95';
@@ -104,8 +109,14 @@ const CreatorModal: React.FC<CreatorModalProps> = ({ isOpen, onClose }) => {
                 </a>
             </div>
             
-            <div className="mt-8 text-[10px] text-gray-600 uppercase tracking-[0.2em] font-bold">
-                Web Development • Design
+            <div className="mt-8 text-[10px] text-gray-600 uppercase tracking-[0.2em] font-bold flex flex-col items-center gap-4">
+                <span>Web Development • Design</span>
+                <button 
+                  onClick={() => setShowLogs(true)}
+                  className="bg-white/5 hover:bg-white/10 text-gray-500 hover:text-gray-300 px-3 py-1 rounded transition-colors text-[8px] uppercase font-bold tracking-widest border border-white/10"
+                >
+                  View Traffic Logs
+                </button>
             </div>
         </div>
       </div>

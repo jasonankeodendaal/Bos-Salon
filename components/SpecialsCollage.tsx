@@ -4,6 +4,7 @@ import { SpecialItem } from '../App';
 import SpecialModal from './SpecialModal';
 import PowderSplashBackground from './PowderSplashBackground';
 import { BullSkullOutline } from './icons/SalonIcons';
+import { sanitizePhoneNumber } from '../utils/formatUtils';
 
 interface SpecialsCollageProps {
   specials: SpecialItem[];
@@ -60,7 +61,8 @@ const SpecialsCollage: React.FC<SpecialsCollageProps> = ({ specials, whatsAppNum
 
     message += `\nCan you please provide more information on booking?`;
     
-    return `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(message)}`;
+    const cleanNumber = sanitizePhoneNumber(whatsAppNumber);
+    return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const formatPrice = (item: SpecialItem) => {

@@ -9,19 +9,23 @@ interface HeroProps {
   portfolioData: PortfolioItem[];
   onNavigate: (view: 'home' | 'admin') => void;
   heroBgUrl: string;
+  heroVideoUrl?: string;
   // New props for CMS
   title?: string;
   subtitle?: string;
   buttonText?: string;
+  whatsAppNumber: string;
 }
 
 const Hero: React.FC<HeroProps> = ({ 
   portfolioData, 
   onNavigate, 
   heroBgUrl,
+  heroVideoUrl,
   title = "Nail and beauty",
   subtitle = "Experience the art of nature",
-  buttonText = "Book an Appointment"
+  buttonText = "Book an Appointment",
+  whatsAppNumber
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
@@ -61,14 +65,25 @@ const Hero: React.FC<HeroProps> = ({
         {/* Light Mode Gradient - Reduced opacity to show image better */}
         <div className="absolute top-0 left-0 w-full h-full z-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
         
-        {/* Background Image - Moved here to sit behind text and carousel */}
+        {/* Background Image/Video - Moved here to sit behind text and carousel */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] z-0 w-full text-center pointer-events-none">
-            <img 
-                src={heroBgUrl}
-                alt="Background Art"
-                aria-hidden="true"
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] sm:w-[50rem] md:w-[65rem] lg:w-[80rem] max-w-none h-auto opacity-75 object-cover"
-            />
+            {heroVideoUrl ? (
+                <video 
+                  src={heroVideoUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] sm:w-[50rem] md:w-[65rem] lg:w-[80rem] max-w-none h-auto opacity-75 object-cover"
+                />
+            ) : (
+                <img 
+                    src={heroBgUrl}
+                    alt="Background Art"
+                    aria-hidden="true"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] sm:w-[50rem] md:w-[65rem] lg:w-[80rem] max-w-none h-auto opacity-75 object-cover"
+                />
+            )}
         </div>
 
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-[55%] z-20 w-full text-center px-4">
@@ -146,6 +161,7 @@ const Hero: React.FC<HeroProps> = ({
           isOpen={isModalOpen}
           onClose={closeModal}
           item={selectedItem}
+          whatsAppNumber={whatsAppNumber}
         />
       )}
     </>

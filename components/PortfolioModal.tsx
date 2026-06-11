@@ -2,14 +2,18 @@
 import React, { useState, useEffect, useCallback, MouseEvent, useRef } from 'react';
 import { PortfolioItem } from '../App';
 import FullScreenImageViewer from './FullScreenImageViewer';
+import { sanitizePhoneNumber } from '../utils/formatUtils';
+
+import { BullSkullOutline } from './icons/SalonIcons';
 
 interface PortfolioModalProps {
   isOpen: boolean;
   onClose: () => void;
   item: PortfolioItem;
+  whatsAppNumber: string;
 }
 
-const PortfolioModal: React.FC<PortfolioModalProps> = ({ isOpen, onClose, item }) => {
+const PortfolioModal: React.FC<PortfolioModalProps> = ({ isOpen, onClose, item, whatsAppNumber }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -45,6 +49,12 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ isOpen, onClose, item }
         document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
     }
     handleClose();
+  };
+  
+  const createWhatsAppLink = () => {
+    const message = `Hi! I'm interested in: ${item.title}`;
+    const cleanNumber = sanitizePhoneNumber(whatsAppNumber);
+    return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
   };
   
   // Central navigation handler to pause videos before switching
@@ -215,16 +225,30 @@ const PortfolioModal: React.FC<PortfolioModalProps> = ({ isOpen, onClose, item }
                 
                 <div className="text-brand-light/80 text-lg leading-relaxed font-sans space-y-4">
                     <p>{item.story}</p>
+                    {item.tags && item.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-4">
+                            {item.tags.map(tag => <span key={tag} className="bg-brand-light/10 text-brand-green text-xs px-2 py-1 rounded">#{tag}</span>)}
+                        </div>
+                    )}
                 </div>
             </div>
             
-            <div className="mt-10 pt-6 border-t border-brand-light/10 flex-shrink-0">
+            <div className="mt-10 pt-6 border-t border-brand-light/10 flex-shrink-0 space-y-4">
                 <a 
                    href="#contact-form" 
                    onClick={handleAnchorClick} 
-                   className="w-full block text-center bg-brand-green text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-brand-light transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                   className="w-full block text-center bg-brand-light text-brand-dark px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-brand-gold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
                     Get a Quote
+                </a>
+                <a 
+                   href={createWhatsAppLink()} 
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="w-full flex items-center justify-center gap-2 bg-brand-green text-white px-8 py-4 rounded-xl font-bold uppercase tracking-widest text-sm hover:bg-opacity-90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                >
+                    <BullSkullOutline className="w-5 h-5" />
+                    Inquire on WhatsApp
                 </a>
             </div>
           </div>

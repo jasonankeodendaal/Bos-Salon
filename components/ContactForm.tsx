@@ -12,17 +12,19 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [contactMethod, setContactMethod] = useState<'email' | 'whatsapp'>('email');
   const [message, setMessage] = useState('');
   const [bookingDate, setBookingDate] = useState('');
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [waLink, setWaLink] = useState('');
   const [referenceImages, setReferenceImages] = useState<File[]>([]);
   const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
 
   // Destructure content settings with fallbacks
   const contactContent = settings?.contact || {};
+  const bookingOptions = settings?.bookingOptions || [];
   const processTitle = contactContent.processTitle || 'Our Process';
   const processIntro = contactContent.processIntro || "We believe in personal care. Whether it's a simple tattoo or complex custom art, we ensure every detail is perfect.";
   const processSteps = contactContent.processSteps || [
@@ -30,6 +32,14 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
       "Consultation: We'll contact you to confirm details, colors, and specific requirements.",
       "Relax & Enjoy: Come in, relax in our studio, and let us work our magic."
   ];
+
+  const toggleOption = (label: string) => {
+    setSelectedOptions(prev => 
+        prev.includes(label) 
+            ? prev.filter(item => item !== label) 
+            : [...prev, label]
+    );
+  };
   const designTitle = contactContent.designTitle || 'Design Ideas?';
   const designIntro = contactContent.designIntro || "If you have a specific design in mind, let us know!";
   const designPoints = contactContent.designPoints || [
@@ -60,12 +70,8 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !message || !bookingDate) {
+    if (!name || !email || !message || !bookingDate || !whatsappNumber) {
       setErrorMessage('Please fill out all required fields to request a booking.');
-      return;
-    }
-    if (contactMethod === 'whatsapp' && !whatsappNumber) {
-      setErrorMessage('Please provide your WhatsApp number if you prefer to be contacted that way.');
       return;
     }
 
@@ -76,7 +82,7 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
     if (referenceImages.length > 0) {
         try {
             const uploadPromises = referenceImages.map(file => 
-                dbUploadFile(file, 'booking-references')
+                dbUploadFile(file, 'media', 'booking-references/').then(url => `${url}?download=`)
             );
             referenceImageUrls = await Promise.all(uploadPromises);
         } catch (error) {
@@ -87,22 +93,62 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
         }
     }
 
-    onAddBooking({ name, email, message, bookingDate, whatsappNumber, contactMethod, referenceImages: referenceImageUrls });
+    onAddBooking({ 
+        name, 
+        email, 
+        message, 
+        bookingDate, 
+        whatsappNumber,
+        referenceImages: referenceImageUrls,
+        selectedOptions
+    });
     
+    // Build WhatsApp message
+    const waMessage = `✨ *New Appointment Request | Bos Salon* ✨
+
+👤 *Client Details*
+• Name: ${name}
+• Email: ${email}
+• WhatsApp: ${whatsappNumber}
+
+📅 *Booking Preference*
+• Requested Date: ${bookingDate}
+• Selected Services: ${selectedOptions.length > 0 ? selectedOptions.join(', ') : 'None selected'}
+
+💬 *Additional Notes*
+${message || 'No additional message provided.'}
+
+📸 *Reference Material*
+${referenceImageUrls.length > 0 ? referenceImageUrls.join('\n') : 'No images attached.'}
+
+_Sent via Bos Salon Booking Portal_`;
+    
+    // Redirect to WhatsApp
+    const adminPhone = settings?.whatsAppNumber || "27795904162";
+    const cleanPhone = adminPhone.replace(/\D/g, '');
+    const whatsAppLink = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMessage)}`;
+    
+    setWaLink(whatsAppLink);
+
     // Reset form and show success message
     setName('');
     setEmail('');
     setWhatsappNumber('');
-    setContactMethod('email');
     setMessage('');
     setBookingDate('');
+    setSelectedOptions([]);
     referenceImagePreviews.forEach(URL.revokeObjectURL);
     setReferenceImages([]);
     setReferenceImagePreviews([]);
     setErrorMessage('');
     setIsLoading(false);
-    setSuccessMessage('Your booking request has been sent! We will contact you shortly to confirm.');
-    setTimeout(() => setSuccessMessage(''), 5000);
+    setSuccessMessage('Booking request processing... Redirecting to WhatsApp to send message.');
+    
+    // Attempt redirect
+    setTimeout(() => {
+        window.open(whatsAppLink, '_blank') || (window.location.href = whatsAppLink);
+        setSuccessMessage('Successfully submitted. If WhatsApp did not open, make sure pop-ups are allowed.');
+    }, 1500);
   };
 
   const today = new Date().toISOString().split('T')[0];
@@ -177,18 +223,60 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
                                     </div>
                                 </div>
 
+                                {/* WhatsApp Number Input (Always Visible) */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-600 mb-2">Preferred Contact Method</label>
-                                    <div className="flex gap-1 rounded-lg bg-brand-off-white border border-gray-300 p-1">
-                                        <button type="button" onClick={() => setContactMethod('email')} className={`w-1/2 p-2 rounded-md text-sm font-semibold transition-colors ${contactMethod === 'email' ? 'bg-white shadow-sm text-brand-green' : 'text-gray-500 hover:bg-white/50'}`}>Email</button>
-                                        <button type="button" onClick={() => setContactMethod('whatsapp')} className={`w-1/2 p-2 rounded-md text-sm font-semibold transition-colors ${contactMethod === 'whatsapp' ? 'bg-white shadow-sm text-brand-green' : 'text-gray-500 hover:bg-white/50'}`}>WhatsApp</button>
-                                    </div>
+                                    <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-600 mb-2">WhatsApp Number</label>
+                                    <input type="tel" id="whatsapp" value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} placeholder="e.g. 27795904162" className="w-full bg-brand-off-white border border-gray-300 rounded-lg p-3 text-brand-light focus:ring-2 focus:ring-brand-green focus:border-brand-green outline-none" required/>
                                 </div>
 
-                                {contactMethod === 'whatsapp' && (
-                                    <div className="animate-fade-in">
-                                        <label htmlFor="whatsapp" className="block text-sm font-medium text-gray-600 mb-2">WhatsApp Number</label>
-                                        <input type="tel" id="whatsapp" value={whatsappNumber} onChange={e => setWhatsappNumber(e.target.value)} placeholder="e.g. 27795904162" className="w-full bg-brand-off-white border border-gray-300 rounded-lg p-3 text-brand-light focus:ring-2 focus:ring-brand-green focus:border-brand-green outline-none" required/>
+                                {bookingOptions.length > 0 && (
+                                    <div className="py-4 border-y border-gray-100 relative">
+                                        <label className="block text-sm font-bold text-brand-light uppercase tracking-wider mb-2">Select Options</label>
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    const menu = document.getElementById('options-menu');
+                                                    if(menu) menu.classList.toggle('hidden');
+                                                }}
+                                                className="w-full flex items-center justify-between p-3 border rounded-lg bg-white text-sm text-brand-light hover:bg-gray-50 focus:ring-2 focus:ring-brand-green outline-none"
+                                            >
+                                                <span>{selectedOptions.length > 0 ? `${selectedOptions.length} option(s) selected` : 'Select options...'}</span>
+                                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"/></svg>
+                                            </button>
+                                            <div id="options-menu" className="hidden absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto p-2 space-y-3">
+                                                {Object.entries(bookingOptions.reduce((acc: any, opt: any) => {
+                                                    const cat = opt.category || 'Uncategorized';
+                                                    if (!acc[cat]) acc[cat] = [];
+                                                    acc[cat].push(opt);
+                                                    return acc;
+                                                }, {})).map(([category, opts]: [string, any]) => (
+                                                    <div key={category}>
+                                                        <h4 className="font-bold text-xs uppercase text-brand-green border-b border-gray-100 pb-1 mb-1">{category}</h4>
+                                                        {opts.map((opt: any) => (
+                                                            <label key={opt.id} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer">
+                                                                <div className="flex items-center gap-2">
+                                                                    <input 
+                                                                        type="checkbox" 
+                                                                        checked={selectedOptions.includes(opt.label)}
+                                                                        onChange={() => {
+                                                                            setSelectedOptions(prev => 
+                                                                                prev.includes(opt.label) 
+                                                                                    ? prev.filter(l => l !== opt.label) 
+                                                                                    : [...prev, opt.label]
+                                                                            )
+                                                                        }}
+                                                                        className="accent-brand-green"
+                                                                    />
+                                                                    <span className="text-sm text-brand-light">{opt.label}</span>
+                                                                </div>
+                                                                <span className="text-xs text-gray-400 font-bold italic">R{opt.price || 0}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
 
@@ -213,11 +301,25 @@ const ContactForm: React.FC<ContactFormProps> = ({ onAddBooking, settings }) => 
                                 </div>
                                 
                                 {errorMessage && <p className="text-center text-red-500 text-sm">{errorMessage}</p>}
-                                {successMessage && <p className="text-center text-green-600 text-sm">{successMessage}</p>}
+                                {successMessage && (
+                                    <div className="text-center">
+                                         <p className="text-green-600 text-sm font-bold mb-4">{successMessage}</p>
+                                         {waLink && (
+                                             <a 
+                                                 href={waLink} 
+                                                 target="_blank" 
+                                                 rel="noopener noreferrer"
+                                                 className="inline-flex items-center justify-center bg-[#25D366] text-white py-3 px-6 rounded-full font-bold shadow hover:bg-[#1ebd5a] transition"
+                                             >
+                                                 Click Here to Open WhatsApp
+                                             </a>
+                                         )}
+                                    </div>
+                                )}
 
                                 <div>
-                                <button type="submit" disabled={isLoading} className="w-full bg-brand-green text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-all duration-300 mt-2 transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed">
-                                    {isLoading ? 'Sending...' : 'Request Booking/Quote'}
+                                <button type="submit" disabled={isLoading || !!successMessage} className="w-full bg-brand-green text-white py-3 rounded-full font-bold text-lg hover:bg-opacity-90 transition-all duration-300 mt-2 transform hover:-translate-y-1 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0">
+                                    {isLoading ? 'Sending...' : 'Book an appointment'}
                                 </button>
                                 </div>
                             </form>

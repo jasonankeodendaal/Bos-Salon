@@ -12,7 +12,7 @@ interface FooterProps {
   businessHours: string;
   socialLinks: SocialLink[];
   apkUrl: string;
-  onNavigate: (view: 'home' | 'admin' | 'client-portal') => void;
+  onNavigate: (view: 'home' | 'admin') => void;
 }
 
 const ClockIcon = ({ className = "w-4 h-4" }) => (

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { SpecialItem } from '../App';
 import SpecialModal from './SpecialModal';
 import { BullSkullOutline } from './icons/SalonIcons';
+import { sanitizePhoneNumber } from '../utils/formatUtils';
 
 interface SpecialsSectionProps {
   specials: SpecialItem[];
@@ -59,7 +60,8 @@ const SpecialsSection: React.FC<SpecialsSectionProps> = ({ specials, onNavigate,
 
     message += `\nCan you please provide more information on booking?`;
     
-    return `https://wa.me/${whatsAppNumber}?text=${encodeURIComponent(message)}`;
+    const cleanNumber = sanitizePhoneNumber(whatsAppNumber);
+    return `https://wa.me/${cleanNumber}?text=${encodeURIComponent(message)}`;
   };
 
   const formatPriceSmall = (item: SpecialItem) => {

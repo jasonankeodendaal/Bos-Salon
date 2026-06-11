@@ -133,6 +133,12 @@ const SpecialModal: React.FC<SpecialModalProps> = ({ isOpen, onClose, item, crea
           <div className="p-8 flex-grow overflow-y-auto text-brand-light">
             <p className="text-brand-light/80 mb-6 leading-relaxed">{item.description}</p>
             
+            {item.tags && item.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {item.tags.map(tag => <span key={tag} className="bg-brand-light/10 text-brand-green text-xs px-2 py-1 rounded">#{tag}</span>)}
+                </div>
+            )}
+
             <div className="bg-white/50 border border-brand-light/10 rounded-xl p-6 my-4 text-center shadow-sm">
               {formatPrice(item)}
             </div>
